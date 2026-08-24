@@ -9,10 +9,10 @@ extraction, a regular-file image builder, a reproducible local hardware
 package, an offline-root hardware installer, an exact minimal base-system
 transaction, a version-locked minimal Hyprland installer, and an inert Omarchy
 source-staging transaction. The real pinned Arch rootfs, hardware transaction,
-and secret-safe base configuration have been exercised in isolated aarch64
-Linux volumes; desktop installers remain fixture-only. No script has been run
-against a real SD card or live system, and the existing bootable SD card has
-not been touched.
+secret-safe base configuration, and regular-image assembly have been exercised
+in isolated aarch64 Linux volumes; desktop installers remain fixture-only. No
+script has been run against a real SD card or live system, and the existing
+bootable SD card has not been touched.
 
 ## Status
 
@@ -31,6 +31,8 @@ Research snapshot: **2026-08-24**
 - The exact offline NetworkManager/sudo/Bluetooth closure and synthetic
   first-boot configuration run are recorded in
   [`research/base-system-results.yaml`](research/base-system-results.yaml).
+- The configured full-root regular-image build and read-only inspection are in
+  [`research/full-image-results.yaml`](research/full-image-results.yaml).
 - Reproducible 4 KiB/16 KiB DKMS build results are in
   [`research/dkms-build-results.yaml`](research/dkms-build-results.yaml).
 - Closely related community attempts are assessed in
@@ -67,10 +69,11 @@ failure paths with `tests/test-validate-system.sh`.
 
 `scripts/bootstrap-arch.sh` verifies the rootfs digest and an explicit detached
 signature/keyring/fingerprint tuple, then can extract into a **new** offline
-root with Linux ownership semantics. `scripts/build-image.sh` consumes an exact
-hardware-selection state and creates a new MBR/FAT/ext4 regular image with
-explicit partition/filesystem identities and embedded/external manifests. Both
-reject physical-device output and existing destinations.
+root with Linux ownership semantics. `scripts/build-image.sh` consumes exact
+hardware and base-system states and creates a new MBR/FAT/ext4 regular image
+with explicit partition/filesystem identities and embedded/external manifests.
+It rejects an unlocked source account or cloned SSH host key as well as every
+physical-device output and existing destination.
 
 The selected Phase 1 hardware baseline is `linux-rpi-16k` plus the pinned
 `uconsole-cm5-dkms` package. The compiler/DKMS closure is also content-locked.
@@ -121,6 +124,11 @@ and idempotent reapply pass on a disposable clone of the retained hardware
 root. Operator-selected credentials have deliberately not been applied to the
 retained source.
 
+A 4 GiB image built from that synthetic configured clone passed filesystem
+checks, read-only remount, state/account/key inspection and manifest digest
+verification. The image contains integration-only credentials, was never
+written to media, and is not a boot candidate.
+
 `scripts/plan-sd-write.sh` is intentionally read-only. It verifies an image
 against its manifest and a stable `/dev/disk/by-id/…` whole-disk identity, then
 rejects mounted, undersized, read-only and system-root devices. There is no SD
@@ -132,7 +140,7 @@ minimal Hyprland transaction against its mounted development root:
 ```sh
 scripts/install-hyprland.sh --plan \
   --root /mnt/uconsole-root \
-  --user alarm
+  --user yourname
 ```
 
 This checks all 21 direct package versions against the target's Arch Linux ARM
@@ -148,7 +156,7 @@ pinned upstream archive and stage selected audit trees outside `PATH`.
 ```sh
 scripts/install-omarchy-arm64.sh --plan \
   --root /mnt/uconsole-root \
-  --user alarm \
+  --user yourname \
   --source-archive /path/to/omarchy-quattro.tar.gz
 ```
 
@@ -198,12 +206,14 @@ that gate but has not been applied to a card.
 │   │   └── build-dkms-inside.sh
 │   ├── base-system-results.yaml
 │   ├── dkms-build-results.yaml
+│   ├── full-image-results.yaml
 │   ├── custom-kernel-delta.yaml
 │   ├── hyprland-package-lock.yaml
 │   ├── image-builder-inputs.yaml
 │   ├── phase1-hardware-install-results.yaml
 │   ├── phase1-inputs.yaml
 │   ├── rootfs-extraction-results.yaml
+│   ├── test-full-image.sh
 │   ├── upstream-lock.yaml
 │   ├── xdg-terminal-exec-inputs.yaml
 │   └── package-audit/                    # future: generated CSV and provenance

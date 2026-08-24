@@ -27,16 +27,18 @@ integration:
   runner: research/test-image-builder.sh
   fixture_image_size_mib: 2048
   final_result: PASS
-  final_image_sha256: 7ceac78a399b3f871315ef8aa54b6f349859d5e21b1a56baed0abc5fb6ed2723
+  final_image_sha256: 811c6f1b6e6a30dcaead76cd2ce53cfc042fc8c847d391182c510cc3f0774774
   final_boot_manifest_sha256: 2660b3735953a56c4c82497ec85ef5e91097a7353bce48ee1989705e801a030a
   verified:
     - regular-file-only output boundary
     - exact MBR disk ID and partition geometry
     - exact FAT volume ID and ext4 UUID
+    - generic uconsole-root ext4 label independent of an account name
     - fsck.fat and e2fsck clean
     - read-only remount of both filesystems
     - rendered PARTUUID fstab and kernel command line
     - preserved hardware-selection state and root payload
+    - required configured base-system state and locked source accounts
     - embedded boot-file manifest and external image manifest
     - prepared source root unchanged
   failures_recorded:
@@ -55,4 +57,4 @@ integration:
     - attempt: 4
       result: PASS
       finding: "Image construction, filesystem checks and read-only inspection all passed"
-result: "PASS for deterministic fixture; full signed Arch root and physical CM5 boot remain pending"
+result: "PASS for deterministic fixture and configured full-root assembly; physical CM5 boot remains pending"

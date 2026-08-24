@@ -1,0 +1,86 @@
+schema: 1
+observed_at: "2026-08-24"
+purpose: "Build and read-only inspect a regular image from the configured full Arch Linux ARM root"
+source:
+  basis: "disposable clone of the retained signed root plus selected hardware and exact base-system transactions"
+  access_during_image_build: read_only
+  configured_with: "synthetic integration-only admin, recovery hash and Wi-Fi keyfile"
+  content_bytes: 2540265472
+builder:
+  script: scripts/build-image.sh
+  runner: research/test-full-image.sh
+  image: menci/archlinuxarm:base-devel-20260819.32222611223
+  arm64_manifest_digest: sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
+  dosfstools: 4.2-5
+  mtools: "1:4.0.49-1"
+security_gate:
+  verified_before_build:
+    - exact hardware-selection state
+    - exact 21-package base-system state
+    - exactly nine non-secret base-system selection fields
+    - non-root wheel admin and 0600 authorized_keys
+    - encrypted local-console recovery hash
+    - locked root and non-admin source alarm accounts
+    - audited key-only sshd policy
+    - locale, timezone, keymap and regulatory-domain state
+    - NetworkManager ownership and optional Wi-Fi mode
+    - absence of SSH host keys
+  negative_fixtures:
+    - missing base-system selection is rejected
+    - unlocked root account is rejected
+image:
+  size_bytes: 4294967296
+  sha256: e6cf67a96586509343086e6312aebd81bb573e4cc763f876950bf4b43309af45
+  external_manifest_sha256: b6b1e66eb3f09d03fc540ce0b425a3a67d379f0570655d6e7675d307d97e68d6
+  source_date_epoch: 1787590000
+  partition_table: mbr
+  disk_id: c05e2026
+  boot:
+    start_sector: 8192
+    sectors: 1048576
+    partuuid: c05e2026-01
+    filesystem: fat32
+    volume_id: C05E2026
+  root:
+    start_sector: 1056768
+    sectors: 7329792
+    partuuid: c05e2026-02
+    filesystem: ext4
+    uuid: 7a4cc8d5-70df-4f98-a88d-3b89c9f21561
+    label: uconsole-root
+  boot_files: 413
+  boot_manifest_sha256: 1ee80a0c8aac50b66ef78ae8bef4d3cf7079d8775458392722b150b6d02e446e
+  config_txt_sha256: 814d1ce7637f801c03030e4ee5cdebce519cbb4c0cf5510507b216b48107e73b
+  cmdline_txt_sha256: d7c87083e93b873bc87f553414b34b8c5de1b3ade175b9f8c296275406b748e6
+  fstab_sha256: a837c45391598c4c22c26da39c0dc6c5f0720cd78ab0c9dfcdd1b2fc8518e4c0
+integration:
+  final_result: PASS
+  verified:
+    - regular-file-only output boundary
+    - exact MBR geometry and filesystem identities
+    - FAT and ext4 filesystem checks
+    - read-only remount and inspection of both partitions
+    - preserved hardware, base-package and non-secret base-selection state
+    - locked source accounts and encrypted synthetic admin recovery hash
+    - 0600 authorized_keys and Wi-Fi keyfile
+    - absence of cloned SSH host keys
+    - PARTUUID-based fstab and kernel command line
+    - embedded boot manifest and external image digest
+    - configured source root unchanged
+  failures_recorded:
+    - attempt: 1
+      result: FAIL
+      finding: "The newly added host runner had not yet received its executable mode."
+      smallest_change: "Set mode 0755 on the two research runner scripts; no image command had run and the output volume remained empty."
+    - attempt: 2
+      result: PASS
+      finding: "The configured full-root build and all read-only image inspections passed."
+limitations:
+  - the image contains synthetic integration credentials and must never be written to media or published
+  - the image proves assembly and policy preservation, not CM5 bootability
+  - no physical block device was opened
+  - operator-selected configuration and a fresh development SD are still required
+artifact_disposition:
+  retained: false
+  action: "Deleted the exact disposable output volume after recording and independently rereading its manifest."
+  recovery: "Not recoverable as an artifact; the test can be rerun, but its image bytes change because the synthetic SSH key is intentionally regenerated."

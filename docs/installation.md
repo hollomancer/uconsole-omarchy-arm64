@@ -46,8 +46,10 @@ Linux/root-only and accepts only a new offline-root destination.
 partitions it with a deterministic MBR, formats FAT32/ext4, copies the prepared
 root, renders PARTUUID-based boot/fstab configuration, runs both filesystem
 checks and publishes embedded/external manifests. Its pinned aarch64 fixture
-integration test passes. [`plan-sd-write.sh`](../scripts/plan-sd-write.sh) is a
-read-only Linux physical-media preflight; it deliberately has no write action.
+and configured full-root integration tests pass. It refuses a root without the
+completed base-system state, locked source accounts and unique-host-key
+boundary. [`plan-sd-write.sh`](../scripts/plan-sd-write.sh) is a read-only Linux
+physical-media preflight; it deliberately has no write action.
 
 Example after the moving rootfs has been downloaded, signature-verified and
 assigned an immutable SHA-256 in the build lock:
@@ -204,9 +206,12 @@ references and manifest are internally consistent.
 
 The regular-image fixture passes this gate, including exact MBR geometry,
 filesystem IDs, fsck, read-only remount, rendered boot references and both
-manifests. The full hardware root has not been promoted to a development image
-because the retained source deliberately does not contain operator
-credentials; P1.4 has been proven only on a disposable clone.
+manifests. A second integration built and inspected a 4 GiB image from the
+configured clone of the real hardware root. It preserved all hardware/base
+state, locked accounts and key modes; exact evidence is in
+[`../research/full-image-results.yaml`](../research/full-image-results.yaml).
+That image contains synthetic credentials and is not a development-media
+candidate. The retained source still deliberately lacks operator credentials.
 
 ### P1.4 — Configure the minimal system
 
@@ -318,7 +323,7 @@ Only after Phase 1 passes, plan the smallest ALARM Hyprland set:
 ```sh
 scripts/install-hyprland.sh --plan \
   --root /mnt/uconsole-root \
-  --user alarm
+  --user yourname
 ```
 
 The script requires the exact `linux-rpi-16k`/uConsole hardware-selection
@@ -378,7 +383,7 @@ trees for audit:
 ```sh
 scripts/install-omarchy-arm64.sh --plan \
   --root /mnt/uconsole-root \
-  --user alarm \
+  --user yourname \
   --source-archive /path/to/omarchy-quattro.tar.gz
 ```
 

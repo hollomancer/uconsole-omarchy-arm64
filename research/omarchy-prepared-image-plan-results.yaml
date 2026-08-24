@@ -35,6 +35,20 @@ validation:
   physical_devices_touched: false
 result: PASS
 build_status: not_run_insufficient_disposable_storage
+prepared_build_runner:
+  script: test-omarchy-prepared-image.sh
+  container_runner: container/test-omarchy-prepared-image-inside.sh
+  contract_test: ../tests/test-omarchy-prepared-image-runner.sh
+  contract_test_result: PASS
+  input_check_result: PASS
+  source_volume: uconsole-hyprland-integration-20260824
+  source_mounted_read_only: true
+  output_volume: uconsole-omarchy-prepared-image-20260824
+  output_verified_empty: true
+  explicit_build_flag: --build-synthetic-image
+  network_during_build: disabled
+  inspection_mounts_read_only: true
+  expected_image_bytes: 8589934592
 storage_observed:
   docker_free_gib: 2.0
   host_free_gib: 2.7

@@ -79,6 +79,8 @@ Research snapshot: **2026-08-24**
   [`research/omarchy-user-preparation-results.yaml`](research/omarchy-user-preparation-results.yaml).
 - The 8 GiB prepared-but-inactive image geometry and layer gate are in
   [`research/omarchy-prepared-image-plan-results.yaml`](research/omarchy-prepared-image-plan-results.yaml).
+- The storage-gated build and read-only inspection entry point is
+  [`research/test-omarchy-prepared-image.sh`](research/test-omarchy-prepared-image.sh).
 
 The validator is read-only and phase-aware:
 
@@ -361,6 +363,7 @@ that gate but has not been applied to a card.
 │   ├── resolve-hyprland-closure.sh
 │   ├── resolve-omarchy-core-build-closure.sh
 │   ├── test-full-image.sh
+│   ├── test-omarchy-prepared-image.sh     # current exact 8 GiB build/inspection runner
 │   ├── upstream-lock.yaml
 │   └── xdg-terminal-exec-inputs.yaml
 ├── packaging/
@@ -394,7 +397,9 @@ that gate but has not been applied to a card.
     ├── test-install-uconsole-prerequisites.sh # current offline-closure safety test
     ├── test-install-uconsole-hardware.sh  # current transaction safety test
     ├── test-omarchy-package-policy.sh     # current complete-policy safety test
+    ├── test-omarchy-prepared-image-runner.sh # current image-runner safety test
     ├── test-plan-omarchy-update.sh        # current update-boundary safety test
+    ├── test-prepare-omarchy-user.sh       # current inactive-home safety test
     ├── test-validate-system.sh            # current deterministic test
     └── fixtures/                          # current captured probe fixtures
 ```

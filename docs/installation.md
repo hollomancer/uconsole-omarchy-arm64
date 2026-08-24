@@ -521,6 +521,23 @@ content and 8,047,820,800 bytes of root capacity. Plan mode creates no output.
 The full image build and read-only mount inspection await additional disposable
 storage; they are not replaced by the passing plan.
 
+The exact build/inspection runner and its empty output volume are already
+prepared. Re-run the non-mutating input check after freeing space:
+
+```sh
+research/test-omarchy-prepared-image.sh \
+  --source-volume uconsole-hyprland-integration-20260824 \
+  --output-volume uconsole-omarchy-prepared-image-20260824 \
+  --check
+```
+
+Then use the same arguments with `--build-synthetic-image`. That explicit flag
+builds the 8 GiB regular file, checks both filesystems and partition identities,
+mounts them read-only, compares all six layer states and three user configs,
+verifies all 51 required runtime commands, and confirms the session remains
+inactive. The output contains synthetic credentials and must not be published
+or written to media.
+
 The first live launch remains manual after Phase 2 evidence is saved. Keep the
 upstream autostart and Hyprland defaults out of the transaction; start only the
 reviewed shell wrapper from the existing minimal session. Re-run

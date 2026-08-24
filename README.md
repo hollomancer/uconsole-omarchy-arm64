@@ -341,12 +341,14 @@ that gate but has not been applied to a card.
 │   ├── prior-art.md
 │   └── upstream-inventory.md
 ├── research/
+│   ├── archive-project-volume.sh
 │   ├── audit-omarchy-base-packages.sh
 │   ├── build-omarchy-core-packages.sh
 │   ├── build-uconsole-dkms.sh
 │   ├── build-uconsole-package.sh
 │   ├── compare-omarchy-prepared-images.sh
 │   ├── container/
+│   │   ├── archive-project-volume-inside.sh
 │   │   ├── build-board-package-inside.sh
 │   │   ├── build-dkms-inside.sh
 │   │   ├── build-omarchy-core-packages-inside.sh
@@ -400,6 +402,7 @@ that gate but has not been applied to a card.
 │   ├── plan-sd-write.sh                  # current: read-only media preflight
 │   └── validate-system.sh                # current: read-only PASS/WARN/FAIL report
 └── tests/
+    ├── test-archive-project-volume.sh     # current archive/restore safety test
     ├── test-bootstrap-arch.sh             # current rootfs/input safety test
     ├── test-build-image.sh                # current image/device safety test
     ├── test-build-omarchy-core-packages.sh # current offline-build policy test

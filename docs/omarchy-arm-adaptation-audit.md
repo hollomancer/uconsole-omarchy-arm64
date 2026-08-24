@@ -102,3 +102,38 @@ command. Before enabling an update it must:
 This keeps normal upstream migrations available without giving Omarchy control
 of the uConsole kernel or Pi firmware chain.
 
+## Quickshell and command activation audit
+
+The pinned Quattro source contains 432 regular files in `bin/`. A token scan of
+`shell/`, `default/hypr/` and `config/hypr/` finds 141 distinct
+`omarchy-*` identifiers. Of those, 118 match shipped commands; the other 23 are
+plugin/notification IDs or partial example strings. This is too broad to expose
+wholesale during first activation.
+
+More importantly, `shell/services/PluginRegistry.qml` treats first-party
+non-bar plugins as implicitly enabled. An empty `plugins` array does not produce
+a minimal shell. Unless named in `disabledPlugins`, background, clipboard,
+dev-gallery, emoji, image-picker, lock, menu, notifications, OSD, polkit,
+reminders, battery, idle, media and nightlight components remain loadable or
+active. Bar widgets become active when placed in the layout.
+
+The upstream Hyprland default also starts more than the shell. Its startup
+handler imports the user environment and then invokes shell launch, first-run
+provisioning, power-profile initialization, monitor watching, udiskie and
+post-boot hooks. Several of those cross the ARM system/hardware ownership
+boundary or depend on packages not yet classified.
+
+Therefore the first runnable ARM userland must use three explicit controls:
+
+1. an ARM Hyprland entry point that does not import upstream autostart until
+   each command has an approved disposition;
+2. a minimal `shell.json` with an explicit `disabledPlugins` list, not merely
+   an empty `plugins` list;
+3. a generated command allowlist that installs/exposes only commands consumed
+   by enabled components and fails when a new upstream command reference is
+   unclassified.
+
+This finding is why the current `install-omarchy-arm64.sh` stages source outside
+`PATH` and rejects activation. The next command-policy pass can proceed from the
+pinned tree, but the actual Quickshell session waits for the real G3/G4 hardware
+results.

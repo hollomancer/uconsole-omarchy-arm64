@@ -79,10 +79,10 @@ source comparison is in [`hardware-source-audit.md`](hardware-source-audit.md).
 
 The provisional Phase 1 default is the locally rebuilt custom kernel because
 it has exact Arch Linux ARM/uConsole CM5 boot evidence. Stock `linux-rpi` plus
-DKMS remains the preferred long-term design, but it must first build against
-both current Arch header packages and pass the same real-hardware and update
-suite. This is a reversible experiment order, not a decision to maintain a
-permanent kernel fork.
+DKMS remains the preferred long-term design. It now builds reproducibly against
+both current Arch header packages, but it must still pass the same real-hardware
+and update/rollback suite. This is a reversible experiment order, not a
+decision to maintain a permanent kernel fork.
 
 For the custom-kernel candidate, do not blindly install its release binary:
 

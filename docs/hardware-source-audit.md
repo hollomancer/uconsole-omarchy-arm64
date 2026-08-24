@@ -39,6 +39,14 @@ header packages. That makes an out-of-tree build test possible without
 inventing a kernel-header package. It does not prove that every required
 kernel API or config symbol is enabled.
 
+The `.config` embedded in both exact header artifacts was also inspected. Both
+enable OF overlays, GPIO, `i2c-gpio`, power-supply core, MIPI DSI, VC4/V3D,
+backlight class, ALSA SoC and simple-card support. Both leave
+`CONFIG_MFD_AXP20X_I2C` and `CONFIG_SND_SOC_SIMPLE_AMPLIFIER` unset, which is
+consistent with the DKMS set supplying those missing board-facing pieces. The
+16 KiB artifact additionally has `CONFIG_ARM64_16K_PAGES=y`. This improves the
+feasibility case but is not a substitute for compiling and loading the modules.
+
 The current community Omarchy ARM run also booted a Pi 5 directly through Pi
 firmware with `linux-rpi` 6.18.45, `initramfs followkernel` and
 `vc4-kms-v3d-pi5`. It observed `vc4-drm`, DRM card nodes and `renderD128`, but
@@ -89,19 +97,29 @@ menci/archlinuxarm:base-devel-20260819.32222611223
 linux/arm64 manifest sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
 ```
 
-The first pull failed while registering a compiler layer because the local
-container store ran out of space. After removing the disposable 3.8 GB kernel
-checkout, the local container runtime did not restart. Consequently there is
-**no DKMS build result yet**. This is recorded as an infrastructure failure,
-not a source failure and not a PASS. The exact next experiment is:
+The initial image pull exhausted the local container store. After reclaiming
+the disposable kernel checkout and running OrbStack outside the Codex sandbox,
+the exact experiment encoded in
+[`../research/build-uconsole-dkms.sh`](../research/build-uconsole-dkms.sh)
+completed for both signed header variants.
 
-1. install `linux-rpi-headers` in the pinned aarch64 builder;
-2. build all modules with the installed kernel release explicitly selected
-   (the container host's `uname -r` is irrelevant);
-3. repeat with `linux-rpi-16k-headers` in a separate clean builder;
-4. compile both overlays with `dtc`;
-5. verify every `.ko` is aarch64 and its vermagic matches the target kernel;
-6. save the complete log and package hashes.
+| Header/kernel release | Modules | Overlays | ELF/vermagic | Result |
+|---|---:|---:|---|---|
+| `linux-rpi-headers` / `6.18.45-1-rpi` | 9/9 | 2/2 | all aarch64, exact release | PASS |
+| `linux-rpi-16k-headers` / `6.18.45-1-rpi-16k` | 9/9 | 2/2 | all aarch64, exact release | PASS |
+
+Each variant was built twice; the module and overlay hashes were identical on
+the repeat. Exact artifact hashes and warning classes are recorded in
+[`../research/dkms-build-results.yaml`](../research/dkms-build-results.yaml).
+The harness retains the complete compiler/DT log, mounts source and headers
+read-only, and promotes artifacts from a new staging directory. It does not
+install anything on the host or target.
+
+The builds emit non-fatal warnings: unused panel-driver variables, two integer
+format mismatches, and four DT nodes whose unit addresses lack `reg`/`ranges`.
+These should be fixed or reconciled upstream before release packaging. Build
+PASS removes header compatibility as a blocker; module loading, probe order,
+real panel/audio/battery behavior and kernel-update rollback remain UNKNOWN.
 
 ## Custom-kernel lineages
 
@@ -157,4 +175,3 @@ It wins only if all of these hold on a fresh development card:
 - a deliberate rollback to the saved kernel/modules/DT set;
 - boot configuration hashes change only through the hardware package flow;
 - source, package and build-log provenance is complete.
-

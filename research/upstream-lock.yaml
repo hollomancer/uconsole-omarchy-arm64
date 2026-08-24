@@ -58,7 +58,7 @@ sources:
     url: https://github.com/yota9/uconsole-cm5.git
     ref: master
     commit: bf7a0ab55654c96b74d013520e1196d39f66391a
-    architecture_note: "Stock Pi kernel plus DKMS/DT alternative; not yet tested on Arch Linux ARM"
+    architecture_note: "Stock Pi kernel plus DKMS/DT alternative; both current Arch header builds pass, runtime not yet tested on Arch Linux ARM"
   - name: uconsole-hyprland-dotfiles
     url: https://github.com/AleReb/uconsole-hyprland-dotfiles.git
     ref: main
@@ -99,4 +99,4 @@ build_environments:
     image: menci/archlinuxarm:base-devel-20260819.32222611223
     index_digest: sha256:ca84a8dbc78fff9f1fd12b64d9b2494dd284a64be02ed21364f158bcb25456e0
     arm64_manifest_digest: sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
-    result: "Infrastructure failure before build: local container store exhausted space while registering compiler layer; DKMS status remains unknown"
+    result: "PASS: all nine modules and both overlays built reproducibly against linux-rpi and linux-rpi-16k 6.18.45-1; hardware loading remains unknown"

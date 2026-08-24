@@ -106,8 +106,10 @@ can provide a separately controlled Arch hardware layer.
 
 1. Audit Ouin, Peter Cai and `wdkdot/uconsole-arch` packaging back to their
    common Rex kernel sources; identify rather than duplicate equivalent work.
-2. Attempt a source-only Arch DKMS build of `yota9/uconsole-cm5` against the
-   exact pinned `linux-rpi` headers. Clarify licensing before importing code.
+2. Reproduce the now-passing source-only builds of `yota9/uconsole-cm5`
+   against the exact pinned `linux-rpi` and `linux-rpi-16k` headers. Clarify
+   licensing before importing code, then test loading only on development
+   media.
 3. Build the custom-kernel candidate in a clean native-aarch64 or
    full-system-QEMU Arch Linux ARM builder.
 4. Convert all externally fetched inputs to SHA-256 verification.

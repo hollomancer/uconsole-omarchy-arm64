@@ -198,7 +198,9 @@ Why it may be a better long-term boundary:
 
 What remains unknown:
 
-- it has not been tested on Arch Linux ARM or its `linux-rpi` headers/config;
+- its nine modules and two overlays now build reproducibly against current
+  Arch Linux ARM `linux-rpi` and `linux-rpi-16k` headers, but have not been
+  loaded on an Arch/uConsole system;
 - DKMS ABI/build failures can turn a routine kernel update into a no-display
   boot, so a known-good kernel and pre-upgrade build gate are still necessary;
 - the repository has no detected top-level license metadata. Individual Linux
@@ -261,9 +263,10 @@ Before implementing Phase 1 scripts:
 2. Compare three Arch hardware packages from source: Ouin's v7.0.9 package,
    `wdkdot/uconsole-arch`, and Peter Cai's design. Map all three back to Rex's
    kernel commits so duplicated patches are visible.
-3. Package `yota9/uconsole-cm5` in a disposable ALARM build environment and
-   determine whether current `linux-rpi` headers/config can build and load its
-   exact modules. Do not install it on the working card.
+3. Reproduce the passing `yota9/uconsole-cm5` builds in a disposable ALARM
+   environment, resolve licensing/warnings, then determine whether current
+   `linux-rpi` can load its exact modules. Do not install it on the working
+   card.
 4. Choose custom kernel versus stock kernel + DKMS using the same acceptance
    tests: cold boot, internal display, audio, battery, radios, 4K/16K page size
    and one kernel upgrade/rollback.

@@ -16,6 +16,8 @@ Research snapshot: **2026-08-24**
   [`research/upstream-lock.yaml`](research/upstream-lock.yaml).
 - The signed August Arch Linux ARM rootfs and Phase 1 kernel/source inputs are
   content-pinned in [`research/phase1-inputs.yaml`](research/phase1-inputs.yaml).
+- Reproducible 4 KiB/16 KiB DKMS build results are in
+  [`research/dkms-build-results.yaml`](research/dkms-build-results.yaml).
 - Closely related community attempts are assessed in
   [`docs/prior-art.md`](docs/prior-art.md).
 - The integration boundary and update ownership are defined in
@@ -73,6 +75,10 @@ layer has passed on real hardware.
 │   ├── prior-art.md
 │   └── upstream-inventory.md
 ├── research/
+│   ├── build-uconsole-dkms.sh
+│   ├── container/
+│   │   └── build-dkms-inside.sh
+│   ├── dkms-build-results.yaml
 │   ├── phase1-inputs.yaml
 │   ├── upstream-lock.yaml
 │   └── package-audit/                    # future: generated CSV and provenance

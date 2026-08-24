@@ -45,10 +45,26 @@ archlinuxarm_kernels:
       version: 6.18.45-1
       defconfig: bcm2711_defconfig
       headers: linux-rpi-headers
+      headers_artifact:
+        url: https://ca.us.mirror.archlinuxarm.org/aarch64/core/linux-rpi-headers-6.18.45-1-aarch64.pkg.tar.xz
+        size_bytes: 11928360
+        sha256: 1b5a819680b49c2840a3ece1c2ae638f89853050e82e8d649612dee85e82bebf
+        signature_sha256: ba21feaa87b42e164953c5054036094ad57f03983c878f95421c235349bdb5b3
+        signature_result: valid
+        signature_fingerprint: 68B3537F39A313B3E574D06777193F152BDBE6A6
+        kernel_release: 6.18.45-1-rpi
     - name: linux-rpi-16k
       version: 6.18.45-1
       defconfig: bcm2712_defconfig
       headers: linux-rpi-16k-headers
+      headers_artifact:
+        url: https://ca.us.mirror.archlinuxarm.org/aarch64/core/linux-rpi-16k-headers-6.18.45-1-aarch64.pkg.tar.xz
+        size_bytes: 11936788
+        sha256: 58c5d993ff832170b2f3ca7346367272684c1fa2ff8a1bfda8d299b46a2e5d76
+        signature_sha256: b5e8223f2a7bc3f73da111796613be8798f5569f1b7a331b2ca8789173a72e95
+        signature_result: valid
+        signature_fingerprint: 68B3537F39A313B3E574D06777193F152BDBE6A6
+        kernel_release: 6.18.45-1-rpi-16k
 
 hardware_sources:
   custom_kernel:
@@ -60,7 +76,8 @@ hardware_sources:
   stock_kernel_dkms:
     repository: https://github.com/yota9/uconsole-cm5.git
     commit: bf7a0ab55654c96b74d013520e1196d39f66391a
-    status: "preferred experiment; Arch header build, licensing and hardware validation pending"
+    status: "both Arch 6.18.45-1 header builds pass; licensing and hardware validation pending"
+    build_results: research/dkms-build-results.yaml
 
 builders:
   - name: archlinuxarm-aarch64-base-devel
@@ -68,4 +85,3 @@ builders:
     index_digest: sha256:ca84a8dbc78fff9f1fd12b64d9b2494dd284a64be02ed21364f158bcb25456e0
     arm64_manifest_digest: sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
     status: "Pinned but local pull/build interrupted by container-store exhaustion"
-

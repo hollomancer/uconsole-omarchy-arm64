@@ -1,0 +1,58 @@
+schema: 1
+observed_at: "2026-08-24"
+source:
+  repository: https://github.com/yota9/uconsole-cm5.git
+  commit: bf7a0ab55654c96b74d013520e1196d39f66391a
+builder:
+  image: menci/archlinuxarm:base-devel-20260819.32222611223
+  arm64_manifest_digest: sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
+  compiler: "GCC 16.1.1 20260430"
+test:
+  harness: research/build-uconsole-dkms.sh
+  runs_per_variant: 2
+  expected_modules: 9
+  expected_overlays: 2
+  elf_requirement: "ELF 64-bit ARM aarch64"
+  vermagic_requirement: "exact target kernel release prefix"
+  result: pass
+  limitation: "Source build only; modules and overlays have not been loaded on Arch Linux ARM/uConsole CM5 hardware"
+warnings:
+  - "Kernel compiler command name differs, but compiler version/build is identical"
+  - "panel-cwu50.c has five unused local variables across init/disable/enable paths"
+  - "axp20x.c and axp20x-regulator.c each have one integer printf-format mismatch"
+  - "DTC reports four unit_address_vs_reg warnings in overlay nodes"
+  - "Repository project glue/overlay redistribution license remains unclear"
+variants:
+  - kernel_release: 6.18.45-1-rpi
+    page_size: "4 KiB expected; runtime confirmation required"
+    headers_sha256: 1b5a819680b49c2840a3ece1c2ae638f89853050e82e8d649612dee85e82bebf
+    result: pass
+    artifacts:
+      axp20x_adc.ko: e5f522a006a502c8057429da075196079b745d786c2009b5a7ba30cf0e22a0c7
+      axp20x_battery.ko: f50854f01ab6beebe9e1cb2389401ce204f9ff5b7afdb8e4f2d3a3d3bf7c2f3d
+      axp20x-i2c.ko: 68e34702adb894f6c24fb568d4d3b789a2b88daa50f1dd398bade89e681a4efc
+      axp20x.ko: 823b71743c4b690ea88eabe8cdd5605c646fe6c9e820eb0e0d2639e522717a84
+      axp20x-pek.ko: 2e0a77f272b563f6e391c94792eea70259f871566cf07b8f2675ac6c0d337acf
+      axp20x-regulator.ko: 79a47066a326dd636bf650f30dffa7789f99fd93af09c84049353231fe337d10
+      ocp8178_bl.ko: 85a0a1561f5959435cf3e3bdb67f12e1e3ce86d6b5fbdfe7071d6b54fcd75091
+      panel-cwu50.ko: 3302be96869ae3b37e6225f0c9c4565666c249e6fd86c266a67711940c472236
+      snd-soc-simple-amplifier.ko: b9bcf258db58a381dea28f220689ff5fca45a6728ded09b1e3b97a63cd99317e
+      uconsole-audio-cm5.dtbo: 86f02d250024669c6e11e6d764b831fa1051646907f942c82b0478210a37ac3a
+      uconsole-cm5-base.dtbo: 4bfb57559a57a7c57954c5dda4797441805aa52c6bba7ed0a87a576b63ef4cb9
+  - kernel_release: 6.18.45-1-rpi-16k
+    page_size: "16 KiB configured; runtime confirmation required"
+    headers_sha256: 58c5d993ff832170b2f3ca7346367272684c1fa2ff8a1bfda8d299b46a2e5d76
+    result: pass
+    artifacts:
+      axp20x_adc.ko: ac2b934c5daa5bca3d8b6ac4a4ac4ae096b920d1c7e494ad4a0211dc01135f43
+      axp20x_battery.ko: 7959d7fe79b7f720e7c53576258a9581b8d80422da3b7f0eaaaef5d3c44212f6
+      axp20x-i2c.ko: 3787a3ec66cdcbb2a4843de774a5a0eb44f25f32601c7a45d1861ff706a6a259
+      axp20x.ko: 73d3c669408fa459b8b7ec8402dc9c8dbcfbd8e1ee9720baa83c3515b4c7354c
+      axp20x-pek.ko: 9f0ef641b95af316bdd964ca0dc5e15afbdb62da6cd6822510a4dc536b9945f9
+      axp20x-regulator.ko: 6f6ac04d423243f7592053c442590584a0c3d423c06da297ed66d8e49ddce738
+      ocp8178_bl.ko: 53a105d7dabda52f8f5fe92dc72cac40adb6d4596dd9dd69a0e1fd27c8b3ed90
+      panel-cwu50.ko: 38b5313034819ceb604c4e48ebea6a2d5fa6e43f5a1fa87b2dae89844c1fb58d
+      snd-soc-simple-amplifier.ko: f33c5b1fca05db6d850e4895d1ac0a3863edfd9e85704a0ee54f1f33fd181f39
+      uconsole-audio-cm5.dtbo: 86f02d250024669c6e11e6d764b831fa1051646907f942c82b0478210a37ac3a
+      uconsole-cm5-base.dtbo: 4bfb57559a57a7c57954c5dda4797441805aa52c6bba7ed0a87a576b63ef4cb9
+

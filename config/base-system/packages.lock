@@ -1,0 +1,22 @@
+# name|version|architecture|sha256|filename
+libmm-glib|1.24.2-1|aarch64|e5c0233fbb1596d585c661efde113dfa5ebdea63402e01d270fb8d81897f0627|libmm-glib-1.24.2-1-aarch64.pkg.tar.xz
+libndp|1.9-1|aarch64|eb095019df469b96d728ef91cbf50e90ecd8482dcbda17fcbc3091b24e87e6c7|libndp-1.9-1-aarch64.pkg.tar.xz
+pcre|8.45-5|aarch64|a553cb6ea6ebf3b47133696c42c2d7adbc4be55c41666723590caf408d24b85b|pcre-8.45-5-aarch64.pkg.tar.xz
+slang|2.3.3-4|aarch64|0eb1ebad4099190298e00cb68e3853d155d52eb8cb1157a7ec914d505279de70|slang-2.3.3-4-aarch64.pkg.tar.xz
+libnewt|0.52.25-2|aarch64|957ba14b3781acaad75817096ddb1d3833f5abb128ad596276f4b2c08870e5a4|libnewt-0.52.25-2-aarch64.pkg.tar.xz
+nspr|4.40-1|aarch64|49a71ff0951c6596b66848381f89273d8c40166731561f716c592c9899b2af30|nspr-4.40-1-aarch64.pkg.tar.xz
+nss|3.127-1|aarch64|3a19811188a301452c4b147d5d969a6f916d198bb0c120efb52903104a96681f|nss-3.127-1-aarch64.pkg.tar.xz
+libnm|1.58.1-1|aarch64|9219404664cc04bcb9575f9a16d2eeb13f7aeaa062c601623a2c4c4571fb3013|libnm-1.58.1-1-aarch64.pkg.tar.xz
+libdaemon|0.14-6|aarch64|b96e8eb1604bf7901feb1addd2882cce2f366b504d919c9fc28a53f8c240243b|libdaemon-0.14-6-aarch64.pkg.tar.xz
+libsodium|1.0.22-1|aarch64|0df84ee0659a06e2c192c72782484a0a6402535178f4ee867bfcb636cf2ebab2|libsodium-1.0.22-1-aarch64.pkg.tar.xz
+libpgm|5.3.128-4|aarch64|9bfc588e91f3c68639538c6eec8bd50905095fb7a480392ec69503b4f7b57009|libpgm-5.3.128-4-aarch64.pkg.tar.xz
+zeromq|4.3.5-3|aarch64|ae6e65b77c02fcec6b566209f02f0effd527234934b8fbc6042acba7619d9c71|zeromq-4.3.5-3-aarch64.pkg.tar.xz
+libteam|1.32-3|aarch64|2facc93c151ae9ac48d614acd38643deca05840d3cd4632a3ed4513f5a108fc8|libteam-1.32-3-aarch64.pkg.tar.xz
+mobile-broadband-provider-info|20251101-1|any|17b38aaeed03afe9c47f0bf7a9ae92787de939ae645950f48dabace4a25fa358|mobile-broadband-provider-info-20251101-1-any.pkg.tar.xz
+networkmanager|1.58.1-1|aarch64|5f88ab112b7e2aa714ed000dd1db0fe4b972b7f91f1450ece1481bc7c3207093|networkmanager-1.58.1-1-aarch64.pkg.tar.xz
+sudo|1.9.17.p2-6|aarch64|3e90ee7aa3b5526a155396f3baa6305e37eed317db674cc077312cc386d5b0bd|sudo-1.9.17.p2-6-aarch64.pkg.tar.xz
+alsa-topology-conf|1.2.5.1-4|any|fc04bacda1d93b22135985a71f0f73a8df57880d4d7f03c3368e5717a917d4cf|alsa-topology-conf-1.2.5.1-4-any.pkg.tar.xz
+alsa-ucm-conf|1.2.16.1-1|any|7c8748eb29e8bdd1632071410aab1ed19edc0f48ffbe47375a51b5a4bdef8db8|alsa-ucm-conf-1.2.16.1-1-any.pkg.tar.xz
+alsa-lib|1.2.16.1-1|aarch64|fe32910ecf90d24b4662b9d437b3ac8f638786eef3719b558f7f98dc9e299a16|alsa-lib-1.2.16.1-1-aarch64.pkg.tar.xz
+bluez|5.87-2|aarch64|432c08e4a54eadc521b8dac10e4e4031e3fa4a4e2fd4eb4ac947ca89bc58cd40|bluez-5.87-2-aarch64.pkg.tar.xz
+bluez-utils|5.87-2|aarch64|87bcd79e63ad7867a5ca19fa53b7b7989efc90657ddafb67c82a6359a2429d3b|bluez-utils-5.87-2-aarch64.pkg.tar.xz

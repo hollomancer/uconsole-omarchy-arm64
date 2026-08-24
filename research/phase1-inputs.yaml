@@ -44,6 +44,13 @@ archlinuxarm_kernels:
     - name: linux-rpi
       version: 6.18.45-1
       defconfig: bcm2711_defconfig
+      package_artifact:
+        url: https://ca.us.mirror.archlinuxarm.org/aarch64/core/linux-rpi-6.18.45-1-aarch64.pkg.tar.xz
+        size_bytes: 29213480
+        sha256: d6cf24138ff1a1a497eb14b4b7bb36e635db35ac81f90d536dfdd11264662148
+        signature_sha256: 84a6de61f21acf44daccc3c1027d1e2746bed4026fe78ec3f86410fbfec27ecc
+        signature_result: valid
+        signature_fingerprint: 68B3537F39A313B3E574D06777193F152BDBE6A6
       headers: linux-rpi-headers
       headers_artifact:
         url: https://ca.us.mirror.archlinuxarm.org/aarch64/core/linux-rpi-headers-6.18.45-1-aarch64.pkg.tar.xz
@@ -56,6 +63,14 @@ archlinuxarm_kernels:
     - name: linux-rpi-16k
       version: 6.18.45-1
       defconfig: bcm2712_defconfig
+      selected: true
+      package_artifact:
+        url: https://ca.us.mirror.archlinuxarm.org/aarch64/core/linux-rpi-16k-6.18.45-1-aarch64.pkg.tar.xz
+        size_bytes: 29328716
+        sha256: e273a69402d82ae9b4df34b31d5dfbceae9b73268f56e4dadf26a82a5ac9838e
+        signature_sha256: 7379037dcd5d37722ff309c6bbafcf982f6cb7a0686c6343e31061c4d5a07f67
+        signature_result: valid
+        signature_fingerprint: 68B3537F39A313B3E574D06777193F152BDBE6A6
       headers: linux-rpi-16k-headers
       headers_artifact:
         url: https://ca.us.mirror.archlinuxarm.org/aarch64/core/linux-rpi-16k-headers-6.18.45-1-aarch64.pkg.tar.xz
@@ -72,16 +87,21 @@ hardware_sources:
     commit: eef4936b13e581bc91054eaae20e18fa4d2b6120
     package_version: 7.0.9-1
     raspberrypi_linux_commit: c2ad96e1f0a8e5f6b4fab8cfd4534b115eb83394
-    status: "provisional first-boot default; rebuild and packaging cleanup required"
+    status: "differential oracle and recovery fallback; not the selected default"
   stock_kernel_dkms:
     repository: https://github.com/yota9/uconsole-cm5.git
     commit: bf7a0ab55654c96b74d013520e1196d39f66391a
-    status: "both Arch 6.18.45-1 header builds pass; licensing and hardware validation pending"
+    source_archive:
+      url: https://github.com/yota9/uconsole-cm5/archive/bf7a0ab55654c96b74d013520e1196d39f66391a.tar.gz
+      size_bytes: 49894
+      sha256: bd03be0b091354bf6a047ca41d0c8198f124d4a12e396647fd0b0f257a7ee4e9
+    status: "selected with linux-rpi-16k; builds pass, licensing and hardware validation pending"
     build_results: research/dkms-build-results.yaml
+    custom_kernel_delta: research/custom-kernel-delta.yaml
 
 builders:
   - name: archlinuxarm-aarch64-base-devel
     image: menci/archlinuxarm:base-devel-20260819.32222611223
     index_digest: sha256:ca84a8dbc78fff9f1fd12b64d9b2494dd284a64be02ed21364f158bcb25456e0
     arm64_manifest_digest: sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
-    status: "Pinned but local pull/build interrupted by container-store exhaustion"
+    status: "PASS: all modules and overlays built twice reproducibly for both kernel variants"

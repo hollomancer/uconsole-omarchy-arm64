@@ -13,16 +13,16 @@ There are two credible Phase 1 hardware designs:
    `linux-rpi` or `linux-rpi-16k` package and build the uConsole-only drivers as
    DKMS modules, with separately packaged overlays.
 
-The custom-kernel route has the stronger exact-system evidence today: Peter
-Cai and `wdkdot/uconsole-arch` have booted Arch Linux ARM on a uConsole CM5.
-The DKMS route has the cleaner long-term ownership boundary and has been tested
-on Pi OS and Ubuntu, but not yet on Arch Linux ARM. It is therefore the
-preferred experiment, not yet the Phase 1 default.
+The custom-kernel route has stronger exact-system history: Peter Cai and
+`wdkdot/uconsole-arch` have booted Arch Linux ARM on a uConsole CM5. The DKMS
+route has the cleaner long-term ownership boundary, is tested on Pi OS and
+Ubuntu, and now builds reproducibly against the exact Arch headers.
 
-Provisional Phase 1 rule: build both from pinned source, initially boot the
-custom kernel on the development card, and promote DKMS only after it passes
-the same display/audio/battery and kernel-upgrade/rollback suite. Neither route
-changes Omarchy.
+Phase 1 decision: use `linux-rpi-16k` plus the pinned DKMS/overlay delta first.
+Keep the custom kernel as a differential oracle and recovery fallback. The
+behavioral comparison is in
+[`custom-kernel-lessons.md`](custom-kernel-lessons.md); neither route changes
+Omarchy.
 
 ## Arch Linux ARM kernel baseline
 
@@ -133,6 +133,13 @@ Strengths:
 - native Arch PKGBUILD and matching header package;
 - uConsole CM5 kernel configuration, drivers and overlay are already combined;
 - 16 KiB page configuration is explicit.
+
+Its new role is an oracle rather than a competing default. It adds several
+testable behaviors beyond the minimum DKMS delta: `usbhid.mousepoll=8`, a
+Broadcom Wi-Fi workaround, a Pi5/CMA KMS selection, battery-profile overrides,
+stricter PMIC handling and an alternate headphone amplifier driver. None is
+copied automatically. Exact hypotheses are recorded in
+[`../research/custom-kernel-delta.yaml`](../research/custom-kernel-delta.yaml).
 
 Required corrections before use:
 

@@ -1,0 +1,99 @@
+schema: 1
+observed_at: "2026-08-24"
+purpose: "Differential oracle for the selected stock linux-rpi-16k plus uConsole DKMS design"
+
+decision:
+  selected_baseline: linux-rpi-16k
+  selected_board_layer: yota9/uconsole-cm5 DKMS modules and overlays
+  custom_kernel_role: "reference and recovery fallback; not the default package"
+  decision_recorded_at: "2026-08-24"
+
+sources:
+  selected_kernel:
+    package: linux-rpi-16k
+    version: 6.18.45-1
+    kernel_release: 6.18.45-1-rpi-16k
+    package_sha256: e273a69402d82ae9b4df34b31d5dfbceae9b73268f56e4dadf26a82a5ac9838e
+  selected_board_layer:
+    repository: https://github.com/yota9/uconsole-cm5.git
+    commit: bf7a0ab55654c96b74d013520e1196d39f66391a
+    source_archive_sha256: bd03be0b091354bf6a047ca41d0c8198f124d4a12e396647fd0b0f257a7ee4e9
+  custom_oracle:
+    repository: https://github.com/OuinOuin74/linux-clockwork-arch.git
+    commit: eef4936b13e581bc91054eaae20e18fa4d2b6120
+    package_version: 7.0.9-1
+    raspberrypi_linux_commit: c2ad96e1f0a8e5f6b4fab8cfd4534b115eb83394
+
+stock_config_comparison:
+  already_present:
+    - CONFIG_ARM64_16K_PAGES
+    - CONFIG_SECURITY_LANDLOCK
+    - CONFIG_F2FS_FS_COMPRESSION
+    - CONFIG_F2FS_FS_LZ4
+    - CONFIG_F2FS_FS_ZSTD
+    - CONFIG_I2C_GPIO
+    - CONFIG_POWER_SUPPLY
+    - CONFIG_DRM_MIPI_DSI
+    - CONFIG_DRM_V3D
+    - CONFIG_DRM_VC4
+    - CONFIG_BACKLIGHT_CLASS_DEVICE
+    - CONFIG_SECURITY_APPARMOR
+  intentionally_supplied_by_board_layer:
+    - CONFIG_MFD_AXP20X_I2C
+    - CONFIG_SND_SOC_SIMPLE_AMPLIFIER
+    - panel-cwu50
+    - ocp8178_bl
+    - axp20x PMIC, regulator, battery, ADC and power-key modules
+  difference_to_observe:
+    stock_default_lsm: landlock
+    custom_default_lsm: "landlock,apparmor"
+    action: "Do not change initially; test whether any selected userland actually requires AppArmor activation"
+
+hardware_hypotheses:
+  - id: H01
+    custom_evidence: "CM5 config enables dtoverlay=dwc2,dr_mode=host"
+    contradiction: "Custom CM5 overlay comment says not to load dwc2"
+    selected_baseline: "Official linux-rpi-16k config also enables dwc2 host mode for [cm5]"
+    action: "Keep the official setting for first boot; validate internal USB keyboard and trackball; remove only with failure evidence"
+  - id: H02
+    custom_evidence: "cmdline adds usbhid.mousepoll=8"
+    action: "Start without it; compare trackball latency and CPU wakeups, then add only if input testing shows a benefit"
+  - id: H03
+    custom_evidence: "package installs brcmfmac roamoff=1 feature_disable=0x282000"
+    action: "Start with stock brcmfmac; retain the exact option as a Wi-Fi stability diagnostic after cold-boot and reconnect tests"
+  - id: H04
+    custom_evidence: "vc4-kms-v3d-pi5,cma-384 is used"
+    selected_baseline: "Official package uses vc4-kms-v3d and the DKMS overlay supplies explicit DSI byte/DPI clock rates"
+    action: "Use the official KMS line first; record CMA and atomic-scanout failures before testing the custom setting"
+  - id: H05
+    custom_evidence: "battery overlay supports batt_uah/vnom_uv overrides and patched AXP driver programs design capacity"
+    selected_baseline: "DKMS overlay fixes 6.7 Ah and 24.79 Wh and its driver programs PMIC capacity"
+    action: "Validate real battery pack values and fuel-gauge convergence; port parameterization only if the fixed profile is wrong"
+  - id: H06
+    custom_evidence: "separate simple-amplifier-switch driver controls GPIO10/GPIO11"
+    selected_baseline: "modified simple-amplifier codec integrates headphone detection into the audio card"
+    action: "Use the selected integrated path; keep the custom driver as a fallback if speaker/headphone switching fails"
+  - id: H07
+    custom_evidence: "monolithic overlay enables RP1 I2C1 and disables an Ethernet alias"
+    selected_baseline: "DKMS base overlay creates only the required bit-banged PMIC bus and does not alter Ethernet"
+    action: "Do not inherit unrelated nodes; add them only if a concrete device fails to enumerate"
+  - id: H08
+    custom_evidence: "boot config sets dtparam=ant2"
+    selected_baseline: "DKMS installer also adds dtparam=ant2"
+    action: "Carry it in the hardware-owned boot fragment and validate Wi-Fi/Bluetooth signal behavior"
+  - id: H09
+    custom_evidence: "custom panel driver checks DCS write errors and publishes physical dimensions"
+    selected_baseline: "DKMS panel driver detects two panel revisions and has distinct initialization sequences"
+    action: "Retain DKMS revision detection; upstream error handling and physical-size fixes after hardware identification"
+  - id: H10
+    custom_evidence: "custom battery and AC patches contain stricter capacity validation and an AC IRQ VBUS toggle"
+    selected_baseline: "DKMS battery source contains the main PMIC programming but not all custom hardening"
+    action: "Capture charge/discharge and AC transition logs; port only the behavior demonstrated necessary"
+
+do_not_copy:
+  - "MD5-only PKGBUILD verification"
+  - "post-install mutation of fstab, config.txt and cmdline.txt"
+  - "automatic replacement of root= using the build host mount"
+  - "README settings that differ from the committed config.txt"
+  - "unrelated CM4 support in the CM5 baseline"
+

@@ -98,11 +98,11 @@ uses `/dev/mmcblk0p1` in `fstab`, and includes default `root`/`alarm` accounts.
 The image step must replace that boot path, render `fstab` from partition UUIDs
 and rotate/lock all default credentials before first boot.
 
-### P1.2 — Select and build the hardware package
+### P1.2 — Build the selected hardware package
 
-Assumption under test: either the v7.0.9 `linux-clockwork-arch` CM5 patch set
-or a stock `linux-rpi` kernel plus the `yota9/uconsole-cm5` DKMS/overlay delta
-can provide a separately controlled Arch hardware layer.
+Decision: use Arch Linux ARM `linux-rpi-16k` plus the pinned
+`yota9/uconsole-cm5` DKMS/overlay delta. The v7.0.9 custom kernel remains a
+differential oracle and recovery fallback.
 
 1. Audit Ouin, Peter Cai and `wdkdot/uconsole-arch` packaging back to their
    common Rex kernel sources; identify rather than duplicate equivalent work.
@@ -110,8 +110,8 @@ can provide a separately controlled Arch hardware layer.
    against the exact pinned `linux-rpi` and `linux-rpi-16k` headers. Clarify
    licensing before importing code, then test loading only on development
    media.
-3. Build the custom-kernel candidate in a clean native-aarch64 or
-   full-system-QEMU Arch Linux ARM builder.
+3. Preserve the custom kernel's known boot, Wi-Fi, HID, KMS, battery and audio
+   differences as individually testable fallback hypotheses.
 4. Convert all externally fetched inputs to SHA-256 verification.
 5. Split package installation from machine mutation: the package may own kernel
    files, modules, DTBs and overlays, but not edit `fstab`, `cmdline.txt` or
@@ -121,10 +121,10 @@ can provide a separately controlled Arch hardware layer.
 7. Diff patches against Raspberry Pi and active ClockworkPi lineages; record
    each still-required board patch.
 
-Gate: at least one approach produces reproducible signed packages and a build
-log. The same real-hardware cold-boot and kernel-update/rollback suite selects
-the winner. The `dwc2` conflict and boot-file mutations are resolved before
-installation.
+Gate: the selected approach produces reproducible signed packages and a build
+log. The real-hardware cold-boot and kernel-update/rollback suite passes. The
+`dwc2` contradiction is treated as an input-device test, and no package hook
+mutates machine identity or partition configuration.
 
 ### P1.3 — Construct an image file, not the SD card
 

@@ -24,8 +24,10 @@ Research snapshot: **2026-08-24**
   [`docs/architecture.md`](docs/architecture.md).
 - Candidate CM5/uConsole hardware support is mapped in
   [`docs/hardware-support.md`](docs/hardware-support.md).
-- The competing kernel/DKMS sources and provisional hardware choice are audited
+- The competing kernel/DKMS sources and selected hardware choice are audited
   in [`docs/hardware-source-audit.md`](docs/hardware-source-audit.md).
+- The custom kernel's useful deltas are retained as test hypotheses in
+  [`docs/custom-kernel-lessons.md`](docs/custom-kernel-lessons.md).
 - Omarchy's first ARM64 package audit is in
   [`docs/omarchy-arm64-package-matrix.md`](docs/omarchy-arm64-package-matrix.md).
 - Reusable lessons from the closest Quattro ARM fork are in
@@ -66,6 +68,7 @@ layer has passed on real hardware.
 │       └── omarchy/                      # future: minimal userland overrides
 ├── docs/
 │   ├── architecture.md
+│   ├── custom-kernel-lessons.md
 │   ├── hardware-source-audit.md
 │   ├── hardware-support.md
 │   ├── installation.md
@@ -79,6 +82,7 @@ layer has passed on real hardware.
 │   ├── container/
 │   │   └── build-dkms-inside.sh
 │   ├── dkms-build-results.yaml
+│   ├── custom-kernel-delta.yaml
 │   ├── phase1-inputs.yaml
 │   ├── upstream-lock.yaml
 │   └── package-audit/                    # future: generated CSV and provenance

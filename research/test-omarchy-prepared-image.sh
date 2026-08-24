@@ -36,6 +36,7 @@ usage() {
     '  --check                  Validate immutable inputs and volume identities (default)' \
     '  --probe-output           Create, loop-check and remove one 64 MiB probe file' \
     '  --build-synthetic-image  Build and retain an integration-only image in the output target' \
+    '  --inspect-synthetic-image  Inspect an existing exact image without modifying it' \
     '' \
     'Options:' \
     '  --output-volume V       Empty project-only Docker volume' \
@@ -68,6 +69,7 @@ while (($# > 0)); do
     --check) ((ACTION_SET == 0)) || die 'choose at most one action'; ACTION='check'; ACTION_SET=1; shift ;;
     --probe-output) ((ACTION_SET == 0)) || die 'choose at most one action'; ACTION='probe'; ACTION_SET=1; shift ;;
     --build-synthetic-image) ((ACTION_SET == 0)) || die 'choose at most one action'; ACTION='build'; ACTION_SET=1; shift ;;
+    --inspect-synthetic-image) ((ACTION_SET == 0)) || die 'choose at most one action'; ACTION='inspect'; ACTION_SET=1; shift ;;
     --dosfstools) (($# >= 2)) || die '--dosfstools requires a file'; DOSFSTOOLS=$2; shift 2 ;;
     --mtools) (($# >= 2)) || die '--mtools requires a file'; MTOOLS=$2; shift 2 ;;
     --help|-h) usage; exit 0 ;;
@@ -119,18 +121,30 @@ if ! CHECK_OUTPUT=$(docker run --rm --platform linux/arm64 --network none \
       test -f /source/root/var/lib/uconsole-omarchy-arm64/hyprland-selection
       test -f /source/root/var/lib/uconsole-omarchy-arm64/omarchy-shell-selection
       test -f /source/root/var/lib/uconsole-omarchy-arm64/user-preparation-integration
-      if find /output -mindepth 1 -maxdepth 1 -print -quit | grep -q .; then
-        printf "output volume is not empty\n" >&2
-        exit 1
+      if test "$1" = inspect; then
+        test -f /output/uconsole-omarchy-prepared-integration.img
+        test -f /output/uconsole-omarchy-prepared-integration.img.manifest.json
+        test "$(find /output -mindepth 1 -maxdepth 1 -print | wc -l)" -eq 2
+      else
+        if find /output -mindepth 1 -maxdepth 1 -print -quit | grep -q .; then
+          printf "output volume is not empty\n" >&2
+          exit 1
+        fi
       fi
       set -- $(df -Pk /output | tail -n 1)
       printf "%s\n" "$4"
-    '); then
+    ' uconsole-preflight "$ACTION"); then
   die 'read-only source/output volume check failed'
 fi
 [[ "$CHECK_OUTPUT" =~ ^[0-9]+$ ]] || die 'unable to measure output-volume free space'
-printf '[PASS] immutable inputs    prepared source and empty output verified read-only\n'
-if ((CHECK_OUTPUT < MIN_FREE_KIB)); then
+if [[ "$ACTION" == inspect ]]; then
+  printf '[PASS] immutable inputs    prepared source and exact image output verified read-only\n'
+else
+  printf '[PASS] immutable inputs    prepared source and empty output verified read-only\n'
+fi
+if [[ "$ACTION" == inspect ]]; then
+  printf '[PASS] inspection target  exact image and manifest present; output mounted read-only\n'
+elif ((CHECK_OUTPUT < MIN_FREE_KIB)); then
   printf '[FAIL] output free space   %s KiB available; %s KiB minimum required\n' "$CHECK_OUTPUT" "$MIN_FREE_KIB" >&2
   if [[ "$ACTION" == check ]]; then exit 3; fi
   die 'refusing to start a partial image build below the storage minimum'
@@ -161,7 +175,21 @@ if [[ "$ACTION" == probe ]]; then
   exit 0
 fi
 
+if [[ "$ACTION" == inspect ]]; then
+  docker run --rm --privileged --platform linux/arm64 --network none \
+    --env UCONSOLE_IMAGE_ACTION=inspect \
+    --mount "type=bind,src=$REPO_ROOT,dst=/repo,readonly" \
+    --mount "type=bind,src=$DOSFSTOOLS,dst=/input/dosfstools.pkg.tar.xz,readonly" \
+    --mount "type=bind,src=$MTOOLS,dst=/input/mtools.pkg.tar.xz,readonly" \
+    --mount "type=volume,src=$SOURCE_VOLUME,dst=/source,readonly" \
+    --mount "$OUTPUT_MOUNT_RO" \
+    "$IMAGE" \
+    /repo/research/container/test-omarchy-prepared-image-inside.sh
+  exit $?
+fi
+
 docker run --rm --privileged --platform linux/arm64 --network none \
+  --env UCONSOLE_IMAGE_ACTION=build \
   --mount "type=bind,src=$REPO_ROOT,dst=/repo,readonly" \
   --mount "type=bind,src=$DOSFSTOOLS,dst=/input/dosfstools.pkg.tar.xz,readonly" \
   --mount "type=bind,src=$MTOOLS,dst=/input/mtools.pkg.tar.xz,readonly" \

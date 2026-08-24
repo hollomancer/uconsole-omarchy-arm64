@@ -69,10 +69,12 @@ The compatibility mechanism is now implemented as:
    every Omarchy update test.
 
 The exact Hyprland transaction, 24-package Omarchy shell closure, thin package
-and user-preparation transactions pass native off-target tests. The assembled
-root also passes the opt-in prepared-image plan with activation explicitly
-absent. This is not permission to patch or launch them on the development card
-before the live hardware and minimal Hyprland gates pass.
+and user-preparation transactions pass native off-target tests. An 8 GiB image
+assembled from that root passes read-only filesystem, partition, state,
+configuration and 51-command inspection with activation explicitly absent.
+It contains synthetic credentials and is not a development-card artifact.
+This is not permission to patch or launch these layers before the live hardware
+and minimal Hyprland gates pass.
 
 ## Selected kernel baseline
 

@@ -518,8 +518,9 @@ scripts/build-image.sh --plan \
 
 The current disposable root passes this plan with 4,186,845,184 bytes of
 content and 8,047,820,800 bytes of root capacity. Plan mode creates no output.
-The full image build and read-only mount inspection await additional disposable
-storage; they are not replaced by the passing plan.
+The later external-volume run built and inspected the exact 8 GiB synthetic
+image; its evidence is recorded in
+`research/omarchy-prepared-image-plan-results.yaml`.
 
 The exact build/inspection runner and its empty output volume are already
 prepared. The runner refuses to allocate the image below 6 GiB of free output
@@ -554,8 +555,8 @@ The path must resolve to
 must be empty. After `--check`, replace that action with `--probe-output`. The
 explicit probe creates one fixed 64 MiB sparse file, formats and checks it
 through a loop device, mounts it read-only, removes only that file and verifies
-that the output is empty again. The currently mounted `SSDmini` reported 897
-GiB free, but this probe has not been authorized or run yet.
+that the output is empty again. The `SSDmini` run reported 940,451,280 KiB free
+to the container; its probe passed and left the output empty.
 
 Then use the same arguments with `--build-synthetic-image`. That explicit flag
 builds the 8 GiB regular file, checks both filesystems and partition identities,
@@ -563,6 +564,12 @@ mounts them read-only, compares all six layer states and three user configs,
 verifies all 51 required runtime commands, and confirms the session remains
 inactive. The output contains synthetic credentials and must not be published
 or written to media.
+
+If a build completes but inspection is interrupted or a validator defect is
+fixed, use `--inspect-synthetic-image`. That action requires exactly the image
+and its external manifest, mounts the output read-only and never rebuilds it.
+The retained synthetic image passed this resumed inspection with SHA-256
+`8af63b82bf33ec804e167c2f817d9d14666a5ce9cd4074c2eebff5bf4a033a46`.
 
 The first live launch remains manual after Phase 2 evidence is saved. Keep the
 upstream autostart and Hyprland defaults out of the transaction; start only the

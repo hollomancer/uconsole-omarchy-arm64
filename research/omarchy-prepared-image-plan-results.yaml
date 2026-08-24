@@ -7,9 +7,9 @@ target:
   live_cm5: false
 builder:
   script: ../scripts/build-image.sh
-  action: plan
+  action: build-and-read-only-inspect
   require_omarchy_prepared: true
-  output_created: false
+  output_created: true
 geometry:
   image_mib: 8192
   boot_mib: 512
@@ -32,9 +32,17 @@ validation:
   prepared_session_inactive: pass
   required_root_headroom: pass
   required_boot_headroom: pass
+  mbr_partition_geometry: pass
+  fat_filesystem_check: pass
+  ext4_filesystem_check: pass
+  read_only_mount_inspection: pass
+  all_six_layer_states_preserved: pass
+  all_three_user_configs_preserved: pass
+  required_runtime_commands_51: pass
+  session_remains_inactive: pass
   physical_devices_touched: false
 result: PASS
-build_status: not_run_insufficient_disposable_storage
+build_status: built-and-inspected
 prepared_build_runner:
   script: test-omarchy-prepared-image.sh
   container_runner: container/test-omarchy-prepared-image-inside.sh
@@ -51,9 +59,12 @@ prepared_build_runner:
   output_verified_empty: true
   explicit_build_flag: --build-synthetic-image
   explicit_probe_flag: --probe-output
+  explicit_inspection_flag: --inspect-synthetic-image
   network_during_build: disabled
   inspection_mounts_read_only: true
   expected_image_bytes: 8589934592
+  inspection_only_resume_result: PASS
+  inspection_bug_fixed: chroot-redirection-moved-outside-unpopulated-image-dev
 storage_observed:
   output_filesystem_free_kib: 483184
   host_filesystem_free_kib: 1139840
@@ -73,11 +84,30 @@ external_output_candidate:
   volume: /Volumes/SSDmini
   reported_free_gib: 897
   required_directory_namespace: uconsole-omarchy-prepared-image-*
-  directory_created: false
-  docker_bind_mount_tested: false
-  loop_device_tested: false
+  directory: /Volumes/SSDmini/uconsole-omarchy-prepared-image-20260824
+  directory_created: true
+  docker_bind_mount_tested: true
+  read_only_preflight_result: PASS
+  output_free_kib_seen_by_container: 940451280
+  loop_device_tested: true
+  disposable_64_mib_probe_result: PASS
+  probe_cleanup_left_output_empty: true
   existing_data_modified: false
+artifact:
+  local_only: true
+  published: false
+  written_to_physical_media: false
+  contains_synthetic_credentials: true
+  filename: uconsole-omarchy-prepared-integration.img
+  image_bytes: 8589934592
+  allocated_kib_on_external_volume: 4275296
+  image_sha256: 8af63b82bf33ec804e167c2f817d9d14666a5ce9cd4074c2eebff5bf4a033a46
+  external_manifest_sha256: 8c3f2bfef492fc82c189e2997da377dbf13818b61dfba50ef282ed9b11cb07cd
+  boot_file_count: 413
+  boot_manifest_sha256: 1ee80a0c8aac50b66ef78ae8bef4d3cf7079d8775458392722b150b6d02e446e
+  omarchy_image_state: prepared-inactive
 limits:
-  - A bootable image artifact has not been assembled from this prepared root.
-  - The prior 4 GiB base-layer image test does not prove this larger desktop-ready image.
-  - A completed image must still be mounted read-only and inspected before it is considered a development-SD candidate.
+  - The synthetic image has not booted on a CM5 or uConsole.
+  - Synthetic credentials make this artifact ineligible for publication or physical media.
+  - Live hardware, GPU, display, input, audio, battery and power-management gates remain required.
+  - Operator access and network inputs must be applied to a fresh clone before a development-SD candidate is built.

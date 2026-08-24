@@ -14,6 +14,7 @@ HELP_OUTPUT=$($RUNNER --help)
 printf '%s\n' "$HELP_OUTPUT" | grep -Fq -- '--build-synthetic-image'
 printf '%s\n' "$HELP_OUTPUT" | grep -Fq -- '--output-directory'
 printf '%s\n' "$HELP_OUTPUT" | grep -Fq -- '--probe-output'
+printf '%s\n' "$HELP_OUTPUT" | grep -Fq -- '--inspect-synthetic-image'
 printf '%s\n' "$HELP_OUTPUT" | grep -Fq 'must never be written to media or published'
 
 for forbidden in --device --write-device --apply-in-place --publish; do
@@ -51,6 +52,8 @@ grep -Fq "'[FAIL] output free space" "$RUNNER"
 grep -Fq 'PROBE_FILE=/output/.uconsole-omarchy-output-probe.img' "$PROBE_INSIDE"
 grep -Fq 'rm -f -- "$PROBE_FILE"' "$PROBE_INSIDE"
 grep -Fq 'mount -o ro "$LOOP_DEVICE"' "$PROBE_INSIDE"
+grep -Fq 'UCONSOLE_IMAGE_ACTION=inspect' "$RUNNER"
+grep -Fq 'command -v -- '\''$command_name'\''" >/dev/null' "$INSIDE"
 grep -Fq "'session_activated=no'" "$INSIDE"
 grep -Fq "'activation=no'" "$INSIDE"
 grep -Fq 'mount -o ro "$ROOT_LOOP_DEVICE"' "$INSIDE"

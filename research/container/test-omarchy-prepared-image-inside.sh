@@ -16,6 +16,7 @@ BOOT_SIZE_BYTES=536870912
 ROOT_OFFSET=541065216
 ROOT_SIZE_BYTES=8047820800
 MIN_FREE_KIB=6291456
+IMAGE_ACTION=${UCONSOLE_IMAGE_ACTION:-}
 BOOT_LOOP_DEVICE=''
 ROOT_LOOP_DEVICE=''
 MOUNT_ROOT=''
@@ -41,25 +42,34 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
+[[ "$IMAGE_ACTION" == build || "$IMAGE_ACTION" == inspect ]] || fail 'container image action must be build or inspect'
 [[ -f "$ROOT_TREE/var/lib/uconsole-omarchy-arm64/user-preparation-integration" ]] || fail 'prepared user state is missing from source'
-[[ -z "$(find /output -mindepth 1 -maxdepth 1 -print -quit)" ]] || fail 'output volume must be empty'
-OUTPUT_FREE_KIB=$(df -Pk /output | awk 'NR == 2 { print $4 }') || fail 'unable to measure output-volume free space'
-[[ "$OUTPUT_FREE_KIB" =~ ^[0-9]+$ ]] || fail 'invalid output-volume free-space measurement'
-((OUTPUT_FREE_KIB >= MIN_FREE_KIB)) || fail 'output volume has less than the 6 GiB build minimum'
+if [[ "$IMAGE_ACTION" == build ]]; then
+  [[ -z "$(find /output -mindepth 1 -maxdepth 1 -print -quit)" ]] || fail 'output volume must be empty'
+  OUTPUT_FREE_KIB=$(df -Pk /output | awk 'NR == 2 { print $4 }') || fail 'unable to measure output-volume free space'
+  [[ "$OUTPUT_FREE_KIB" =~ ^[0-9]+$ ]] || fail 'invalid output-volume free-space measurement'
+  ((OUTPUT_FREE_KIB >= MIN_FREE_KIB)) || fail 'output volume has less than the 6 GiB build minimum'
+else
+  [[ -f "$OUTPUT" && ! -b "$OUTPUT" ]] || fail 'existing image is missing or is not a regular file'
+  [[ -f "${OUTPUT}.manifest.json" ]] || fail 'existing external manifest is missing'
+  [[ $(find /output -mindepth 1 -maxdepth 1 -print | wc -l) -eq 2 ]] || fail 'inspection output contains unexpected entries'
+fi
 mkdir -p /work || fail 'unable to create integration work directory'
 pacman -U --needed --noconfirm "$DOSFSTOOLS" "$MTOOLS" || fail 'unable to install pinned image tools into the disposable builder'
 
-/repo/scripts/build-image.sh \
-  --build \
-  --root-tree "$ROOT_TREE" \
-  --output "$OUTPUT" \
-  --size-mib 8192 \
-  --boot-mib 512 \
-  --disk-id c05e2026 \
-  --boot-id C05E2026 \
-  --root-uuid 7a4cc8d5-70df-4f98-a88d-3b89c9f21561 \
-  --source-date-epoch 1787590000 \
-  --require-omarchy-prepared || fail 'prepared desktop image build failed'
+if [[ "$IMAGE_ACTION" == build ]]; then
+  /repo/scripts/build-image.sh \
+    --build \
+    --root-tree "$ROOT_TREE" \
+    --output "$OUTPUT" \
+    --size-mib 8192 \
+    --boot-mib 512 \
+    --disk-id c05e2026 \
+    --boot-id C05E2026 \
+    --root-uuid 7a4cc8d5-70df-4f98-a88d-3b89c9f21561 \
+    --source-date-epoch 1787590000 \
+    --require-omarchy-prepared || fail 'prepared desktop image build failed'
+fi
 
 [[ -f "$OUTPUT" && ! -b "$OUTPUT" && $(stat -c '%s' "$OUTPUT") -eq $IMAGE_BYTES ]] || fail 'completed image identity differs'
 [[ -f "${OUTPUT}.manifest.json" ]] || fail 'external image manifest is missing'
@@ -107,7 +117,7 @@ while IFS='|' read -r command_name provider disposition reason extra; do
   [[ -n "$command_name" && "$command_name" != \#* ]] || continue
   [[ -z "${extra:-}" ]] || fail "invalid runtime policy row: $command_name"
   [[ "$disposition" != inactive-optional ]] || continue
-  chroot "$MOUNT_ROOT" /usr/bin/bash --noprofile --norc -c "command -v -- '$command_name' >/dev/null" || fail "runtime command is absent: $command_name"
+  chroot "$MOUNT_ROOT" /usr/bin/bash --noprofile --norc -c "command -v -- '$command_name'" >/dev/null || fail "runtime command is absent: $command_name"
   REQUIRED_COMMANDS=$((REQUIRED_COMMANDS + 1))
   : "$provider" "$reason"
 done < /repo/config/arm64-overrides/omarchy-runtime-command-policy.tsv

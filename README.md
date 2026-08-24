@@ -15,10 +15,12 @@ Arch rootfs, hardware transaction,
 secret-safe base configuration, and regular-image assembly have been exercised
 in isolated aarch64 Linux volumes. The content-pinned Hyprland, Omarchy shell
 package and inactive user-preparation transactions also pass against a native
-ARM64 clone. An 8 GiB prepared-desktop image plan passes every layer and
-headroom gate, but the full image has not been allocated. All desktop work
-remains off-target and hardware-gated. No script has been run against a real SD card or live system,
-and the existing bootable SD card has not been touched.
+ARM64 clone. An 8 GiB prepared-desktop image was built as a regular file and
+passed filesystem, partition, state, configuration and 51-command read-only
+inspection. It contains synthetic credentials and remains local-only. All
+desktop work remains off-target and hardware-gated. No script has been run
+against a real SD card or live system, and the existing bootable SD card has
+not been touched.
 
 ## Status
 
@@ -77,7 +79,7 @@ Research snapshot: **2026-08-24**
   [`research/omarchy-shell-package-results.yaml`](research/omarchy-shell-package-results.yaml).
 - The conflict-safe inactive home seed is recorded in
   [`research/omarchy-user-preparation-results.yaml`](research/omarchy-user-preparation-results.yaml).
-- The 8 GiB prepared-but-inactive image geometry and layer gate are in
+- The 8 GiB prepared-but-inactive image build and read-only inspection are in
   [`research/omarchy-prepared-image-plan-results.yaml`](research/omarchy-prepared-image-plan-results.yaml).
 - The storage-gated build and read-only inspection entry point is
   [`research/test-omarchy-prepared-image.sh`](research/test-omarchy-prepared-image.sh).

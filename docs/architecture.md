@@ -152,3 +152,35 @@ exact selected hardware state, locks and verifies every direct package version,
 and stages only a plain user session. Apply is prohibited by procedure until a
 saved on-device hardware report has no required failures and identifies V3D or
 V3DV rather than a software renderer.
+
+## ARM update boundary
+
+The upstream updater is not portable as an indivisible command. It combines a
+Snapper snapshot, Omarchy/x86 keyring bootstrapping, a rolling `pacman -Syu`,
+all pending migrations, AUR updates, orphan removal and reboot handling. Other
+reachable commands overwrite `pacman.conf`, install an x64 EFI firmware binary
+under `/boot`, rebuild Limine or perform a Limine/Btrfs factory reset.
+
+The ARM mechanism therefore promotes inputs, not the upstream updater:
+
+1. `plan-omarchy-update.sh` verifies an explicit source commit and archive
+   SHA-256 without running source code.
+2. The complete base-package policy must match. Any package addition, removal
+   or substitution fails closed.
+3. Every update-boundary command is content-locked and assigned one of:
+   reusable userland, ARM replacement, blocked hardware, blocked package path
+   or deferred optional behavior.
+4. A fresh installation initializes exact markers for the 87 migrations in
+   the pinned source instead of executing historical upgrade scripts against a
+   tree already seeded at that version.
+5. Every later migration must be content-locked and individually assigned an
+   ARM disposition before promotion.
+6. The replacement system-package step consumes a promoted exact Arch Linux
+   ARM transaction. It may not change repositories or independently select a
+   kernel, firmware, device tree or boot configuration.
+7. The complete candidate is applied only to a disposable image. Its hardware
+   and boot manifest must compare byte for byte before G6 can pass.
+
+The current policy audit passes for the pinned source, but it does not enable
+updates or migrations. Evidence and the upstream call sequence are recorded in
+[`../research/omarchy-update-audit-results.yaml`](../research/omarchy-update-audit-results.yaml).

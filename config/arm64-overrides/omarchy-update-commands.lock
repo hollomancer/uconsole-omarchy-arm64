@@ -1,0 +1,29 @@
+# path|sha256|disposition|reason
+bin/omarchy-channel-set|6515539654284884fcae0a41a12b56583c3948a2fefa1b5a0db4d4b1fb5a7edb|blocked-packages|Changes Omarchy channels and package repositories
+bin/omarchy-migrate|23e16d62bb0358a3248885f4952b188d7e1d5247caa04e6b5cb55772ddfaa6f9|replace-arm|Only migrations added after the initialized baseline may run after individual ARM ownership review
+bin/omarchy-refresh-limine|cd0c5bbfa0e3122661a505a81c8de7abccd0b7c09a092b77e7465fe8974f850f|blocked-hardware|Writes the Limine boot configuration and rebuilds an unsupported boot chain
+bin/omarchy-refresh-pacman|8bf29b263940ee4c96a2079ba1ac65359f8497be8cb37c657124e5f739d57a26|blocked-packages|Overwrites pacman configuration and mirrorlist with x86 Omarchy sources
+bin/omarchy-snapshot|a154bb5fd33ad3288be4783557887a7207176e9d05bc72585c30e27fea8e3e7b|blocked-hardware|Assumes the Snapper and Limine storage recovery model
+bin/omarchy-system-factory-reset-finish|72ead5e21b597b1a91d6d0bf361ba5db6c81bee012728a34bb790b2e79aaa78e|blocked-hardware|Completes the unsupported Btrfs and Limine factory reset flow
+bin/omarchy-system-factory-reset|b4388a6b3827549d44df84234b39aab80a5aee96e3b269195b79edd3d7e41a66|blocked-hardware|Rebuilds roots, initramfs and Limine boot assets
+bin/omarchy-update-analyze-logs|d72930596e608ef47004fbf444b2088b5b9a3bf94e4fdfa26b2507eadcedad99|allow-userland|Reads the update transcript after an ARM-controlled transaction
+bin/omarchy-update-aur-pkgs|fa72062dc1aedb99f4e33fcbde98a2d21b7d3ff058fb8148080396c23bcd740d|blocked-packages|Invokes the on-target AUR helper excluded by ARM policy
+bin/omarchy-update-available|257387ccfcca6211f7bc6bf2cc500bd07d4066c8354f7b869400bc5153e6d645|replace-arm|Must query a promoted ARM userland source rather than the x86 Omarchy repository
+bin/omarchy-update-confirm|ed94d094d903513c24d66c5d90267276e6e02e54df5b092c47ab968f05d8dbff|allow-userland|Interactive confirmation has no package or hardware ownership
+bin/omarchy-update-dev|a3e73119adb0019d9204f38d5410e7813e6633f2cfba5a44d32bc043c9aa32f9|blocked-packages|Git-mode updates bypass pinned source promotion and package verification
+bin/omarchy-update-firmware|1e576c8d44a82965cf27bfe8e36c8d43f05aeb1b35f2de9a0e1ed52b2234fcd6|blocked-hardware|Installs an x64 EFI payload under boot and runs platform firmware updates
+bin/omarchy-update-keyring|1a7277106e9f3de34325d27dac5bc6c8e778a83eabeeebcc4e0b921c66be74de|blocked-packages|Bootstraps the Omarchy key and Arch x86 keyring with partial database refreshes
+bin/omarchy-update-lock|9448e1748b10e46bb4310be37d69d0eba6090f69c71264cce4fc6f344278cb7d|allow-userland|Serializes an update without changing package or hardware ownership
+bin/omarchy-update-mise|edc8148e37bf0b43957f59f8aba7d3c6bfaf8b40d43f0199ba7bf05ae5c908a5|defer-optional|Development runtime updates are outside the core desktop transaction
+bin/omarchy-update-orphan-pkgs|1ac3fb5cb996bc2de9e41e715d85e190ab43bf54422997f25c8e3222de28a0c6|blocked-packages|Automatic orphan removal could remove hardware or ARM compatibility dependencies
+bin/omarchy-update-pacman-guard|aa56714de498170cf9460923dc1047dd89dcc3b08e21809ad2d764ebd1553fed|replace-arm|The upstream guard redirects upgrades into the unsafe x86 update orchestrator
+bin/omarchy-update-pkg-prune|22a4b71541270a7d7c6ed85d480f9f2888df059e030d30860caf4c1f9a601dda|allow-userland|Package-cache pruning is safe only outside the immutable recovery cache
+bin/omarchy-update-requires-free-space|50a5ddef021dac5e79f789a53643fa91a6b8d7193b4d27786516d142525eca93|allow-userland|Read-only free-space preflight is reusable
+bin/omarchy-update-restart|7bc95f8a0a3ae35cfd81453e08194f5660c27cf59528c7d95b4345f362030b60|defer-optional|Reboot prompting waits for an ARM-aware kernel and session transition check
+bin/omarchy-update-status|f2d76f443b3b6b553790a766cf39aef48ae457cae670538d4390d9457cfa40cc|allow-userland|Reports update status without owning the transaction
+bin/omarchy-update-stay-awake|848005a3ae94d0d260476247eb7be90e0581b5ff329ae414c21b686fe8b993ad|allow-userland|Temporary update inhibition does not alter boot ownership
+bin/omarchy-update-system-pkgs-when-conflicted|dae1379216754e372f749ce4a4f3232b20225d08e2d0784d7607bba113ebbc62|blocked-packages|Retries a rolling unpinned whole-system pacman transaction
+bin/omarchy-update-system-pkgs|5eb31930e2a09c73c33e1ad86baa86e5260f085414d86343e5d38d54e6930d46|replace-arm|Must be replaced by a promoted exact Arch Linux ARM and userland transaction
+bin/omarchy-update-time|72fac707c08f25f0321a3916ed8227e3737c8cc4c3d6bb93c9d4c98531f78c6f|allow-userland|Measures elapsed update time only
+bin/omarchy-update-user-notify|4722e0e3331e9ea1118a379bf12363e369b8e58642781b212a29496700a156a5|allow-userland|User notification is reusable after the ARM update result exists
+bin/omarchy-update|cd1b703031a7456b2bd1302166a2cd29a1db8007f15bed954f64e742502aa552|replace-arm|The top-level flow calls Snapper, x86 keyrings, rolling pacman, migrations and AUR updates

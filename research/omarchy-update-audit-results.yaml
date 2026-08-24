@@ -1,0 +1,71 @@
+schema: 1
+observed_at: "2026-08-24"
+source:
+  project: basecamp/omarchy
+  commit: d99d4fc6de0bc99d48c9935724fa19d7fb41ae54
+  archive_sha256: 3b60bb6d5694478963c167571457ee266cdba1e7791395a80f2f26074d72d6eb
+  archive_entries: 1907
+
+upstream_flow:
+  top_level: bin/omarchy-update
+  sequence:
+    - prune package cache
+    - create Snapper snapshot when available
+    - update Git development checkout
+    - bootstrap Omarchy and Arch x86 keyrings
+    - run an unpinned pacman -Syu transaction
+    - execute every migration without a marker
+    - run post-update hooks
+    - update AUR and mise packages
+    - remove orphan packages
+    - prompt for restart
+  incompatible_assumptions:
+    - "omarchy-update-keyring installs omarchy-keyring and archlinux-keyring rather than preserving the Arch Linux ARM trust root"
+    - "omarchy-update-system-pkgs performs a rolling whole-system pacman -Syu"
+    - "omarchy-refresh-pacman overwrites pacman.conf and mirrorlist with Omarchy x86 sources"
+    - "omarchy-update-firmware installs fwupdx64.efi under /boot"
+    - "snapshot, Limine refresh and factory reset commands own an unsupported Btrfs/EFI boot model"
+    - "AUR and orphan phases can build or remove ARM compatibility and hardware dependencies implicitly"
+
+command_policy:
+  lock: ../config/arm64-overrides/omarchy-update-commands.lock
+  lock_sha256: 33be5fe94ccf447be2554d1ec0cdfbb1837c0f9ebc20b4787022c6f3f98bd3d3
+  commands: 28
+  dispositions:
+    allow_userland: 9
+    replace_arm: 5
+    blocked_hardware: 5
+    blocked_packages: 7
+    deferred_optional: 2
+
+migration_policy:
+  lock: ../config/arm64-overrides/omarchy-migration-baseline.lock
+  lock_sha256: bf1cd979738bc9035731e881fae95072d64caf2bacb3705f9a47433a0aa7b143
+  baseline_migrations: 87
+  initial_install_disposition: baseline-do-not-run
+  rationale: "A fresh install is seeded from the current userland state; replaying historical upgrade scripts would mutate packages, user files and system ownership a second time. Exact markers will be initialized only during a future audited activation transaction."
+  static_scan:
+    privileged_or_system_path_references: 39
+    package_mutation_references: 26
+    boot_ownership_references: 10
+  future_rule: "Every new migration must be content-locked and assigned an explicit ARM disposition before candidate promotion."
+
+planner:
+  path: ../scripts/plan-omarchy-update.sh
+  result: PASS
+  verifies:
+    - explicit candidate commit and SHA-256
+    - archive-root and traversal safety
+    - exact base-package policy coverage
+    - complete update-command inventory and content hashes
+    - complete migration classification and content hashes
+    - blocked boot, firmware, kernel, Pacman-mirror and factory-reset ownership
+  executes_upstream_code: false
+  mutates_target_root: false
+
+remaining_gate:
+  - build and sign the thin ARM userland package plus five core source packages
+  - implement the replacement ARM update orchestrator
+  - apply a candidate only to a disposable image
+  - compare the hardware and boot manifest byte for byte before promotion
+  - run future allowed migrations against disposable user data and conflict fixtures

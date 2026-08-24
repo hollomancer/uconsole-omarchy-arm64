@@ -22,6 +22,7 @@ PHASE="hardware"
 ROOT="/"
 FIXTURE=""
 PACKAGES_FILE="$REPO_ROOT/config/arm64-overrides/omarchy-core.packages"
+HARDWARE_PACKAGES_FILE="$REPO_ROOT/config/uconsole-hardware/packages.lock"
 
 PASS_COUNT=0
 WARN_COUNT=0
@@ -92,6 +93,7 @@ if [[ -n "$FIXTURE" ]]; then
 fi
 [[ -d "$ROOT" ]] || die_usage "root directory does not exist: $ROOT"
 [[ -f "$PACKAGES_FILE" ]] || die_usage "package manifest does not exist: $PACKAGES_FILE"
+[[ -f "$HARDWARE_PACKAGES_FILE" ]] || die_usage "hardware package lock does not exist: $HARDWARE_PACKAGES_FILE"
 
 phase_at_least() {
   local wanted=$1
@@ -176,6 +178,23 @@ collect_dt_compatibles() {
   done < <(find "$dt_root" -type f -name compatible -print 2>/dev/null)
 }
 
+state_field() {
+  local state_file=$1
+  local key=$2
+  awk -F '=' -v wanted="$key" '$1 == wanted {count++; value=substr($0, index($0, "=") + 1)} END {if (count == 1 && value != "") print value; else exit 1}' "$state_file"
+}
+
+hardware_lock_field() {
+  local package_name=$1
+  local field=$2
+  awk -F '|' -v wanted="$package_name" -v index="$field" '$0 !~ /^#/ && $1 == wanted {count++; value=$index} END {if (count == 1 && value != "") print value; else exit 1}' "$HARDWARE_PACKAGES_FILE"
+}
+
+module_loaded() {
+  local module_name=$1
+  printf '%s\n' "$MODULES" | awk -v wanted="$module_name" '$1 == wanted {found=1} END {exit !found}'
+}
+
 printf 'uConsole CM5 validation — phase=%s root=%s\n\n' "$PHASE" "$ROOT"
 
 run_probe uname_m uname -m
@@ -190,6 +209,35 @@ if [[ $PROBE_STATUS -eq 0 && -n "$PROBE_OUTPUT" ]]; then
   report PASS kernel "$PROBE_OUTPUT"
 else
   report FAIL kernel 'kernel version unavailable'
+fi
+OBSERVED_KERNEL_RELEASE=$PROBE_OUTPUT
+
+HARDWARE_STATE="$ROOT/var/lib/uconsole-omarchy-arm64/hardware-selection"
+if [[ -f "$HARDWARE_STATE" && ! -L "$HARDWARE_STATE" ]]; then
+  EXPECTED_KERNEL_VERSION=$(hardware_lock_field linux-rpi-16k 2)
+  EXPECTED_KERNEL_SHA=$(hardware_lock_field linux-rpi-16k 3)
+  EXPECTED_KERNEL_RELEASE=$(hardware_lock_field linux-rpi-16k 4)
+  EXPECTED_HEADERS_SHA=$(hardware_lock_field linux-rpi-16k-headers 3)
+  EXPECTED_BOARD_VERSION=$(hardware_lock_field uconsole-cm5-dkms 2)
+  EXPECTED_BOARD_SHA=$(hardware_lock_field uconsole-cm5-dkms 3)
+  EXPECTED_BOARD_COMMIT=$(hardware_lock_field uconsole-cm5-dkms 4)
+  if [[ $(awk 'END {print NR}' "$HARDWARE_STATE") -eq 9 ]] &&
+    [[ $(state_field "$HARDWARE_STATE" kernel_package) == linux-rpi-16k ]] &&
+    [[ $(state_field "$HARDWARE_STATE" kernel_version) == "$EXPECTED_KERNEL_VERSION" ]] &&
+    [[ $(state_field "$HARDWARE_STATE" kernel_release) == "$EXPECTED_KERNEL_RELEASE" ]] &&
+    [[ $(state_field "$HARDWARE_STATE" board_package) == uconsole-cm5-dkms ]] &&
+    [[ $(state_field "$HARDWARE_STATE" board_version) == "$EXPECTED_BOARD_VERSION" ]] &&
+    [[ $(state_field "$HARDWARE_STATE" board_source_commit) == "$EXPECTED_BOARD_COMMIT" ]] &&
+    [[ $(state_field "$HARDWARE_STATE" kernel_sha256) == "$EXPECTED_KERNEL_SHA" ]] &&
+    [[ $(state_field "$HARDWARE_STATE" headers_sha256) == "$EXPECTED_HEADERS_SHA" ]] &&
+    [[ $(state_field "$HARDWARE_STATE" board_sha256) == "$EXPECTED_BOARD_SHA" ]] &&
+    [[ "$OBSERVED_KERNEL_RELEASE" == "$EXPECTED_KERNEL_RELEASE" ]]; then
+    report PASS hardware-selection "linux-rpi-16k $EXPECTED_KERNEL_VERSION; board $EXPECTED_BOARD_VERSION at ${EXPECTED_BOARD_COMMIT:0:12}"
+  else
+    report FAIL hardware-selection 'saved hardware state or running kernel differs from the exact selected lock'
+  fi
+else
+  report FAIL hardware-selection 'exact hardware-selection state is missing'
 fi
 
 run_probe getconf_pagesize getconf PAGESIZE
@@ -223,13 +271,23 @@ fi
 
 MODULES=""
 if MODULES=$(read_text "$ROOT/proc/modules"); then
-  if [[ "$MODULES" == *$'vc4 '* && "$MODULES" == *$'v3d '* ]]; then
+  if module_loaded vc4 && module_loaded v3d; then
     report PASS gpu-kernel-driver 'vc4 and v3d modules loaded'
   else
     report FAIL gpu-kernel-driver 'vc4 and/or v3d module is absent'
   fi
+  BOARD_MODULES_MISSING=""
+  for board_module in panel_cwu50 ocp8178_bl axp20x_battery snd_soc_simple_amplifier; do
+    module_loaded "$board_module" || BOARD_MODULES_MISSING="$BOARD_MODULES_MISSING $board_module"
+  done
+  if [[ -z "$BOARD_MODULES_MISSING" ]]; then
+    report PASS uconsole-modules 'panel, backlight, battery and audio-amplifier board modules loaded'
+  else
+    report FAIL uconsole-modules "missing:$BOARD_MODULES_MISSING"
+  fi
 else
   report FAIL gpu-kernel-driver '/proc/modules is unreadable'
+  report FAIL uconsole-modules '/proc/modules is unreadable'
 fi
 
 if [[ -e "$ROOT/dev/dri/card0" && -e "$ROOT/dev/dri/renderD128" ]]; then
@@ -248,29 +306,35 @@ fi
 run_probe glxinfo glxinfo -B
 GLX_LOWER=$(lower "$PROBE_OUTPUT")
 if [[ $PROBE_STATUS -eq 127 ]]; then
-  report WARN opengl-acceleration 'glxinfo unavailable or no captured probe'
+  if phase_at_least hyprland; then report FAIL opengl-acceleration 'glxinfo unavailable or no captured probe'
+  else report WARN opengl-acceleration 'glxinfo unavailable or no captured probe'; fi
 elif [[ "$GLX_LOWER" == *"llvmpipe"* || "$GLX_LOWER" == *"softpipe"* ]]; then
   report FAIL opengl-acceleration "software renderer detected: $PROBE_OUTPUT"
 elif [[ $PROBE_STATUS -eq 0 && ( "$GLX_LOWER" == *"v3d"* || "$GLX_LOWER" == *"broadcom"* ) ]]; then
   report PASS opengl-acceleration "$PROBE_OUTPUT"
 elif [[ $PROBE_STATUS -ne 0 ]]; then
-  report WARN opengl-acceleration "probe unavailable outside a graphical session: ${PROBE_OUTPUT:-no output}"
+  if phase_at_least hyprland; then report FAIL opengl-acceleration "required probe failed: ${PROBE_OUTPUT:-no output}"
+  else report WARN opengl-acceleration "probe unavailable outside a graphical session: ${PROBE_OUTPUT:-no output}"; fi
 else
-  report WARN opengl-acceleration "renderer is not recognized as V3D: $PROBE_OUTPUT"
+  if phase_at_least hyprland; then report FAIL opengl-acceleration "renderer is not recognized as V3D: $PROBE_OUTPUT"
+  else report WARN opengl-acceleration "renderer is not recognized as V3D: $PROBE_OUTPUT"; fi
 fi
 
 run_probe vulkaninfo vulkaninfo --summary
 VULKAN_LOWER=$(lower "$PROBE_OUTPUT")
 if [[ $PROBE_STATUS -eq 127 ]]; then
-  report WARN vulkan-acceleration 'vulkaninfo unavailable or no captured probe'
+  if phase_at_least hyprland; then report FAIL vulkan-acceleration 'vulkaninfo unavailable or no captured probe'
+  else report WARN vulkan-acceleration 'vulkaninfo unavailable or no captured probe'; fi
 elif [[ "$VULKAN_LOWER" == *"lavapipe"* || "$VULKAN_LOWER" == *"llvmpipe"* || "$VULKAN_LOWER" == *"software"* ]]; then
   report FAIL vulkan-acceleration "software renderer detected: $PROBE_OUTPUT"
 elif [[ $PROBE_STATUS -eq 0 && ( "$VULKAN_LOWER" == *"v3dv"* || "$VULKAN_LOWER" == *"broadcom"* ) ]]; then
   report PASS vulkan-acceleration "$PROBE_OUTPUT"
 elif [[ $PROBE_STATUS -ne 0 ]]; then
-  report WARN vulkan-acceleration "probe failed: ${PROBE_OUTPUT:-no output}"
+  if phase_at_least hyprland; then report FAIL vulkan-acceleration "required probe failed: ${PROBE_OUTPUT:-no output}"
+  else report WARN vulkan-acceleration "probe failed: ${PROBE_OUTPUT:-no output}"; fi
 else
-  report WARN vulkan-acceleration "device is not recognized as V3DV: $PROBE_OUTPUT"
+  if phase_at_least hyprland; then report FAIL vulkan-acceleration "device is not recognized as V3DV: $PROBE_OUTPUT"
+  else report WARN vulkan-acceleration "device is not recognized as V3DV: $PROBE_OUTPUT"; fi
 fi
 
 CONNECTED=""
@@ -371,12 +435,18 @@ for TYPE_FILE in "$ROOT"/sys/class/power_supply/*/type; do
     BATTERY_STATUS='unknown'
     if [[ -r "$SUPPLY/capacity" ]]; then CAPACITY=$(read_text "$SUPPLY/capacity"); fi
     if [[ -r "$SUPPLY/status" ]]; then BATTERY_STATUS=$(read_text "$SUPPLY/status"); fi
-    BATTERY_DETAIL="$NAME capacity=$CAPACITY status=$BATTERY_STATUS"
+    if [[ "$CAPACITY" =~ ^[0-9]+$ && "$CAPACITY" -ge 0 && "$CAPACITY" -le 100 && -n "$BATTERY_STATUS" ]]; then
+      BATTERY_DETAIL="$NAME capacity=$CAPACITY status=$BATTERY_STATUS"
+    else
+      BATTERY_DETAIL="invalid:$NAME capacity=$CAPACITY status=$BATTERY_STATUS"
+    fi
     break
   fi
 done
-if [[ -n "$BATTERY_DETAIL" ]]; then
+if [[ -n "$BATTERY_DETAIL" && "$BATTERY_DETAIL" != invalid:* ]]; then
   report PASS battery "$BATTERY_DETAIL"
+elif [[ "$BATTERY_DETAIL" == invalid:* ]]; then
+  report FAIL battery "${BATTERY_DETAIL#invalid:}"
 else
   report FAIL battery 'no Battery power_supply found'
 fi
@@ -395,7 +465,8 @@ fi
 run_probe hyprctl hyprctl systeminfo
 HYPR_STATUS=$PROBE_STATUS
 HYPR_OUTPUT=$PROBE_OUTPUT
-if [[ $HYPR_STATUS -eq 0 && -n "$HYPR_OUTPUT" ]]; then
+HYPR_LOWER=$(lower "$HYPR_OUTPUT")
+if [[ $HYPR_STATUS -eq 0 && "$HYPR_LOWER" == *"hyprland"* && "$HYPR_LOWER" == *"aquamarine"* ]]; then
   report PASS hyprland "$HYPR_OUTPUT"
 elif phase_at_least hyprland; then
   report FAIL hyprland "required session unavailable: ${HYPR_OUTPUT:-no output}"
@@ -408,9 +479,30 @@ MONITOR_LOWER=$(lower "$PROBE_OUTPUT")
 if [[ $PROBE_STATUS -eq 0 && ( "$MONITOR_LOWER" == *"720x1280"* || "$MONITOR_LOWER" == *"1280x720"* ) && ( "$MONITOR_LOWER" == *"transform: 1"* || "$MONITOR_LOWER" == *"transform: 3"* ) ]]; then
   report PASS display-orientation "$PROBE_OUTPUT"
 elif [[ $PROBE_STATUS -eq 0 ]]; then
-  report WARN display-orientation "native mode plus 90/270-degree transform not confirmed: $PROBE_OUTPUT"
+  if phase_at_least hyprland; then report FAIL display-orientation "native mode plus 90/270-degree transform not confirmed: $PROBE_OUTPUT"
+  else report WARN display-orientation "native mode plus 90/270-degree transform not confirmed: $PROBE_OUTPUT"; fi
 else
-  report WARN display-orientation 'requires a running Hyprland session'
+  if phase_at_least hyprland; then report FAIL display-orientation 'required running Hyprland monitor probe is unavailable'
+  else report WARN display-orientation 'requires a running Hyprland session'; fi
+fi
+
+run_probe hypr_devices hyprctl devices
+HYPR_DEVICES_LOWER=$(lower "$PROBE_OUTPUT")
+if [[ $PROBE_STATUS -eq 0 && "$HYPR_DEVICES_LOWER" == *"mice:"* && "$HYPR_DEVICES_LOWER" == *"keyboards:"* ]]; then
+  report PASS wayland-input 'Hyprland reports both pointer and keyboard classes'
+elif phase_at_least hyprland; then
+  report FAIL wayland-input "Hyprland pointer/keyboard classes not confirmed: ${PROBE_OUTPUT:-no output}"
+else
+  report WARN wayland-input 'requires a running Hyprland session'
+fi
+
+run_probe portal_status systemctl --user is-active xdg-desktop-portal-hyprland.service
+if [[ $PROBE_STATUS -eq 0 && "$PROBE_OUTPUT" == active ]]; then
+  report PASS hyprland-portal 'xdg-desktop-portal-hyprland is active'
+elif phase_at_least hyprland; then
+  report FAIL hyprland-portal "required user portal is inactive: ${PROBE_OUTPUT:-no output}"
+else
+  report WARN hyprland-portal 'not required during hardware phase'
 fi
 
 run_probe omarchy_version omarchy-version

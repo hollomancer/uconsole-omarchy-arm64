@@ -1,0 +1,9 @@
+kernel_package=linux-rpi-16k
+kernel_version=6.18.45-1
+kernel_release=6.18.45-1-rpi-16k
+board_package=uconsole-cm5-dkms
+board_version=0.1.r0.gbf7a0ab-1
+board_source_commit=bf7a0ab55654c96b74d013520e1196d39f66391a
+kernel_sha256=e273a69402d82ae9b4df34b31d5dfbceae9b73268f56e4dadf26a82a5ac9838e
+headers_sha256=58c5d993ff832170b2f3ca7346367272684c1fa2ff8a1bfda8d299b46a2e5d76
+board_sha256=a9058969381e40b6fc4edec9082aa628b2ba7c89504eeecdb0a7cd12a8a6718d

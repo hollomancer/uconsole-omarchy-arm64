@@ -1,0 +1,7 @@
+Mice:
+	Mouse at 1234:
+		uConsole Mouse
+
+Keyboards:
+	Keyboard at 5678:
+		uConsole Keyboard

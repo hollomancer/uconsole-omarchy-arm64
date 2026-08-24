@@ -61,10 +61,13 @@ authoritative for Pi platform devices. DRM sysfs and the bound platform driver
 are the useful evidence.
 
 [`../scripts/validate-system.sh`](../scripts/validate-system.sh) reports PASS,
-WARN or FAIL for architecture, kernel, page size, DT model/overlays, DRM nodes,
-GPU modules, OpenGL/Vulkan software-renderer detection, PCI inventory, display,
-backlight, audio, networking, radios, battery, input devices, Hyprland,
-orientation, Omarchy userland and missing core packages. Unknown or unavailable
-evidence is WARN/FAIL, never silently omitted. Use `--phase hardware`, then
-`--phase hyprland`, then `--phase omarchy` so later layers become mandatory
-only at their gate.
+WARN or FAIL for architecture, the exact selected hardware state/running
+kernel, page size, DT model/overlays, board modules, DRM nodes, GPU modules,
+OpenGL/Vulkan software-renderer detection, PCI inventory, display, backlight,
+audio, networking, radios, battery, input devices, Hyprland, orientation,
+Wayland input classes, the Hyprland portal, Omarchy userland and missing core
+packages. Unknown or unavailable evidence is WARN/FAIL, never silently
+omitted. Use `--phase hardware`, then `--phase hyprland`, then `--phase
+omarchy`. In the Hyprland and Omarchy phases, missing GL/Vulkan probes, native
+orientation, compositor input or portal state are hard failures rather than
+warnings.

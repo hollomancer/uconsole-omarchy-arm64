@@ -106,6 +106,13 @@ artifact:
   boot_file_count: 413
   boot_manifest_sha256: 1ee80a0c8aac50b66ef78ae8bef4d3cf7079d8775458392722b150b6d02e446e
   omarchy_image_state: prepared-inactive
+reproducibility:
+  evidence: omarchy-prepared-image-reproducibility-results.yaml
+  independent_builds: 2
+  procedural_repeatability: PASS
+  semantic_repeatability: PASS
+  byte_reproducibility: FAIL
+  requirement_decision: pending
 limits:
   - The synthetic image has not booted on a CM5 or uConsole.
   - Synthetic credentials make this artifact ineligible for publication or physical media.

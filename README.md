@@ -81,6 +81,9 @@ Research snapshot: **2026-08-24**
   [`research/omarchy-user-preparation-results.yaml`](research/omarchy-user-preparation-results.yaml).
 - The 8 GiB prepared-but-inactive image build and read-only inspection are in
   [`research/omarchy-prepared-image-plan-results.yaml`](research/omarchy-prepared-image-plan-results.yaml).
+- The two-build whole-image reproducibility result is in
+  [`research/omarchy-prepared-image-reproducibility-results.yaml`](research/omarchy-prepared-image-reproducibility-results.yaml):
+  semantic contents match exactly, but filesystem bytes do not.
 - The storage-gated build and read-only inspection entry point is
   [`research/test-omarchy-prepared-image.sh`](research/test-omarchy-prepared-image.sh).
   It accepts either a project-only Docker volume or a pre-created, namespaced
@@ -342,10 +345,12 @@ that gate but has not been applied to a card.
 │   ├── build-omarchy-core-packages.sh
 │   ├── build-uconsole-dkms.sh
 │   ├── build-uconsole-package.sh
+│   ├── compare-omarchy-prepared-images.sh
 │   ├── container/
 │   │   ├── build-board-package-inside.sh
 │   │   ├── build-dkms-inside.sh
 │   │   ├── build-omarchy-core-packages-inside.sh
+│   │   ├── compare-omarchy-prepared-images-inside.sh
 │   │   ├── probe-image-output-inside.sh
 │   │   └── test-omarchy-prepared-image-inside.sh
 │   ├── base-system-results.yaml
@@ -363,6 +368,7 @@ that gate but has not been applied to a card.
 │   ├── omarchy-shell-package-results.yaml
 │   ├── omarchy-user-preparation-results.yaml
 │   ├── omarchy-prepared-image-plan-results.yaml
+│   ├── omarchy-prepared-image-reproducibility-results.yaml
 │   ├── phase1-hardware-install-results.yaml
 │   ├── phase1-inputs.yaml
 │   ├── package-audit/                    # current generated matrix and pins
@@ -396,6 +402,7 @@ that gate but has not been applied to a card.
     ├── test-bootstrap-arch.sh             # current rootfs/input safety test
     ├── test-build-image.sh                # current image/device safety test
     ├── test-build-omarchy-core-packages.sh # current offline-build policy test
+    ├── test-compare-omarchy-prepared-images.sh # current read-only comparison test
     ├── test-configure-base-system.sh      # current account/network policy test
     ├── test-install-base-system-packages.sh # current exact-closure test
     ├── test-install-hyprland.sh           # current package/config safety test

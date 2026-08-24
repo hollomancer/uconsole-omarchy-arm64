@@ -76,6 +76,14 @@ It contains synthetic credentials and is not a development-card artifact.
 This is not permission to patch or launch these layers before the live hardware
 and minimal Hyprland gates pass.
 
+Two independent image builds from the same immutable root pass an exhaustive
+read-only semantic comparison: every path, type, mode, owner, regular-file size
+and digest, symlink target, and normalized manifest field matches. Their FAT,
+ext4 and whole-image bytes differ, so the current guarantee is procedural and
+semantic repeatability—not byte-for-byte image reproducibility. Whether to
+normalize filesystem metadata/layout further is an explicit project decision;
+package and input locks remain byte-addressed regardless.
+
 ## Selected kernel baseline
 
 The initial research selected the source and patch set from

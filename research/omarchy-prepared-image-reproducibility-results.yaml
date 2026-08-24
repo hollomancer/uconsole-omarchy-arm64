@@ -1,0 +1,61 @@
+schema: 1
+verified_at: 2026-08-24
+scope: two-independent-builds-from-one-immutable-prepared-root
+builder:
+  image: menci/archlinuxarm:base-devel-20260819.32222611223@sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
+  source_volume: uconsole-hyprland-integration-20260824
+  source_mounted_read_only: true
+  network: disabled
+  image_bytes_each: 8589934592
+  source_date_epoch: 1787590000
+build_a:
+  directory: /Volumes/SSDmini/uconsole-omarchy-prepared-image-20260824
+  image_sha256: 8af63b82bf33ec804e167c2f817d9d14666a5ce9cd4074c2eebff5bf4a033a46
+  allocated_kib: 4275296
+  manifest_sha256: 8c3f2bfef492fc82c189e2997da377dbf13818b61dfba50ef282ed9b11cb07cd
+  inspection_result: PASS
+build_b:
+  directory: /Volumes/SSDmini/uconsole-omarchy-prepared-image-repro-20260824
+  image_sha256: cb26d756c6d429f5603f4499d57745c9e33d94c1e12de741f6d845ec79fd598d
+  allocated_kib: 4275280
+  manifest_sha256: 8e35a4642300fb41dea6089f1d5d1e1f60781385a4b84966ddf9b84802088c8e
+  inspection_result: PASS
+read_only_comparison:
+  script: compare-omarchy-prepared-images.sh
+  container_runner: container/compare-omarchy-prepared-images-inside.sh
+  contract_test: ../tests/test-compare-omarchy-prepared-images.sh
+  contract_test_result: PASS
+  comparison_result: PASS-with-byte-variance-warning
+  image_a_sha256: 8af63b82bf33ec804e167c2f817d9d14666a5ce9cd4074c2eebff5bf4a033a46
+  image_b_sha256: cb26d756c6d429f5603f4499d57745c9e33d94c1e12de741f6d845ec79fd598d
+  boot_a_sha256: 14dec46958e2d255f6a6998c892c306d5cce1776f80506560cde4ec556595b24
+  boot_b_sha256: 75b00f71b60c0dc789bd438799e8d18979ea70e1be2e604a2e378f94b5faad64
+  root_a_sha256: 409a2bc4198305f7219cc9084bc2e55099fd5b53a44879c85fae6ea21da285c0
+  root_b_sha256: 20bfb031f33a1036c0cec1512211c68df1226beab4ad989508604c33d79436c1
+  semantic_boot_tree: PASS
+  semantic_root_tree: PASS
+  compared_per_entry:
+    - path
+    - type
+    - mode
+    - uid
+    - gid
+    - regular_file_size
+    - regular_file_sha256
+    - symlink_target
+  normalized_external_manifest: PASS
+  image_directories_mounted_read_only: true
+  filesystem_mounts_read_only: true
+result:
+  procedural_repeatability: PASS
+  semantic_repeatability: PASS
+  byte_reproducibility: FAIL
+  classification: filesystem-metadata-or-layout-variance
+  exact_variance_cause: not-yet-localized
+  byte_reproducibility_requirement: decision-pending
+artifact_policy:
+  both_local_only: true
+  published: false
+  written_to_physical_media: false
+  contains_synthetic_credentials: true
+  retained_pending_decision: true

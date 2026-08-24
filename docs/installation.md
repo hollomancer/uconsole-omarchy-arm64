@@ -571,6 +571,20 @@ and its external manifest, mounts the output read-only and never rebuilds it.
 The retained synthetic image passed this resumed inspection with SHA-256
 `8af63b82bf33ec804e167c2f817d9d14666a5ce9cd4074c2eebff5bf4a033a46`.
 
+For a two-build reproducibility audit, keep each completed image in its own
+namespaced external directory and run:
+
+```sh
+research/compare-omarchy-prepared-images.sh \
+  --image-a-dir /Volumes/SSDmini/uconsole-omarchy-prepared-image-20260824 \
+  --image-b-dir /Volumes/SSDmini/uconsole-omarchy-prepared-image-repro-20260824
+```
+
+The comparator mounts both directories and all four partition ranges
+read-only. The current pair is semantically identical for every compared
+entry and manifest field, but is not byte-identical; see
+`research/omarchy-prepared-image-reproducibility-results.yaml`.
+
 The first live launch remains manual after Phase 2 evidence is saved. Keep the
 upstream autostart and Hyprland defaults out of the transaction; start only the
 reviewed shell wrapper from the existing minimal session. Re-run

@@ -17,6 +17,13 @@ the exact hardware-selection state and every local package's name, version,
 architecture and SHA-256, then uses a single local `pacman -U` transaction. It
 does not refresh or resolve a repository.
 
+For off-target preparation of the retained integration root, use
+`research/install-phase1-base-packages.sh`. It accepts only the exact
+`uconsole-phase1-operator-pending-YYYYMMDD` volume namespace, runs without
+network access, and proves package-transaction idempotence. The resulting root
+still has the signed rootfs accounts and must not be imaged or booted until the
+private configuration transaction below succeeds.
+
 Run `scripts/configure-base-system.sh --plan` only after the package state is
 present. The required operator choices are an admin account, an SSH public-key
 file, a private file containing a yescrypt or SHA-512 crypt recovery hash, and

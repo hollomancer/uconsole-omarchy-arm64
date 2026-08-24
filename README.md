@@ -39,6 +39,11 @@ Research snapshot: **2026-08-24**
 - The exact offline NetworkManager/sudo/Bluetooth closure and synthetic
   first-boot configuration run are recorded in
   [`research/base-system-results.yaml`](research/base-system-results.yaml).
+- A fresh retained root containing only the signed rootfs, selected hardware
+  layer and exact base packages is recorded in
+  [`research/phase1-operator-root-results.yaml`](research/phase1-operator-root-results.yaml).
+  It is intentionally blocked on operator identity/access inputs and must not
+  be imaged or booted in its current state.
 - The configured full-root regular-image build and read-only inspection are in
   [`research/full-image-results.yaml`](research/full-image-results.yaml).
 - Reproducible 4 KiB/16 KiB DKMS build results are in
@@ -163,8 +168,10 @@ Bluetooth; installs key-only SSH policy; and locks the source `root` and
 non-admin `alarm` accounts. It never accepts plaintext password arguments or
 records a Wi-Fi secret in its public state. Full package/configuration apply
 and idempotent reapply pass on a disposable clone of the retained hardware
-root. Operator-selected credentials have deliberately not been applied to the
-retained source.
+root. A fresh `uconsole-phase1-operator-pending-20260824` root now carries the
+same signed rootfs, exact hardware state and package-only base layer. Operator-
+selected credentials have deliberately not been applied, both source accounts
+remain unsafe, and the root cannot pass the image-builder configuration gate.
 
 A 4 GiB image built from that synthetic configured clone passed filesystem
 checks, read-only remount, state/account/key inspection and manifest digest
@@ -350,6 +357,8 @@ that gate but has not been applied to a card.
 │   ├── build-uconsole-dkms.sh
 │   ├── build-uconsole-package.sh
 │   ├── compare-omarchy-prepared-images.sh
+│   ├── inspect-phase1-operator-root.sh
+│   ├── install-phase1-base-packages.sh
 │   ├── container/
 │   │   ├── archive-project-volume-inside.sh
 │   │   ├── build-board-package-inside.sh
@@ -377,6 +386,7 @@ that gate but has not been applied to a card.
 │   ├── omarchy-prepared-image-reproducibility-results.yaml
 │   ├── phase1-hardware-install-results.yaml
 │   ├── phase1-inputs.yaml
+│   ├── phase1-operator-root-results.yaml
 │   ├── project-volume-archive-results.yaml
 │   ├── package-audit/                    # current generated matrix and pins
 │   ├── rootfs-extraction-results.yaml

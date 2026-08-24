@@ -276,9 +276,15 @@ policy and leaves SSH host keys absent for unique generation on the device.
 The exact 21-package closure and this policy pass apply plus idempotent reapply
 on a disposable native-aarch64 clone of the real retained hardware root. See
 [`../research/base-system-results.yaml`](../research/base-system-results.yaml).
-The retained source remains unchanged. Before promoting it, the operator must
-still select the admin name, SSH public key, regulatory domain, recovery-hash
-file, and whether to provide a private bootstrap Wi-Fi keyfile.
+The fresh `uconsole-phase1-operator-pending-20260824` volume has now repeated
+signed root extraction, the complete hardware transaction, package plan/apply,
+idempotent package reapply and a read-only boundary inspection. See
+[`../research/phase1-operator-root-results.yaml`](../research/phase1-operator-root-results.yaml).
+It deliberately retains the source account credential state, lacks SSH host
+keys and has no base-configuration, Hyprland or Omarchy state. Before promoting
+it, the operator must still select the admin name, SSH public key, regulatory
+domain, recovery-hash file, timezone, and whether to provide a private
+bootstrap Wi-Fi keyfile.
 
 ### P1.5 — Write and boot the fresh SD
 

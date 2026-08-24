@@ -120,8 +120,11 @@ The next Arch-owned layer also passes native-aarch64 integration on a
 disposable clone: an exact local NetworkManager/sudo/BlueZ closure, non-root
 admin, key-only SSH, locked source accounts, locale/time/radio policy and one
 network owner. Secret inputs are file-only and excluded from public selection
-state. This does not close G1 because the retained source has not received the
-operator's real inputs and no CM5 has booted it.
+state. A fresh retained root has now independently repeated signed extraction,
+the selected hardware transaction and the package-only base transaction. It
+stops before configuration with both source accounts still unsafe, no SSH host
+identity and no upper-layer state. This does not close G1 because the operator's
+real inputs have not been applied and no CM5 has booted it.
 
 The custom kernel is retained as a differential oracle and recovery fallback,
 not as the default package. Its proven boot settings, PMIC behavior and

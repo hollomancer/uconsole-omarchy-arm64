@@ -1,0 +1,73 @@
+schema: 1
+observed_at: 2026-08-24
+purpose: "Fresh Phase 1 root stopped before operator identity, secrets or media construction"
+target:
+  volume: uconsole-phase1-operator-pending-20260824
+  created_at: "2026-08-24T18:00:21-04:00"
+  scope: local-project-only
+  container_references_after_inspection: 0
+  publishable: false
+  bootable_candidate: false
+builder:
+  image: menci/archlinuxarm:base-devel-20260819.32222611223@sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
+layers:
+  signed_rootfs:
+    runner: research/test-rootfs-extraction.sh
+    result: PASS
+    sha256: f10903be472e2662e110f0f7bae2750a30914ce3dc0fcd38ec85d3405d8c8967
+    signer_fingerprint: 68B3537F39A313B3E574D06777193F152BDBE6A6
+    numeric_ownership: PASS
+  hardware:
+    runner: research/install-phase1-hardware.sh
+    result: PASS
+    kernel: linux-rpi-16k=6.18.45-1
+    kernel_release: 6.18.45-1-rpi-16k
+    board: uconsole-cm5-dkms=0.1.r0.gbf7a0ab-1
+    board_source_commit: bf7a0ab55654c96b74d013520e1196d39f66391a
+    dkms: installed
+    initramfs: present
+    overlays: present
+    state_sha256: 88ed52d7ec67c9602e54f1d0bc2b4b48bf56b4fb453128231b909bcb667afc6b
+  base_packages:
+    runner: research/install-phase1-base-packages.sh
+    result: PASS
+    locked_packages: 21
+    plan_before_apply: true
+    idempotent_reapply: PASS
+    network_during_runner: disabled
+    state_sha256: bbdc7bd2439d951bed3e035144dec34b2ac2af49ec69764202730f820482f12f
+inspection:
+  runner: research/inspect-phase1-operator-root.sh
+  access: read_only
+  result: PASS_WITH_EXPECTED_WARNINGS
+  root_size_kib: 2477744
+  filesystem_entries: 69366
+  base_system_selection_present: false
+  hyprland_selection_present: false
+  omarchy_selection_present: false
+  ssh_host_keys_present: false
+  source_root_account_safe_for_boot: false
+  source_alarm_account_safe_for_boot: false
+expected_warnings:
+  - "Source rootfs accounts retain their pre-configuration credential state"
+  - "Operator identity/access configuration is required before image construction or boot"
+  - "The first-boot initramfs retains the previously recorded ARM microcode, DRM privacy-screen and optional Renesas firmware warnings"
+storage_after:
+  host_available_kib: 4907744
+  external_ssd_available_kib: 925426400
+  immediate_additional_cleanup_required: false
+  constraint: "Do not create another large local clone or image; use SSDmini for archives and image output"
+security_boundary:
+  operator_identity_added: false
+  ssh_public_key_added: false
+  console_recovery_hash_added: false
+  wifi_secret_added: false
+  physical_media_touched: false
+next_required_inputs:
+  - admin_user
+  - ssh_public_key_file
+  - console_recovery_hash_file
+  - wifi_regulatory_country_code
+  - timezone
+  - optional_private_networkmanager_keyfile
+next_gate: "Plan and apply configure-base-system.sh, inspect, then build only to external storage"

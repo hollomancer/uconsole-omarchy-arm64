@@ -9,8 +9,11 @@ cp -R /recipe/. /work/package/
 cp /recipe/overrides/* /work/package/
 cp /overrides/omarchy-command-policy.tsv /work/package/
 cp /overrides/omarchy-plugin-policy.tsv /work/package/
+cp /overrides/omarchy-runtime-command-policy.tsv /work/package/
 cp /overrides/shell.json /work/package/
 cp /overrides/omarchy-menu.jsonc /work/package/
+cp /overrides/themes/tokyo-night/foot.ini /work/package/tokyo-night-foot.ini
+cp /overrides/themes/tokyo-night/shell.toml /work/package/tokyo-night-shell.toml
 cp /input/omarchy-d99d4fc6.tar.gz /work/sources/omarchy-d99d4fc6de0bc99d48c9935724fa19d7fb41ae54.tar.gz
 chown -R builder:builder /work/package /work/sources /output
 
@@ -39,7 +42,15 @@ INTERNAL_COUNT=$(find /inspect/usr/share/omarchy-arm64/bin -maxdepth 1 -type f |
 [[ -f /inspect/usr/share/omarchy-arm64/shell/shell.qml ]]
 cmp -s /inspect/usr/share/omarchy-arm64/config/omarchy/shell.json /overrides/shell.json
 cmp -s /inspect/usr/share/omarchy-arm64/default/omarchy/omarchy-menu.jsonc /overrides/omarchy-menu.jsonc
-[[ ! -e /inspect/boot && ! -e /inspect/etc && ! -e /inspect/usr/share/omarchy-arm64/default/hypr ]]
+cmp -s /inspect/usr/share/omarchy-arm64/themes/tokyo-night/foot.ini /overrides/themes/tokyo-night/foot.ini
+cmp -s /inspect/usr/share/omarchy-arm64/themes/tokyo-night/shell.toml /overrides/themes/tokyo-night/shell.toml
+cmp -s /inspect/usr/share/doc/omarchy-arm64-userland/omarchy-runtime-command-policy.tsv /overrides/omarchy-runtime-command-policy.tsv
+cmp -s /inspect/usr/share/omarchy-arm64/config/foot/foot.ini /work/package/src/omarchy-d99d4fc6de0bc99d48c9935724fa19d7fb41ae54/config/foot/foot.ini
+cmp -s /inspect/usr/share/fontconfig/conf.avail/50-omarchy.conf /work/package/src/omarchy-d99d4fc6de0bc99d48c9935724fa19d7fb41ae54/default/fontconfig/conf.avail/50-omarchy.conf
+cmp -s /inspect/usr/share/fonts/omarchy/omarchy.ttf /work/package/src/omarchy-d99d4fc6de0bc99d48c9935724fa19d7fb41ae54/default/fonts/omarchy/omarchy.ttf
+[[ $(readlink /inspect/etc/fonts/conf.d/50-omarchy.conf) == '/usr/share/fontconfig/conf.avail/50-omarchy.conf' ]]
+[[ ! -e /inspect/boot && ! -e /inspect/usr/share/omarchy-arm64/default/hypr ]]
+[[ $(find /inspect/etc -mindepth 1 ! -path '/inspect/etc/fonts' ! -path '/inspect/etc/fonts/conf.d' ! -path '/inspect/etc/fonts/conf.d/50-omarchy.conf' -print -quit) == '' ]]
 
 if find /inspect/usr/share/omarchy-arm64/bin -maxdepth 1 -type f -printf '%f\n' |
   grep -E '(update|migrate|pkg|boot|kernel|firmware|snapper|limine)' >/dev/null; then
@@ -61,7 +72,7 @@ awk '
 PACKAGE_SHA=$(sha256sum "$PACKAGE" | awk '{print $1}')
 PACKAGE_SIZE=$(stat -c '%s' "$PACKAGE")
 PACKAGE_VERSION=$(awk -F ' = ' '$1 == "pkgver" {print $2; exit}' <<< "$PKGINFO")
-[[ "$PACKAGE_VERSION" == '4.0.0.alpha-2' ]]
+[[ "$PACKAGE_VERSION" == '4.0.0.alpha-3' ]]
 printf '# package|version|architecture|sha256|filename|size\n' > /output/artifacts.lock
 printf 'omarchy-arm64-userland|%s|any|%s|%s|%s\n' "$PACKAGE_VERSION" "$PACKAGE_SHA" "${PACKAGE##*/}" "$PACKAGE_SIZE" >> /output/artifacts.lock
 sha256sum "$PACKAGE" > /output/SHA256SUMS
@@ -70,6 +81,7 @@ printf '%s\n' \
   '[PASS] exactly three reviewed wrappers enter /usr/bin' \
   '[PASS] exactly 37 selected commands remain internal to OMARCHY_PATH' \
   '[PASS] reduced shell and menu policy payloads match byte-for-byte' \
+  '[PASS] rendered Tokyo Night, Foot and fontconfig payloads match reviewed inputs' \
   '[PASS] no Hyprland, boot, firmware, kernel, initramfs or update ownership payload exists' \
   '[PASS] package archive ownership is root:root' \
   > /output/BUILD-RESULTS.txt

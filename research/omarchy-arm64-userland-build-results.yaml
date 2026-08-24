@@ -11,11 +11,11 @@ builder:
   network: disabled
 artifact:
   package: omarchy-arm64-userland
-  version: 4.0.0.alpha-2
+  version: 4.0.0.alpha-3
   architecture: any
-  filename: omarchy-arm64-userland-4.0.0.alpha-2-any.pkg.tar.xz
-  size: 65321824
-  sha256: 19cd7f72f025562110c3750224561534a9994ac9ec4bb9849b3b6da01c1039aa
+  filename: omarchy-arm64-userland-4.0.0.alpha-3-any.pkg.tar.xz
+  size: 65330320
+  sha256: 4824a5b829cf6633e0d329307341398353fe14881c9642730e96bb7c31d93b71
 reproducibility:
   builds: 2
   package_byte_identical: true
@@ -26,12 +26,22 @@ payload:
   internal_only_commands: 34
   upstream_command_implementations: 29
   fail_closed_command_overrides: 8
+  runtime_external_commands: 54
+  required_runtime_commands: 51
+  inactive_optional_runtime_commands: 3
+  new_official_runtime_providers: 6
   transitive_shipped_references: 25
   unselected_transitive_references: 0
   sourced_shell_libraries: 0
   plugin_manifests: 37
   enabled_plugins: 16
   explicitly_disabled_plugins: 21
+  rendered_initial_theme: tokyo-night
+  foot_config_sha256: a5165f8a0a93c6d7262aaae6c00c11617ffb2f35bafca73f458b6549a9dca5cf
+  rendered_theme_foot_sha256: d20c424a3e0635011e683d8a379b1e3711abaf61f7d44cf9dd25409a04558667
+  rendered_theme_shell_sha256: 1343b48a969352eddb145e5acff00a8505d30f4f4007c4234d593b9d4b4a053b
+  ships_omarchy_icon_font: true
+  owns_system_fontconfig: true
   owns_hyprland_configuration: false
   owns_home_files: false
   owns_services: false
@@ -45,8 +55,11 @@ validation:
   reduced_menu_exact_match: pass
   disposable_pacman_install: pass
   disposable_pacman_remove: pass
+  visual_default_hashes: pass
 notes:
   - The fakeroot emulation warning is inherited from the pinned ARM container; MTREE ownership is root:root.
   - A pkgrel=1 candidate was rejected because its selected top-level helpers did not include their transitive helper graph; it was never promoted.
   - Eight broad upstream actions are explicit fail-closed first-run implementations, not silent replacements.
+  - The pinned upstream theme renderer does not run under macOS Bash 3.2 because it requires associative arrays. The exact render succeeded in the pinned native ARM64 builder with networking disabled.
+  - pkgrel=3 adds the reviewed upstream Foot configuration, rendered Tokyo Night Foot/Quickshell files, Omarchy icon font, fontconfig policy and explicit runtime dependencies.
   - The package is a non-activated candidate and was not copied to a target SD card.

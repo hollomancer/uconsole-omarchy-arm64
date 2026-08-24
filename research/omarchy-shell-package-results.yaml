@@ -1,0 +1,70 @@
+schema: 1
+verified_at: 2026-08-24
+target:
+  kind: disposable-off-target-root
+  architecture: aarch64
+  source_layer: exact-hyprland-clone
+  live_cm5: false
+source:
+  project: basecamp/omarchy
+  commit: d99d4fc6de0bc99d48c9935724fa19d7fb41ae54
+  archive_sha256: 3b60bb6d5694478963c167571457ee266cdba1e7791395a80f2f26074d72d6eb
+locks:
+  direct:
+    path: ../config/omarchy-shell/packages.lock
+    sha256: 019a79e470a26a7b3c34adb5209f02269eca3cb4df78e70a15aa41619f097159
+    packages: 10
+  transaction:
+    path: ../config/omarchy-shell/transaction.lock
+    sha256: 9cdf7f52c8f5da8a857ebd1fd3c90a7e299965396b9a2ca4fb0116f633a546e3
+    packages: 24
+    direct_packages: 10
+    dependency_packages: 14
+    compressed_bytes: 80957768
+  runtime_policy:
+    path: ../config/arm64-overrides/omarchy-runtime-command-policy.tsv
+    sha256: 5c5c8e3e01b4217294210a1442af8c3b42d42f4f1b97f29cec85ded8296c724d
+    external_commands: 54
+    required_commands: 51
+    inherited_commands: 44
+    inactive_optional_commands: 3
+  local_userland:
+    path: ../config/omarchy-shell/userland.lock
+    version: 4.0.0.alpha-3
+    sha256: 4824a5b829cf6633e0d329307341398353fe14881c9642730e96bb7c31d93b71
+    size: 65330320
+resolution:
+  runs_compared: 2
+  byte_identical_transaction_locks: true
+  payload_and_signature_hashes_identical: true
+  pacman_signature_verification: PASS
+native_plan:
+  result: PASS
+  forward_dependency_upgrades: 1
+  implicit_downgrades: 0
+  note: "The retained root's libelf 0.195-1 moves forward to the locked 0.196-1; the installer rejects implicit downgrades."
+native_application:
+  result: PASS
+  official_packages: 24
+  local_packages: 1
+  resulting_quickshell_version: 0.3.1-1
+  resulting_userland_version: 4.0.0.alpha-3
+  required_runtime_commands_present: 51
+  lower_layer_state_byte_identical: true
+  home_seeded: false
+  session_activated: false
+  uwsm_enabled: false
+  hardware_owned: false
+  updates_owned: false
+failures_recorded:
+  - attempt: 1
+    result: FAIL
+    finding: "The test mounted the local package under a generic basename that did not match the locked filename."
+    smallest_change: "Mount the immutable local package with its exact locked basename. No target mutation occurred."
+  - attempt: 2
+    result: PASS
+    finding: "The offline native transaction installed the exact official closure and local package while preserving every lower layer."
+limits:
+  - The shell was not launched without a live Wayland compositor.
+  - The three optional external-display commands asdcontrol, ddcutil and sudo remain inactive in the first-run uConsole configuration.
+  - The package transaction does not activate a session, enable a display manager or own updates.

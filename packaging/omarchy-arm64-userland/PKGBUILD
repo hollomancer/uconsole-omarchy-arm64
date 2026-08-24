@@ -3,7 +3,7 @@
 
 pkgname=omarchy-arm64-userland
 pkgver=4.0.0.alpha
-pkgrel=2
+pkgrel=3
 pkgdesc='Fail-closed Omarchy Quickshell userland for Arch Linux ARM'
 arch=('any')
 url='https://github.com/basecamp/omarchy'
@@ -14,27 +14,41 @@ depends=(
   'bluez-utils'
   'brightnessctl'
   'coreutils'
+  'findutils'
   'fontconfig'
+  'foot'
+  'gawk'
+  'glib2'
+  'grep'
   'gtk3'
   'hyprland'
+  'inotify-tools'
   'iproute2'
+  'iputils'
+  'iw'
   'jq'
   'libpulse'
   'libxkbcommon'
   'networkmanager'
+  'noto-fonts'
+  'noto-fonts-emoji'
   'pipewire'
   'pipewire-pulse'
   'power-profiles-daemon'
+  'procps-ng'
   'quickshell'
+  'sed'
   'systemd'
+  'ttf-jetbrains-mono-nerd'
+  'ttf-liberation'
   'uwsm'
+  'util-linux'
   'wireplumber'
   'wl-clipboard'
   'xkeyboard-config'
 )
 optdepends=(
   'ddcutil: brightness control for a future external DDC/CI display'
-  'iw: additional Wi-Fi radio details in the network panel'
 )
 options=('!strip')
 
@@ -43,8 +57,11 @@ source=(
   "omarchy-${_commit}.tar.gz"
   'omarchy-command-policy.tsv'
   'omarchy-plugin-policy.tsv'
+  'omarchy-runtime-command-policy.tsv'
   'shell.json'
   'omarchy-menu.jsonc'
+  'tokyo-night-foot.ini'
+  'tokyo-night-shell.toml'
   'omarchy-launch-shell-arm64'
   'omarchy-shell-arm64'
   'omarchy-menu-arm64'
@@ -61,8 +78,11 @@ sha256sums=(
   '3b60bb6d5694478963c167571457ee266cdba1e7791395a80f2f26074d72d6eb'
   '153e21bbf5eeb68962f0616a2cb2c6b73dc0c8479a0126e7d96bd3d122c5cd9d'
   'b223194684dabac2a4f806cb0cdfc67a12de1e8b0d2bf578dddc60b8c0e93a81'
+  '5c5c8e3e01b4217294210a1442af8c3b42d42f4f1b97f29cec85ded8296c724d'
   'b8f1995c5fbfe55252463c47f21cce833154f905a92d493a03981a21eac8ac9a'
   '3be408d9e9cc1abde7dc3d25f1415b214cd306984c322890188f74b5fd70d2b2'
+  'd20c424a3e0635011e683d8a379b1e3711abaf61f7d44cf9dd25409a04558667'
+  '1343b48a969352eddb145e5acff00a8505d30f4f4007c4234d593b9d4b4a053b'
   '4fbf3b9428d63ac4453a72ba139cc8001d1e6a1a5e80da6acaddc6769fbf06a4'
   '296861f9cb05ed42fd75b3770014ef7f15a4c152f87ee83507368129d67a18bd'
   '5ea28218bbf66789f53454afb8cbae77becf70e913cf5a4a2720f2e141233c31'
@@ -84,9 +104,12 @@ package() {
   local reason=''
   local command_source=''
 
-  install -d "$destination/bin" "$destination/config/omarchy" "$destination/default/omarchy"
+  install -d "$destination/bin" "$destination/config/foot" "$destination/config/omarchy" "$destination/default/omarchy"
   cp -a "$upstream/shell" "$destination/shell"
   cp -a "$upstream/themes" "$destination/themes"
+  install -m 0644 "$srcdir/tokyo-night-foot.ini" "$destination/themes/tokyo-night/foot.ini"
+  install -m 0644 "$srcdir/tokyo-night-shell.toml" "$destination/themes/tokyo-night/shell.toml"
+  install -m 0644 "$upstream/config/foot/foot.ini" "$destination/config/foot/foot.ini"
   install -m 0644 "$upstream/default/omarchy/launcher.hides" "$destination/default/omarchy/launcher.hides"
   install -m 0644 "$srcdir/omarchy-menu.jsonc" "$destination/default/omarchy/omarchy-menu.jsonc"
   install -m 0644 "$srcdir/shell.json" "$destination/config/omarchy/shell.json"
@@ -108,13 +131,25 @@ package() {
   install -Dm0755 "$srcdir/omarchy-shell-arm64" "$pkgdir/usr/bin/omarchy-shell"
   install -Dm0755 "$srcdir/omarchy-menu-arm64" "$pkgdir/usr/bin/omarchy-menu"
 
+  # These are architecture-independent Omarchy visual defaults. The generated
+  # Tokyo Night outputs above are content-reviewed so the disabled broad theme
+  # mutation path is not needed during first-run preparation.
+  install -Dm0644 "$upstream/default/fonts/omarchy/omarchy.ttf" "$pkgdir/usr/share/fonts/omarchy/omarchy.ttf"
+  install -Dm0644 "$upstream/default/fontconfig/conf.avail/50-omarchy.conf" "$pkgdir/usr/share/fontconfig/conf.avail/50-omarchy.conf"
+  install -d "$pkgdir/etc/fonts/conf.d"
+  ln -s /usr/share/fontconfig/conf.avail/50-omarchy.conf "$pkgdir/etc/fonts/conf.d/50-omarchy.conf"
+
   install -Dm0644 "$upstream/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   install -Dm0644 "$srcdir/omarchy-command-policy.tsv" "$pkgdir/usr/share/doc/$pkgname/omarchy-command-policy.tsv"
   install -Dm0644 "$srcdir/omarchy-plugin-policy.tsv" "$pkgdir/usr/share/doc/$pkgname/omarchy-plugin-policy.tsv"
+  install -Dm0644 "$srcdir/omarchy-runtime-command-policy.tsv" "$pkgdir/usr/share/doc/$pkgname/omarchy-runtime-command-policy.tsv"
   printf '%s\n' \
     "upstream_commit=${_commit}" \
     'activation=not-enabled' \
     'home_seeded=no' \
+    'initial_theme=tokyo-night-rendered' \
+    'terminal_config=home-seed-only' \
+    'fontconfig=package-owned' \
     'hyprland_owned=no' \
     'updates_owned=no' \
     'hardware_owned=no' \

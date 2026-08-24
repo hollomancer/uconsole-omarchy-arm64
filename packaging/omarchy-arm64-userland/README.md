@@ -3,7 +3,9 @@
 This recipe builds a deliberately thin, architecture-independent package from
 the pinned Omarchy source archive. It contains the Quickshell UI, themes, the
 reduced ARM menu and only the commands selected by
-`omarchy-command-policy.tsv`.
+`omarchy-command-policy.tsv`. It also ships the pinned upstream Foot
+configuration, rendered Tokyo Night Foot/Quickshell theme, Omarchy icon font
+and fontconfig policy needed by that selected UI.
 
 The package does not contain or configure Hyprland, UWSM, a display manager,
 Pacman repositories, migrations, kernel files, firmware, initramfs, a
@@ -17,3 +19,5 @@ process tree. Eight names have small documented fail-closed implementations:
 speaker tuning, DNS mutation, presentation-terminal actions, launcher removal,
 and dynamic theme/wallpaper changes. The immutable first-run theme and
 background are initialized by the separate conflict-safe user preparation.
+The official runtime packages are not bundled; they are installed from the
+separate exact closure under `config/omarchy-shell/`.

@@ -1,0 +1,58 @@
+# command|provider|disposition|reason
+# This is the external command surface of the enabled shell, shared services,
+# and 37 selected Omarchy command implementations. Omarchy-prefixed commands
+# are governed separately by omarchy-command-policy.tsv.
+awk|gawk|required-existing|Selected audio, battery, display, network and system-stat helpers.
+bash|bash|required-existing|Quickshell process wrappers and selected helper implementations.
+bluetoothctl|bluez-utils|required-existing|Enabled Bluetooth panel and power actions.
+brightnessctl|brightnessctl|required-existing|Internal uConsole DSI backlight control.
+busctl|systemd|required-existing|Notifications and UPower property queries over D-Bus.
+cat|coreutils|required-existing|Selected battery and display helpers plus plugin scanning.
+date|coreutils|required-existing|Display helper cache timing and Hyprland scale audit records.
+dirname|coreutils|required-existing|Plugin registry and text-size state paths.
+fc-match|fontconfig|required-existing|Quickshell resolves the active monospace family.
+find|findutils|required-existing|Application/icon and plugin registry scans.
+flock|util-linux|required-existing|Serializes brightness-key actions.
+grep|grep|required-existing|Battery, display, IPC and input parsing.
+gsettings|glib2|required-existing|Enabled monitor text-scaling action.
+gtk-launch|gtk3|required-existing|Application launch through reviewed desktop entries.
+head|coreutils|required-existing|Battery, display and Wayland socket selection.
+hyprctl|hyprland|required-existing|Monitor, input, scaling, focus and compositor state.
+inotifywait|inotify-tools|required-shell|The always-instantiated local plugin registry watcher.
+ip|iproute2|required-existing|Enabled network status and route discovery.
+iw|iw|required-existing|Built-in Wi-Fi band and radio detail actions.
+jq|jq|required-shell|Enabled OSD, display and notification JSON handling.
+logger|util-linux|required-existing|Quickshell supervisor failure records.
+ls|coreutils|required-existing|Wayland socket discovery.
+mkdir|coreutils|required-existing|Notification, plugin and power-profile state directories.
+mktemp|coreutils|required-existing|Conflict-safe network and text-size staging.
+mv|coreutils|required-existing|Atomic text-size configuration publication.
+nmcli|networkmanager|required-existing|Enabled NetworkManager panel and Wi-Fi actions.
+pactl|libpulse|required-existing|Enabled PipeWire-Pulse input/output actions.
+pgrep|procps-ng|required-existing|Foot text-size notification and terminal reload probes.
+ping|iputils|required-existing|Expanded network status latency probe.
+pkill|procps-ng|required-existing|Optional installed-terminal reloads from text-size action.
+powerprofilesctl|power-profiles-daemon|required-shell|Enabled power profile query and action.
+printf|bash|required-existing|Shell built-in used by selected helpers and QML command strings.
+ps|procps-ng|required-existing|Hyprland scale caller ancestry check.
+qs|quickshell|required-shell|Omarchy shell IPC client.
+quickshell|quickshell|required-shell|Reviewed Quickshell process launched under systemd-cat.
+readlink|coreutils|required-existing|Current background and Wayland state resolution.
+rfkill|util-linux|required-existing|Persistent Bluetooth soft-block control.
+rm|coreutils|required-existing|Temporary network and optional display cache cleanup.
+sed|sed|required-existing|Text-size editing and selected status parsing.
+sleep|coreutils|required-existing|Compositor and Bluetooth bounded retry loops.
+sort|coreutils|required-existing|Application, plugin and hardware inventory ordering.
+systemd-cat|systemd|required-existing|Persistent bounded Quickshell journal capture.
+tac|coreutils|required-existing|Power-profile display ordering.
+timeout|coreutils|required-existing|Bounds audio, Bluetooth and shell IPC operations.
+top|procps-ng|required-existing|Expanded power-panel CPU statistic.
+tr|coreutils|required-existing|Network, monitor and process-state normalization.
+upower|upower|required-shell|Enabled battery query and power panel details.
+uwsm-app|uwsm|required-existing|Application scopes without enabling a UWSM session.
+wl-copy|wl-clipboard|required-shell|Enabled network panel copy action.
+wpctl|wireplumber|required-existing|Enabled PipeWire node and volume actions.
+xkbcli|libxkbcommon|required-existing|Built-in keyboard layout metadata.
+asdcontrol|asdcontrol|inactive-optional|Apple external-display helper only; never selected for the internal DSI panel and unavailable in the initial layer.
+ddcutil|ddcutil|inactive-optional|External DDC/CI display helper only; never selected for the internal DSI panel.
+sudo|sudo|inactive-optional|Apple external-display helper only; no enabled internal-panel path invokes it.

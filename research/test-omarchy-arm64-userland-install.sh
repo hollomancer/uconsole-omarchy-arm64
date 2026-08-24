@@ -10,8 +10,8 @@ set -o pipefail
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd) || exit 2
 PACKAGE=''
 ACTION='run'
-EXPECTED_SHA256='19cd7f72f025562110c3750224561534a9994ac9ec4bb9849b3b6da01c1039aa'
-EXPECTED_SIZE='65321824'
+EXPECTED_SHA256='4824a5b829cf6633e0d329307341398353fe14881c9642730e96bb7c31d93b71'
+EXPECTED_SIZE='65330320'
 IMAGE='menci/archlinuxarm:base-devel-20260819.32222611223@sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0'
 
 die() { printf 'ERROR: %s\n' "$*" >&2; exit 2; }
@@ -29,7 +29,7 @@ while (($# > 0)); do
 done
 
 [[ -f "$PACKAGE" && ! -L "$PACKAGE" ]] || die 'package must be a regular, non-symlink file'
-[[ "${PACKAGE##*/}" == 'omarchy-arm64-userland-4.0.0.alpha-2-any.pkg.tar.xz' ]] || die 'unexpected package filename'
+[[ "${PACKAGE##*/}" == 'omarchy-arm64-userland-4.0.0.alpha-3-any.pkg.tar.xz' ]] || die 'unexpected package filename'
 [[ "$(sha256_file "$PACKAGE")" == "$EXPECTED_SHA256" ]] || die 'package SHA-256 mismatch'
 [[ "$(file_size "$PACKAGE")" == "$EXPECTED_SIZE" ]] || die 'package size mismatch'
 printf '[PASS] package sha256=%s bytes=%s\n' "$EXPECTED_SHA256" "$EXPECTED_SIZE"

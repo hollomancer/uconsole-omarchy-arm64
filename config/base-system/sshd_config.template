@@ -1,0 +1,7 @@
+# Managed by uconsole-omarchy-arm64. SSH is key-only.
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+PubkeyAuthentication yes
+AuthenticationMethods publickey
+AllowUsers @ADMIN_USER@

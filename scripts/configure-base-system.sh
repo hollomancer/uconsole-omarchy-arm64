@@ -172,6 +172,7 @@ CONSOLE_PASSWORD_HASH=$(sed -n '1p' "$CONSOLE_PASSWORD_HASH_FILE")
 [[ "$CONSOLE_PASSWORD_HASH" != *:* && "$CONSOLE_PASSWORD_HASH" != *[[:space:]]* ]] || install_common_die 'console password hash contains a forbidden separator or whitespace'
 
 WIFI_PRESEED=no
+WIFI_VALIDATION=not-selected
 if [[ -n "$WIFI_KEYFILE" ]]; then
   install_common_require_file 'NetworkManager Wi-Fi keyfile' "$WIFI_KEYFILE"
   WIFI_MODE=$(file_mode "$WIFI_KEYFILE") || install_common_die 'unable to inspect Wi-Fi keyfile mode'
@@ -180,11 +181,16 @@ if [[ -n "$WIFI_KEYFILE" ]]; then
   WIFI_SIZE=$(wc -c < "$WIFI_KEYFILE" | tr -d ' ')
   ((WIFI_SIZE > 0 && WIFI_SIZE <= 65536)) || install_common_die 'Wi-Fi keyfile must be 1 to 65536 bytes'
   grep -Iq . "$WIFI_KEYFILE" || install_common_die 'Wi-Fi keyfile must be non-binary text'
+  WIFI_KEY_MGMT=$(awk -F '=' '
+    /^\[/ { current=$0; gsub(/^\[|\]$/, "", current); next }
+    current == "wifi-security" && $1 == "key-mgmt" { count++; value=substr($0, index($0, "=") + 1) }
+    END { if (count == 1 && value != "") print value; else exit 1 }
+  ' "$WIFI_KEYFILE") || install_common_die 'Wi-Fi keyfile lacks one [wifi-security] key-mgmt entry'
+  [[ "$WIFI_KEY_MGMT" == wpa-psk || "$WIFI_KEY_MGMT" == sae ]] || install_common_die 'Wi-Fi keyfile key-mgmt must be wpa-psk or sae'
   for required_wifi_value in \
     'connection|type|wifi' \
     'connection|autoconnect|true' \
     'wifi|ssid|' \
-    'wifi-security|key-mgmt|wpa-psk' \
     'wifi-security|psk|'; do
     section=${required_wifi_value%%|*}
     remainder=${required_wifi_value#*|}
@@ -204,6 +210,20 @@ if [[ -n "$WIFI_KEYFILE" ]]; then
       install_common_die "Wi-Fi keyfile lacks one valid [$section] $key entry"
     fi
   done
+  WIFI_VALIDATION=structural
+  WIFI_NORMALIZED_SIZE=''
+  if [[ "$WIFI_KEYFILE" == "$ROOT"/* ]]; then
+    TARGET_WIFI_KEYFILE=/${WIFI_KEYFILE#"$ROOT"/}
+    WIFI_NORMALIZED_SIZE=$("$CHROOT_COMMAND" "$ROOT" /usr/bin/bash -o pipefail -c 'nmcli --offline connection modify < "$1" | wc -c' -- "$TARGET_WIFI_KEYFILE" 2>/dev/null) || install_common_die 'target NetworkManager rejected the Wi-Fi keyfile'
+    WIFI_NORMALIZED_SIZE=$(printf '%s' "$WIFI_NORMALIZED_SIZE" | tr -d ' ')
+    WIFI_VALIDATION=target-nmcli-offline
+  elif command -v nmcli >/dev/null 2>&1; then
+    WIFI_NORMALIZED_SIZE=$(nmcli --offline connection modify < "$WIFI_KEYFILE" 2>/dev/null | wc -c | tr -d ' ') || install_common_die 'host NetworkManager rejected the Wi-Fi keyfile'
+    WIFI_VALIDATION=host-nmcli-offline
+  fi
+  if [[ -n "$WIFI_NORMALIZED_SIZE" ]]; then
+    [[ "$WIFI_NORMALIZED_SIZE" =~ ^[0-9]+$ && "$WIFI_NORMALIZED_SIZE" -gt 0 ]] || install_common_die 'NetworkManager returned an empty Wi-Fi profile'
+  fi
   WIFI_PRESEED=yes
 fi
 
@@ -305,7 +325,7 @@ printf '%s\n' \
   "[PASS] local recovery       private yescrypt/SHA-512 hash validated; value not printed" \
   "[PASS] locale/time          $LOCALE $KEYMAP $TIMEZONE" \
   "[PASS] radio policy         regulatory domain $REG_DOMAIN" \
-  "[PASS] network policy       NetworkManager + systemd-resolved; Wi-Fi preseed=$WIFI_PRESEED" \
+  "[PASS] network policy       NetworkManager + systemd-resolved; Wi-Fi preseed=$WIFI_PRESEED validation=$WIFI_VALIDATION" \
   '[PASS] SSH policy           key-only; root/password/keyboard-interactive login disabled' \
   '' \
   "Action: $ACTION" \

@@ -186,6 +186,13 @@ new read-only container. Create the private recovery hash with
 `scripts/create-console-password-hash.sh`; this works even when host LibreSSL
 lacks SHA-512 crypt support.
 
+If bootstrap Wi-Fi is selected, create its private input with
+`scripts/create-wifi-keyfile.sh`. It reads SSID/passphrase from `/dev/tty`,
+supports WPA2/WPA3 Personal plus hidden networks, creates only a new mode-0600
+file outside the repository, and never accepts the passphrase as an argument.
+The real configuration plan validates it with the target's pinned `nmcli`
+offline parser before any mutation.
+
 After the real configuration and automatic inspector pass, build only a new
 regular 8 GiB image in a new namespaced directory on `SSDmini`:
 
@@ -456,6 +463,7 @@ that gate but has not been applied to a card.
 │   ├── bootstrap-arch.sh                 # current: signed rootfs extraction
 │   ├── build-image.sh                    # current: regular image assembler
 │   ├── configure-base-system.sh          # current: secret-safe offline policy
+│   ├── create-wifi-keyfile.sh             # current: interactive private Wi-Fi helper
 │   ├── install-base-system-packages.sh   # current: exact local runtime closure
 │   ├── install-uconsole-prerequisites.sh # current: exact offline build closure
 │   ├── install-uconsole-hardware.sh      # current: offline kernel/DT layer
@@ -474,6 +482,7 @@ that gate but has not been applied to a card.
     ├── test-build-omarchy-core-packages.sh # current offline-build policy test
     ├── test-compare-omarchy-prepared-images.sh # current read-only comparison test
     ├── test-configure-base-system.sh      # current account/network policy test
+    ├── test-create-wifi-keyfile.sh        # current private Wi-Fi helper safety test
     ├── test-install-base-system-packages.sh # current exact-closure test
     ├── test-install-hyprland.sh           # current package/config safety test
     ├── test-install-omarchy-arm64.sh      # current inert-staging safety test

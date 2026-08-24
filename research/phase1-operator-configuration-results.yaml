@@ -13,6 +13,26 @@ password_hash_helper:
   plaintext_file: false
   output_mode: "0600"
   functional_test: PASS
+wifi_keyfile_helper:
+  script: scripts/create-wifi-keyfile.sh
+  implementation: "Interactive GLib-keyfile escaping plus target NetworkManager offline parse"
+  interactive_terminal_prompts:
+    ssid: 1
+    passphrase: 2
+  plaintext_process_argument: false
+  plaintext_intermediate_file: false
+  output_mode: "0600"
+  supported_key_management:
+    - wpa-psk
+    - sae
+  hidden_network_option: true
+  contract_test: tests/test-create-wifi-keyfile.sh
+  contract_test_result: PASS
+  functional_pty_test: PASS
+  exact_target_nmcli_version: 1.58.1
+  exact_target_offline_parse: PASS
+  normalized_secret_output_logged: false
+  synthetic_private_files_removed: true
 configuration_runner:
   script: research/configure-phase1-operator-root.sh
   default_action: plan
@@ -31,6 +51,17 @@ configuration_runner:
     post_plan_filesystem_entries: 69366
     post_plan_hardware_state_sha256: 88ed52d7ec67c9602e54f1d0bc2b4b48bf56b4fb453128231b909bcb667afc6b
     post_plan_base_packages_state_sha256: bbdc7bd2439d951bed3e035144dec34b2ac2af49ec69764202730f820482f12f
+  retained_root_wifi_plan:
+    inputs: disposable-synthetic-private
+    result: PASS
+    target_networkmanager_offline_parser: PASS
+    normalized_secret_output_logged: false
+    target_changed: false
+    post_plan_root_size_kib: 2477744
+    post_plan_filesystem_entries: 69366
+    post_plan_hardware_state_sha256: 88ed52d7ec67c9602e54f1d0bc2b4b48bf56b4fb453128231b909bcb667afc6b
+    post_plan_base_packages_state_sha256: bbdc7bd2439d951bed3e035144dec34b2ac2af49ec69764202730f820482f12f
+    disposable_inputs_removed: true
 post_apply_inspector:
   host_script: research/inspect-phase1-configured-root.sh
   inside_script: research/container/inspect-phase1-configured-root-inside.sh
@@ -58,6 +89,28 @@ post_apply_inspector:
   inspected_base_state_sha256: dde6fd599700013c0dadec47344520f8082dbe8225f7640ae35a09e8f2ca7d5d
   disposable_workspace_removed: true
 failures_recorded:
+  - attempt: wifi-keyfile-parser-probe-1
+    result: FAIL_SAFE
+    finding: "Docker could not create a single-file mountpoint below the read-only retained volume"
+    smallest_change: "Overlay only a dedicated private directory on the target /run mountpoint"
+    target_changed: false
+  - attempt: wifi-keyfile-parser-probe-2
+    result: FAIL_SAFE
+    finding: "nmcli connection load does not support offline mode"
+    smallest_change: "Use the documented connection modify stdin/stdout offline parser"
+    target_changed: false
+  - attempt: wifi-keyfile-helper-pty-1
+    result: FAIL_SAFE
+    finding: "The sandboxed pseudo-terminal did not permit writes to /dev/tty"
+    smallest_change: "Keep the production /dev/tty requirement and run the synthetic functional test in an approved controlling terminal"
+    output_created: false
+  - attempt: wifi-keyfile-helper-pty-2
+    result: PASS
+    finding: "Hidden WPA profile created mode 0600 with both passphrase entries suppressed"
+  - attempt: retained-root-wifi-plan
+    result: PASS
+    finding: "Target nmcli parsed the private profile; plan output omitted the PSK and the read-only root remained operator-pending"
+    target_changed: false
   - attempt: config-plan-1
     result: FAIL_SAFE
     finding: "macOS LibreSSL passwd does not support the documented -6 option, so the empty hash file was rejected before plan"

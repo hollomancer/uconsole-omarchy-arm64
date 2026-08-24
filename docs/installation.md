@@ -257,8 +257,23 @@ scripts/configure-base-system.sh --plan \
 
 Add `--wifi-keyfile /secure/path/bootstrap.nmconnection` only when Wi-Fi must
 associate before the first local login. The file must be a private
-NetworkManager WPA-PSK connection; no secret should be placed in the repository
-or command line. If Wi-Fi is omitted, enroll it from the local console.
+NetworkManager WPA/SAE Personal connection; no secret should be placed in the
+repository or command line. If Wi-Fi is omitted, enroll it from the local
+console.
+
+Create that optional private profile interactively with:
+
+```sh
+scripts/create-wifi-keyfile.sh \
+  --output /secure/path/bootstrap.nmconnection
+```
+
+The default `wpa-psk` setting supports WPA2/WPA3 Personal. Use `--key-mgmt sae`
+only for a WPA3-only network, and add `--hidden` only when required. The helper
+prompts twice for the passphrase, writes a new mode-0600 file outside the
+repository, and refuses passphrase arguments. During the retained-root plan,
+the pinned target `nmcli` parses this file offline and its normalized output is
+discarded without logging the secret.
 
 Generate the console recovery hash into a new private file with the pinned
 offline ARM64 crypt implementation. This avoids the incompatible `passwd`

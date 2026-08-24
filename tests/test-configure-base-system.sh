@@ -82,6 +82,15 @@ psk=fixture-secret
 method=auto
 WIFI
 chmod 0600 "$WIFI_KEYFILE"
+SAE_KEYFILE="$TEST_TMP/wifi-sae.nmconnection"
+sed 's/key-mgmt=wpa-psk/key-mgmt=sae/' "$WIFI_KEYFILE" > "$SAE_KEYFILE"
+chmod 0600 "$SAE_KEYFILE"
+
+FAKE_BASE_CHROOT_LOG="$TEST_TMP/sae-chroot.log" "$CONFIGURER" \
+  --root "$ROOT" --admin-user codex --ssh-public-key "$SSH_PUBLIC_KEY" \
+  --console-password-hash-file "$PASSWORD_HASH" --wifi-keyfile "$SAE_KEYFILE" \
+  --reg-domain US --hostname uconsole --timezone UTC --chroot-command "$FAKE_CHROOT" \
+  --plan >/dev/null || { printf 'Expected SAE base config plan to pass\n' >&2; exit 1; }
 
 ARGS=(
   --root "$ROOT" --admin-user codex --ssh-public-key "$SSH_PUBLIC_KEY"

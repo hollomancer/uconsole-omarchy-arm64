@@ -38,7 +38,8 @@ package name, repository, version, architecture or count.
 | `vulkan-broadcom` | V3DV Vulkan ICD | ALARM aarch64 1:26.2.1-1 | ALARM | Yes for requested validation |
 | `pipewire` / `wireplumber` | audio/session graph | ALARM aarch64 | ALARM | Yes |
 | `foot` | terminal | ALARM aarch64 1.27.0-1 | ALARM | Yes for core UX |
-| `omarchy` | commands and userland | Upstream package remains unsuitable because its `any` payload hard-depends on Limine/Snapper; the thin `omarchy-arm64-userland` candidate builds reproducibly as `any` and passes disposable ARM64 Pacman install/remove | use the thin pinned package; never install upstream package wholesale | Yes, Phase 5 only; live test pending |
+| visual fonts (`ttf-jetbrains-mono-nerd`, `noto-fonts`, `noto-fonts-emoji`, `ttf-liberation`) | terminal, bar and icon/text fallback | Current ALARM `any` packages resolve in the exact shell transaction | ALARM; replaces the narrower unavailable `ttf-jetbrains-mono-nerd-basic` name | Yes for first-run visuals |
+| `omarchy` | commands and userland | Upstream package remains unsuitable because its `any` payload hard-depends on Limine/Snapper; the thin `omarchy-arm64-userland` pkgrel 3 builds reproducibly as `any`, passes disposable ARM64 Pacman install/remove and installs with the exact shell closure | use the thin pinned package; never install upstream package wholesale | Yes, Phase 5 only; live test pending |
 | `omarchy-settings` | broad `/etc` defaults | PKGBUILD is `any`; contents overlap boot, logind, networking and initramfs ownership | split/audit; install only approved settings | Partly; not wholesale |
 
 ## Exact-name misses requiring classification
@@ -68,7 +69,7 @@ build result.
 | `tensaku` | Omarchy utility | Omarchy PKGBUILD is x86_64-only | inspect source; build if portable, otherwise omit | Optional |
 | `tobi-try` | Omarchy utility | Omarchy PKGBUILD is `any` | build/test | To classify |
 | `ttf-ia-writer` | typography | 20181225-2 builds byte-identically with the expected 16 fonts | live font-discovery test, then sign | Visual core |
-| `ttf-jetbrains-mono-nerd-basic` | terminal/icon font | Omarchy PKGBUILD is `any` | build/package font | Visual core |
+| `ttf-jetbrains-mono-nerd-basic` | terminal/icon font | no exact ALARM package is needed for the selected surface; ALARM `ttf-jetbrains-mono-nerd` 3.5.1-2 is `any` and installed in the exact shell closure | use the broader official ALARM font package; functional delta is additional glyph coverage | Visual core |
 | `ttfx` | terminal text effects | 0.3.2-3 builds as ELF64 AArch64; unit, golden, CLI, signal and terminal-close tests pass | live 16 KiB/session test, then sign | Supporting |
 | `tzupdate` | automatic timezone | Omarchy PKGBUILD is x86_64-only | audit source build; otherwise manual/systemd alternative | Optional |
 | `ufw-docker` | firewall/container integration | Omarchy PKGBUILD is `any` | build only if Docker group is selected | Optional |
@@ -94,11 +95,12 @@ The exact hashes are in
 [`../research/package-audit/inputs.yaml`](../research/package-audit/inputs.yaml).
 The remaining work is behavioral rather than name matching:
 
-1. Extract every systemd unit, shell command invocation and Lua/QML external
-   executable reference from the pinned Omarchy tree and reduce the proposed
-   68-package core group to a proven command-consumer closure.
-2. Resolve the selected core dependency closure against pinned ALARM databases.
-   Do not equate the upstream Arch Linux x86 package set with ALARM.
+1. Maintain the selected first-run shell's closed 54-command runtime policy:
+   51 required commands and three inactive external-display optionals. Any new
+   enabled plugin or external command must fail the audit until classified.
+2. Extend the exact 24-package first-run shell closure only when a reviewed
+   consumer is enabled. Do not equate the upstream Arch Linux x86 package set
+   with ALARM.
 3. For every remaining source build, inspect upstream release assets and PKGBUILD `arch`, then
    follow the mandated preference order: ALARM, official ARM64 binary, AUR,
    source build, compatible replacement, disable optional feature.

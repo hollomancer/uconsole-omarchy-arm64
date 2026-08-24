@@ -28,13 +28,20 @@ Current files:
   internal-only commands; the 37 packaged implementations include eight
   documented fail-closed overrides, and every other one of the 432 upstream
   commands is blocked by default;
+- `omarchy-runtime-command-policy.tsv` classifies the selected shell's 54
+  external commands as inherited, shell-required or inactive optional;
 - `shell.json` is the fail-closed first-run bar/plugin configuration;
+- `foot.ini` is the exact pinned upstream terminal configuration seeded into
+  the target user's home;
+- `themes/tokyo-night/` contains the reviewed Foot and Quickshell outputs
+  rendered from the pinned upstream templates and colors in native ARM64;
 - `omarchy-menu.jsonc` removes install, update, boot, power and unreviewed
   application actions from the first-run launcher;
 - `omarchy-source.lock` pins the upstream Quattro audit archive;
 - `omarchy-staged-paths.lock` is the exact inert-source staging allowlist;
 - `ACTIVATION-BLOCKED.md` records the gates before any staged code can run;
-- `omarchy-core.packages` remains the validator's target core inventory.
+- `omarchy-core.packages` is the exact direct package inventory enforced by the
+  validator for the selected first-run shell.
 
 These are active audit controls, not proof of a runnable Omarchy session. The
 exact policies produce the non-activated `omarchy-arm64-userland` package, but

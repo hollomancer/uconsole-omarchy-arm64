@@ -349,6 +349,13 @@ The resolver downloads into temporary storage, verifies official package
 signatures and publishes the cache only when its generated content lock equals
 `config/hyprland/transaction.lock` byte for byte.
 
+The native off-target apply now passes: Hyprland 0.56.1-3 and the reviewed Lua
+configuration were installed into the disposable configured clone while the
+hardware/base states remained byte-identical and no display manager, autologin
+or UWSM activation appeared. See
+[`../research/hyprland-install-results.yaml`](../research/hyprland-install-results.yaml).
+This integration result does not replace the live G3/G4 evidence.
+
 Apply mode installs Hyprland, Aquamarine, portals, Foot, PipeWire/WirePlumber,
 Mesa/V3DV and the requested input/graphics diagnostics. It installs
 `~/.config/hypr/hyprland.lua` only when that path is absent or already exactly
@@ -437,8 +444,8 @@ research/build-omarchy-arm64-userland.sh \
   --output /new/empty/artifact-directory
 ```
 
-The pinned build has architecture `any`, size 65,321,824 bytes and SHA-256
-`19cd7f72f025562110c3750224561534a9994ac9ec4bb9849b3b6da01c1039aa`.
+The pinned build has architecture `any`, size 65,330,320 bytes and SHA-256
+`4824a5b829cf6633e0d329307341398353fe14881c9642730e96bb7c31d93b71`.
 Two network-disabled aarch64 builds and their `.BUILDINFO` files are identical.
 The payload has three `/usr/bin` wrappers and 37 selected implementations
 beneath `/usr/share/omarchy-arm64/bin`; 34 are internal-only and every other
@@ -448,13 +455,35 @@ Validate Pacman behavior only in the disposable container:
 
 ```sh
 research/test-omarchy-arm64-userland-install.sh \
-  --package /path/to/omarchy-arm64-userland-4.0.0.alpha-2-any.pkg.tar.xz
+  --package /path/to/omarchy-arm64-userland-4.0.0.alpha-3-any.pkg.tar.xz
 ```
 
-After the live hardware and minimal Hyprland gates pass, install the exact
-artifact into the mounted development root as a separately reviewed Pacman
-transaction. Do not install from the inert source stage. Before any session is
-started, plan the user boundary:
+Resolve the exact shell-only official closure off-target from the frozen
+databases, then plan the combined official/local package transaction:
+
+```sh
+research/resolve-omarchy-shell-closure.sh \
+  --source-volume uconsole-hyprland-root \
+  --output-dir /new/empty/omarchy-shell-package-cache
+
+scripts/install-omarchy-shell.sh --plan \
+  --root /mnt/uconsole-root \
+  --user yourname \
+  --package-dir /path/to/omarchy-shell-package-cache \
+  --userland-package /path/to/omarchy-arm64-userland-4.0.0.alpha-3-any.pkg.tar.xz
+```
+
+The lock contains 10 direct packages plus 14 new dependencies, totaling
+80,957,768 compressed bytes. All payload and detached-signature hashes are
+checked before the offline transaction. The installer permits forward
+dependency upgrades but rejects implicit downgrades, boot/hardware payloads,
+home seeding, session/service activation and update ownership. Its native
+off-target apply installed Quickshell 0.3.1 and all 51 required runtime
+commands while preserving lower-layer state.
+
+After the live hardware and minimal Hyprland gates pass, apply the exact
+transaction to the mounted development root. Do not install from the inert
+source stage. Before any session is started, plan the user boundary:
 
 ```sh
 scripts/prepare-omarchy-user.sh --plan \
@@ -464,11 +493,33 @@ scripts/prepare-omarchy-user.sh --plan \
 ```
 
 Plan mode verifies the installed inactive package, target account, exact shell
-configuration, and every historical migration digest. Apply is allowed only on
+and Foot configurations, rendered initial theme, and every historical
+migration digest. Apply is allowed only on
 an offline root. It refuses any pre-existing `~/.config/omarchy` or migration
 state unless the entire prior result is byte-for-byte identical. It seeds the
-ARM `shell.json` and 87 zero-byte migration markers, records that no migration
-ran, and leaves Hyprland/session startup unchanged.
+ARM `shell.json`, pinned Foot config, Tokyo Night theme/background links and 87
+zero-byte migration markers, records that no migration ran, and leaves
+Hyprland/session startup unchanged.
+
+To validate a fully prepared source before allocating an image, use the
+additional image gate:
+
+```sh
+scripts/build-image.sh --plan \
+  --root-tree /mnt/uconsole-root \
+  --output /new/output/uconsole-omarchy.img \
+  --disk-id HEX8 \
+  --boot-id HEX8 \
+  --root-uuid UUID \
+  --source-date-epoch EPOCH \
+  --size-mib 8192 \
+  --require-omarchy-prepared
+```
+
+The current disposable root passes this plan with 4,186,845,184 bytes of
+content and 8,047,820,800 bytes of root capacity. Plan mode creates no output.
+The full image build and read-only mount inspection await additional disposable
+storage; they are not replaced by the passing plan.
 
 The first live launch remains manual after Phase 2 evidence is saved. Keep the
 upstream autostart and Hyprland defaults out of the transaction; start only the

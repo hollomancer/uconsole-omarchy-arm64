@@ -13,9 +13,11 @@ Five missing core Omarchy packages also have content-locked,
 byte-reproducible off-target AArch64 builds. The real pinned
 Arch rootfs, hardware transaction,
 secret-safe base configuration, and regular-image assembly have been exercised
-in isolated aarch64 Linux volumes. The content-pinned Hyprland plan also passes
-against a native configured ARM64 clone; desktop apply remains fixture-only and
-hardware-gated. No script has been run against a real SD card or live system,
+in isolated aarch64 Linux volumes. The content-pinned Hyprland, Omarchy shell
+package and inactive user-preparation transactions also pass against a native
+ARM64 clone. An 8 GiB prepared-desktop image plan passes every layer and
+headroom gate, but the full image has not been allocated. All desktop work
+remains off-target and hardware-gated. No script has been run against a real SD card or live system,
 and the existing bootable SD card has not been touched.
 
 ## Status
@@ -60,6 +62,8 @@ Research snapshot: **2026-08-24**
 - The safe Phase 1 plan is in [`docs/installation.md`](docs/installation.md).
 - The Phase 2 direct package set and repository snapshot are recorded in
   [`research/hyprland-package-lock.yaml`](research/hyprland-package-lock.yaml).
+- The native off-target Hyprland application result is in
+  [`research/hyprland-install-results.yaml`](research/hyprland-install-results.yaml).
 - The first missing core package build is recorded in
   [`research/xdg-terminal-exec-inputs.yaml`](research/xdg-terminal-exec-inputs.yaml).
 - The other five core local-package inputs and two-build results are in
@@ -69,6 +73,12 @@ Research snapshot: **2026-08-24**
   [`research/audit-omarchy-activation.sh`](research/audit-omarchy-activation.sh).
 - The thin package's two-build and disposable Pacman evidence is in
   [`research/omarchy-arm64-userland-build-results.yaml`](research/omarchy-arm64-userland-build-results.yaml).
+- The exact Omarchy shell closure and native offline transaction are in
+  [`research/omarchy-shell-package-results.yaml`](research/omarchy-shell-package-results.yaml).
+- The conflict-safe inactive home seed is recorded in
+  [`research/omarchy-user-preparation-results.yaml`](research/omarchy-user-preparation-results.yaml).
+- The 8 GiB prepared-but-inactive image geometry and layer gate are in
+  [`research/omarchy-prepared-image-plan-results.yaml`](research/omarchy-prepared-image-plan-results.yaml).
 
 The validator is read-only and phase-aware:
 
@@ -90,7 +100,9 @@ root with Linux ownership semantics. `scripts/build-image.sh` consumes exact
 hardware and base-system states and creates a new MBR/FAT/ext4 regular image
 with explicit partition/filesystem identities and embedded/external manifests.
 It rejects an unlocked source account or cloned SSH host key as well as every
-physical-device output and existing destination.
+physical-device output and existing destination. The optional
+`--require-omarchy-prepared` gate additionally requires the exact Hyprland,
+shell-package and user-seed states and rejects any claim of session activation.
 
 The selected Phase 1 hardware baseline is `linux-rpi-16k` plus the pinned
 `uconsole-cm5-dkms` package. The compiler/DKMS closure is also content-locked.
@@ -164,10 +176,11 @@ scripts/install-hyprland.sh --plan \
 This requires the exact Phase 1 base state and selected admin, then verifies a
 204-package incremental closure from local files. All package payloads and
 detached signatures are content-pinned; plan mode makes no repository request.
-The frozen resolver and native ARM64 plan pass, but apply remains prohibited
-until live hardware and V3D/V3DV pass. Apply eventually installs the package
-set and a minimal Lua config without enabling autologin, a display manager or
-UWSM, and refuses to overwrite a different user config.
+The frozen resolver, native ARM64 plan and off-target apply pass. Procedure
+still prohibits applying it to development media until live hardware and
+V3D/V3DV pass. The transaction installs the package set and a minimal Lua
+config without enabling autologin, a display manager or UWSM, and refuses to
+overwrite a different user config.
 
 The Omarchy script currently has one intentionally narrow operation: verify a
 pinned upstream archive and stage selected audit trees outside `PATH`.
@@ -201,7 +214,24 @@ Eight broad actions use documented fail-closed first-run implementations. It
 contains no Hyprland defaults, home files, services, migrations, updater,
 package manager or boot/hardware payload. Two network-disabled builds were
 byte-identical at SHA-256
-`19cd7f72f025562110c3750224561534a9994ac9ec4bb9849b3b6da01c1039aa`.
+`4824a5b829cf6633e0d329307341398353fe14881c9642730e96bb7c31d93b71`.
+
+The exact additional official runtime is a 24-package, 80,957,768-byte
+transaction: 10 direct packages and 14 dependencies. It includes Quickshell,
+power/clipboard/plugin support and the reviewed visual font set. Install it and
+the local package as one offline, non-activating transaction:
+
+```sh
+scripts/install-omarchy-shell.sh --plan \
+  --root /mnt/uconsole-root \
+  --user yourname \
+  --package-dir /path/to/omarchy-shell-package-cache \
+  --userland-package /path/to/omarchy-arm64-userland-4.0.0.alpha-3-any.pkg.tar.xz
+```
+
+The native ARM64 apply verified all 51 required external commands, preserved
+the hardware/base/Hyprland states byte for byte, and did not seed a home,
+activate a session, enable UWSM or acquire hardware/update ownership.
 
 After installing that exact package into a disposable offline root, user
 preparation can be planned separately:
@@ -214,9 +244,11 @@ scripts/prepare-omarchy-user.sh --plan \
 ```
 
 The transaction rejects conflicting user state, seeds only the reviewed shell
-configuration, creates 87 empty historical-migration markers without executing
-a migration, and leaves Hyprland/session startup unchanged. Target install and
-launch remain blocked until live CM5 hardware and minimal Hyprland pass.
+and Foot configurations plus immutable Tokyo Night visual state, creates 87
+empty historical-migration markers without executing a migration, and leaves
+Hyprland/session startup unchanged. Native ARM64 apply and byte-identical
+reapply pass; live launch remains blocked until CM5 hardware and minimal
+Hyprland pass.
 
 Prospective source updates are also audit-only:
 
@@ -271,7 +303,7 @@ that gate but has not been applied to a card.
 │   │   ├── README.md
 │   │   ├── omarchy-base-package-policy.tsv # current complete classification
 │   │   ├── omarchy-command-policy.tsv    # current default-deny command surface
-│   │   ├── omarchy-core.packages         # current validation baseline
+│   │   ├── omarchy-core.packages         # current exact first-run validation baseline
 │   │   ├── omarchy-migration-baseline.lock # current no-replay baseline
 │   │   ├── omarchy-plugin-policy.tsv     # current complete plugin classification
 │   │   ├── omarchy-menu.jsonc            # current reduced launcher
@@ -285,6 +317,7 @@ that gate but has not been applied to a card.
 │   ├── base-system/                      # current: exact Phase 1 runtime/policy inputs
 │   ├── hyprland/                         # current: direct/transaction locks + Lua config
 │   ├── image/                            # current: fstab/cmdline image templates
+│   ├── omarchy-shell/                    # current: direct/transaction/local runtime locks
 │   └── uconsole-hardware/                # current: boot + package/prerequisite locks
 ├── docs/
 │   ├── architecture.md
@@ -311,12 +344,16 @@ that gate but has not been applied to a card.
 │   ├── full-image-results.yaml
 │   ├── custom-kernel-delta.yaml
 │   ├── hyprland-package-lock.yaml
+│   ├── hyprland-install-results.yaml
 │   ├── image-builder-inputs.yaml
 │   ├── omarchy-core-build-inputs.yaml
 │   ├── omarchy-core-build-results.yaml
 │   ├── omarchy-core-build-transaction.lock
 │   ├── omarchy-update-audit-results.yaml
 │   ├── omarchy-arm64-userland-build-results.yaml
+│   ├── omarchy-shell-package-results.yaml
+│   ├── omarchy-user-preparation-results.yaml
+│   ├── omarchy-prepared-image-plan-results.yaml
 │   ├── phase1-hardware-install-results.yaml
 │   ├── phase1-inputs.yaml
 │   ├── package-audit/                    # current generated matrix and pins
@@ -340,6 +377,7 @@ that gate but has not been applied to a card.
 │   ├── install-uconsole-hardware.sh      # current: offline kernel/DT layer
 │   ├── install-hyprland.sh               # current: minimal compositor layer
 │   ├── install-omarchy-arm64.sh          # current: inert userland source stage
+│   ├── install-omarchy-shell.sh          # current: exact inactive runtime transaction
 │   ├── prepare-omarchy-user.sh            # current: conflict-safe inactive home seed
 │   ├── plan-omarchy-update.sh             # current: read-only candidate audit
 │   ├── plan-sd-write.sh                  # current: read-only media preflight
@@ -352,6 +390,7 @@ that gate but has not been applied to a card.
     ├── test-install-base-system-packages.sh # current exact-closure test
     ├── test-install-hyprland.sh           # current package/config safety test
     ├── test-install-omarchy-arm64.sh      # current inert-staging safety test
+    ├── test-install-omarchy-shell.sh      # current exact runtime-boundary test
     ├── test-install-uconsole-prerequisites.sh # current offline-closure safety test
     ├── test-install-uconsole-hardware.sh  # current transaction safety test
     ├── test-omarchy-package-policy.sh     # current complete-policy safety test

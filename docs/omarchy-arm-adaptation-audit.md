@@ -153,7 +153,7 @@ Those controls are now implemented and tested against the pinned archive:
 The resulting `omarchy-arm64-userland` package is architecture-independent and
 contains no Hyprland defaults, `/etc`, service, home, migration or boot payload.
 Two network-disabled aarch64 builds were byte-identical at SHA-256
-`19cd7f72f025562110c3750224561534a9994ac9ec4bb9849b3b6da01c1039aa`.
+`4824a5b829cf6633e0d329307341398353fe14881c9642730e96bb7c31d93b71`.
 Pacman install/removal passed in a disposable ARM64 root.
 
 Eight selected names intentionally use small ARM first-run implementations
@@ -167,12 +167,15 @@ reductions, not silent substitutions.
 
 An earlier `pkgrel=1` candidate was rejected after the recursive audit found
 that top-level helpers alone were not a closed runtime graph. It was never
-promoted; `pkgrel=2` adds the required safe transitive implementations and the
+promoted; `pkgrel=2` added the required safe transitive implementations and
+`pkgrel=3` adds the exact Foot configuration, rendered Tokyo Night theme,
+Omarchy icon font, fontconfig policy and explicit runtime dependencies. The
 audit now fails on any unselected call or sourced shell library.
 
 `scripts/prepare-omarchy-user.sh` separately enforces the user boundary. It
-refuses existing Omarchy config/state, seeds only the reviewed `shell.json`, and
-creates the 87 historical migration names as empty completion markers without
+refuses existing Omarchy/Foot config or state, seeds only the reviewed
+`shell.json`, pinned `foot.ini` and immutable initial visual state, and creates
+the 87 historical migration names as empty completion markers without
 running them. An exact rerun is idempotent; any changed file is a hard failure.
 It does not modify Hyprland or start a session.
 

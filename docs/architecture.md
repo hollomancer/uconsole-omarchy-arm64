@@ -68,9 +68,11 @@ The compatibility mechanism is now implemented as:
    separately versioned hardware bundle. Record their hashes before and after
    every Omarchy update test.
 
-The package and user-preparation transactions pass off-target tests, but this
-is not permission to patch or launch them on the development card before the
-live hardware and minimal Hyprland gates pass.
+The exact Hyprland transaction, 24-package Omarchy shell closure, thin package
+and user-preparation transactions pass native off-target tests. The assembled
+root also passes the opt-in prepared-image plan with activation explicitly
+absent. This is not permission to patch or launch them on the development card
+before the live hardware and minimal Hyprland gates pass.
 
 ## Selected kernel baseline
 
@@ -153,6 +155,14 @@ exact selected hardware state, locks and verifies every direct package version,
 and stages only a plain user session. Apply is prohibited by procedure until a
 saved on-device hardware report has no required failures and identifies V3D or
 V3DV rather than a software renderer.
+
+The later package/image tools preserve the same boundary. The Omarchy shell
+installer requires the exact Hyprland state and records `session_activated=no`,
+`uwsm_enabled=no`, `hardware_owned=no` and `updates_owned=no`. The user
+preparer seeds only reviewed home content. The image builder's
+`--require-omarchy-prepared` option requires those exact states and refuses any state
+that claims activation; it does not turn the shell on. A separate, reviewed
+live-session handoff is intentionally still missing.
 
 ## ARM update boundary
 

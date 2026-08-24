@@ -522,7 +522,9 @@ The full image build and read-only mount inspection await additional disposable
 storage; they are not replaced by the passing plan.
 
 The exact build/inspection runner and its empty output volume are already
-prepared. Re-run the non-mutating input check after freeing space:
+prepared. The runner refuses to allocate the image below 6 GiB of free output
+space and recommends 10 GiB. Re-run the non-mutating input check after freeing
+space:
 
 ```sh
 research/test-omarchy-prepared-image.sh \
@@ -530,6 +532,30 @@ research/test-omarchy-prepared-image.sh \
   --output-volume uconsole-omarchy-prepared-image-20260824 \
   --check
 ```
+
+Exit status 3 means the immutable inputs are valid but the storage gate is not
+met. The 2026-08-24 preflight passed the source/output checks and stopped with
+483,184 KiB free; it did not allocate an image.
+
+To avoid deleting Docker state, the output may instead be an empty,
+operator-created directory directly under a mounted external volume. The
+runner neither creates nor cleans this directory:
+
+```sh
+mkdir /Volumes/SSDmini/uconsole-omarchy-prepared-image-20260824
+research/test-omarchy-prepared-image.sh \
+  --source-volume uconsole-hyprland-integration-20260824 \
+  --output-directory /Volumes/SSDmini/uconsole-omarchy-prepared-image-20260824 \
+  --check
+```
+
+The path must resolve to
+`/Volumes/NAME/uconsole-omarchy-prepared-image-*`, must not be a symlink and
+must be empty. After `--check`, replace that action with `--probe-output`. The
+explicit probe creates one fixed 64 MiB sparse file, formats and checks it
+through a loop device, mounts it read-only, removes only that file and verifies
+that the output is empty again. The currently mounted `SSDmini` reported 897
+GiB free, but this probe has not been authorized or run yet.
 
 Then use the same arguments with `--build-synthetic-image`. That explicit flag
 builds the 8 GiB regular file, checks both filesystems and partition identities,

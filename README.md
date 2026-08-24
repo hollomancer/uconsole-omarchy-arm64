@@ -81,6 +81,9 @@ Research snapshot: **2026-08-24**
   [`research/omarchy-prepared-image-plan-results.yaml`](research/omarchy-prepared-image-plan-results.yaml).
 - The storage-gated build and read-only inspection entry point is
   [`research/test-omarchy-prepared-image.sh`](research/test-omarchy-prepared-image.sh).
+  It accepts either a project-only Docker volume or a pre-created, namespaced
+  directory directly below an external volume; both paths share the same
+  read-only input checks and 6 GiB fail-closed storage gate.
 
 The validator is read-only and phase-aware:
 
@@ -340,7 +343,9 @@ that gate but has not been applied to a card.
 │   ├── container/
 │   │   ├── build-board-package-inside.sh
 │   │   ├── build-dkms-inside.sh
-│   │   └── build-omarchy-core-packages-inside.sh
+│   │   ├── build-omarchy-core-packages-inside.sh
+│   │   ├── probe-image-output-inside.sh
+│   │   └── test-omarchy-prepared-image-inside.sh
 │   ├── base-system-results.yaml
 │   ├── dkms-build-results.yaml
 │   ├── full-image-results.yaml

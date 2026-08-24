@@ -15,6 +15,7 @@ BOOT_OFFSET=4194304
 BOOT_SIZE_BYTES=536870912
 ROOT_OFFSET=541065216
 ROOT_SIZE_BYTES=8047820800
+MIN_FREE_KIB=6291456
 BOOT_LOOP_DEVICE=''
 ROOT_LOOP_DEVICE=''
 MOUNT_ROOT=''
@@ -42,6 +43,9 @@ trap 'exit 143' TERM
 
 [[ -f "$ROOT_TREE/var/lib/uconsole-omarchy-arm64/user-preparation-integration" ]] || fail 'prepared user state is missing from source'
 [[ -z "$(find /output -mindepth 1 -maxdepth 1 -print -quit)" ]] || fail 'output volume must be empty'
+OUTPUT_FREE_KIB=$(df -Pk /output | awk 'NR == 2 { print $4 }') || fail 'unable to measure output-volume free space'
+[[ "$OUTPUT_FREE_KIB" =~ ^[0-9]+$ ]] || fail 'invalid output-volume free-space measurement'
+((OUTPUT_FREE_KIB >= MIN_FREE_KIB)) || fail 'output volume has less than the 6 GiB build minimum'
 mkdir -p /work || fail 'unable to create integration work directory'
 pacman -U --needed --noconfirm "$DOSFSTOOLS" "$MTOOLS" || fail 'unable to install pinned image tools into the disposable builder'
 

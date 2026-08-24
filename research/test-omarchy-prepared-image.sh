@@ -14,22 +14,32 @@ if ! REPO_ROOT=$(cd -- "$SCRIPT_DIR/.." && pwd); then printf 'Unable to resolve 
 
 SOURCE_VOLUME=''
 OUTPUT_VOLUME=''
+OUTPUT_DIRECTORY=''
+OUTPUT_MOUNT_RO=''
+OUTPUT_MOUNT_RW=''
+OUTPUT_DESCRIPTION=''
 ACTION='check'
+ACTION_SET=0
 DOSFSTOOLS=/private/tmp/dosfstools-4.2-5-aarch64.pkg.tar.xz
 MTOOLS='/private/tmp/mtools-1:4.0.49-1-aarch64.pkg.tar.xz'
 IMAGE='menci/archlinuxarm:base-devel-20260819.32222611223@sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0'
 DOSFSTOOLS_SHA=c41120c6c89469f259d5248ea2ed0a7bea19f8a38d493682f7ff82037a862c21
 MTOOLS_SHA=27b3fec3314df29d943d80f97e060d852dd60ba840f8188f25c5993e85c34f3b
+MIN_FREE_KIB=6291456
+RECOMMENDED_FREE_KIB=10485760
 
 usage() {
   printf '%s\n' \
-    'Usage: research/test-omarchy-prepared-image.sh --source-volume V --output-volume V [options]' \
+    'Usage: research/test-omarchy-prepared-image.sh --source-volume V OUTPUT [options]' \
     '' \
     'Actions:' \
     '  --check                  Validate immutable inputs and volume identities (default)' \
-    '  --build-synthetic-image  Build and retain an integration-only image in the output volume' \
+    '  --probe-output           Create, loop-check and remove one 64 MiB probe file' \
+    '  --build-synthetic-image  Build and retain an integration-only image in the output target' \
     '' \
     'Options:' \
+    '  --output-volume V       Empty project-only Docker volume' \
+    '  --output-directory DIR  Empty project-only directory directly under /Volumes/NAME' \
     '  --dosfstools FILE        Pinned Arch Linux ARM package' \
     '  --mtools FILE            Pinned Arch Linux ARM package' \
     '  --help                   Show this help' \
@@ -54,8 +64,10 @@ while (($# > 0)); do
   case "$1" in
     --source-volume) (($# >= 2)) || die '--source-volume requires a name'; SOURCE_VOLUME=$2; shift 2 ;;
     --output-volume) (($# >= 2)) || die '--output-volume requires a name'; OUTPUT_VOLUME=$2; shift 2 ;;
-    --check) ACTION='check'; shift ;;
-    --build-synthetic-image) ACTION='build'; shift ;;
+    --output-directory) (($# >= 2)) || die '--output-directory requires a path'; OUTPUT_DIRECTORY=$2; shift 2 ;;
+    --check) ((ACTION_SET == 0)) || die 'choose at most one action'; ACTION='check'; ACTION_SET=1; shift ;;
+    --probe-output) ((ACTION_SET == 0)) || die 'choose at most one action'; ACTION='probe'; ACTION_SET=1; shift ;;
+    --build-synthetic-image) ((ACTION_SET == 0)) || die 'choose at most one action'; ACTION='build'; ACTION_SET=1; shift ;;
     --dosfstools) (($# >= 2)) || die '--dosfstools requires a file'; DOSFSTOOLS=$2; shift 2 ;;
     --mtools) (($# >= 2)) || die '--mtools requires a file'; MTOOLS=$2; shift 2 ;;
     --help|-h) usage; exit 0 ;;
@@ -65,11 +77,30 @@ while (($# > 0)); do
 done
 
 [[ "$SOURCE_VOLUME" =~ ^uconsole-[a-z0-9][a-z0-9._-]*$ ]] || die 'unsafe or missing uConsole source volume name'
-[[ "$OUTPUT_VOLUME" =~ ^uconsole-omarchy-prepared-image-[a-z0-9][a-z0-9._-]*$ ]] || die 'output volume must use the uconsole-omarchy-prepared-image-* namespace'
-[[ "$SOURCE_VOLUME" != "$OUTPUT_VOLUME" ]] || die 'source and output volumes must differ'
+if [[ -n "$OUTPUT_VOLUME" && -n "$OUTPUT_DIRECTORY" ]]; then
+  die 'choose exactly one output target'
+elif [[ -n "$OUTPUT_VOLUME" ]]; then
+  [[ "$OUTPUT_VOLUME" =~ ^uconsole-omarchy-prepared-image-[a-z0-9][a-z0-9._-]*$ ]] || die 'output volume must use the uconsole-omarchy-prepared-image-* namespace'
+  [[ "$SOURCE_VOLUME" != "$OUTPUT_VOLUME" ]] || die 'source and output volumes must differ'
+  OUTPUT_MOUNT_RO="type=volume,src=$OUTPUT_VOLUME,dst=/output,readonly"
+  OUTPUT_MOUNT_RW="type=volume,src=$OUTPUT_VOLUME,dst=/output"
+  OUTPUT_DESCRIPTION="$OUTPUT_VOLUME (distinct project-only Docker volume)"
+elif [[ -n "$OUTPUT_DIRECTORY" ]]; then
+  [[ -d "$OUTPUT_DIRECTORY" && ! -L "$OUTPUT_DIRECTORY" ]] || die 'output directory must already exist and must not be a symlink'
+  [[ "$OUTPUT_DIRECTORY" != *,* ]] || die 'output directory must not contain a comma'
+  if ! OUTPUT_DIRECTORY=$(cd -- "$OUTPUT_DIRECTORY" && pwd -P); then die 'unable to resolve output directory'; fi
+  [[ "$OUTPUT_DIRECTORY" =~ ^/Volumes/[^/]+/uconsole-omarchy-prepared-image-[a-z0-9][a-z0-9._-]*$ ]] || die 'output directory must be a direct, project-namespaced child of /Volumes/NAME'
+  OUTPUT_MOUNT_RO="type=bind,src=$OUTPUT_DIRECTORY,dst=/output,readonly"
+  OUTPUT_MOUNT_RW="type=bind,src=$OUTPUT_DIRECTORY,dst=/output"
+  OUTPUT_DESCRIPTION="$OUTPUT_DIRECTORY (external project-only directory)"
+else
+  die 'choose exactly one of --output-volume or --output-directory'
+fi
 command -v docker >/dev/null 2>&1 || die 'docker is required'
 docker volume inspect "$SOURCE_VOLUME" >/dev/null || die "Docker source volume does not exist: $SOURCE_VOLUME"
-docker volume inspect "$OUTPUT_VOLUME" >/dev/null || die "Docker output volume does not exist: $OUTPUT_VOLUME"
+if [[ -n "$OUTPUT_VOLUME" ]]; then
+  docker volume inspect "$OUTPUT_VOLUME" >/dev/null || die "Docker output volume does not exist: $OUTPUT_VOLUME"
+fi
 for package_file in "$DOSFSTOOLS" "$MTOOLS"; do
   [[ -f "$package_file" && ! -L "$package_file" ]] || die "tool package is missing or unsafe: $package_file"
 done
@@ -77,14 +108,14 @@ done
 [[ $(sha256_file "$MTOOLS") == "$MTOOLS_SHA" ]] || die 'mtools package SHA-256 mismatch'
 
 printf '[PASS] source volume       %s (read-only during build)\n' "$SOURCE_VOLUME"
-printf '[PASS] output volume       %s (distinct project-only namespace)\n' "$OUTPUT_VOLUME"
+printf '[PASS] output target       %s\n' "$OUTPUT_DESCRIPTION"
 printf '[PASS] image tools         pinned dosfstools and mtools payloads\n'
 printf '[PASS] builder             %s\n' "$IMAGE"
-if [[ "$ACTION" == check ]]; then
-  if ! docker run --rm --platform linux/arm64 --network none \
-    --mount "type=volume,src=$SOURCE_VOLUME,dst=/source,readonly" \
-    --mount "type=volume,src=$OUTPUT_VOLUME,dst=/output,readonly" \
-    "$IMAGE" sh -eu -c '
+CHECK_OUTPUT=''
+if ! CHECK_OUTPUT=$(docker run --rm --platform linux/arm64 --network none \
+  --mount "type=volume,src=$SOURCE_VOLUME,dst=/source,readonly" \
+  --mount "$OUTPUT_MOUNT_RO" \
+  "$IMAGE" sh -eu -c '
       test -f /source/root/var/lib/uconsole-omarchy-arm64/hyprland-selection
       test -f /source/root/var/lib/uconsole-omarchy-arm64/omarchy-shell-selection
       test -f /source/root/var/lib/uconsole-omarchy-arm64/user-preparation-integration
@@ -92,10 +123,41 @@ if [[ "$ACTION" == check ]]; then
         printf "output volume is not empty\n" >&2
         exit 1
       fi
-    '; then
-    die 'read-only source/output volume check failed'
+      set -- $(df -Pk /output | tail -n 1)
+      printf "%s\n" "$4"
+    '); then
+  die 'read-only source/output volume check failed'
+fi
+[[ "$CHECK_OUTPUT" =~ ^[0-9]+$ ]] || die 'unable to measure output-volume free space'
+printf '[PASS] immutable inputs    prepared source and empty output verified read-only\n'
+if ((CHECK_OUTPUT < MIN_FREE_KIB)); then
+  printf '[FAIL] output free space   %s KiB available; %s KiB minimum required\n' "$CHECK_OUTPUT" "$MIN_FREE_KIB" >&2
+  if [[ "$ACTION" == check ]]; then exit 3; fi
+  die 'refusing to start a partial image build below the storage minimum'
+elif ((CHECK_OUTPUT < RECOMMENDED_FREE_KIB)); then
+  printf '[WARN] output free space   %s KiB available; %s KiB recommended\n' "$CHECK_OUTPUT" "$RECOMMENDED_FREE_KIB"
+else
+  printf '[PASS] output free space   %s KiB available\n' "$CHECK_OUTPUT"
+fi
+if [[ "$ACTION" == check ]]; then
+  printf 'Input check complete. Neither volume was changed.\n'
+  exit 0
+fi
+
+if [[ "$ACTION" == probe ]]; then
+  if ! docker run --rm --privileged --platform linux/arm64 --network none \
+    --mount "type=bind,src=$REPO_ROOT,dst=/repo,readonly" \
+    --mount "$OUTPUT_MOUNT_RW" \
+    "$IMAGE" \
+    /repo/research/container/probe-image-output-inside.sh; then
+    die 'output loop-device probe failed'
   fi
-  printf 'Input check complete. A read-only container verified the prepared source and empty output; neither volume was changed.\n'
+  if ! docker run --rm --platform linux/arm64 --network none \
+    --mount "$OUTPUT_MOUNT_RO" \
+    "$IMAGE" sh -eu -c 'test -z "$(find /output -mindepth 1 -maxdepth 1 -print -quit)"'; then
+    die 'output probe cleanup did not leave an empty directory'
+  fi
+  printf '[PASS] output probe        output is empty after the disposable loop-device check\n'
   exit 0
 fi
 
@@ -104,6 +166,6 @@ docker run --rm --privileged --platform linux/arm64 --network none \
   --mount "type=bind,src=$DOSFSTOOLS,dst=/input/dosfstools.pkg.tar.xz,readonly" \
   --mount "type=bind,src=$MTOOLS,dst=/input/mtools.pkg.tar.xz,readonly" \
   --mount "type=volume,src=$SOURCE_VOLUME,dst=/source,readonly" \
-  --mount "type=volume,src=$OUTPUT_VOLUME,dst=/output" \
+  --mount "$OUTPUT_MOUNT_RW" \
   "$IMAGE" \
   /repo/research/container/test-omarchy-prepared-image-inside.sh

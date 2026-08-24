@@ -38,21 +38,45 @@ build_status: not_run_insufficient_disposable_storage
 prepared_build_runner:
   script: test-omarchy-prepared-image.sh
   container_runner: container/test-omarchy-prepared-image-inside.sh
+  output_probe_runner: container/probe-image-output-inside.sh
   contract_test: ../tests/test-omarchy-prepared-image-runner.sh
   contract_test_result: PASS
-  input_check_result: PASS
+  immutable_input_check_result: PASS
+  storage_gate_result: FAIL
+  storage_gate_exit_code: 3
+  storage_gate_verified_at: 2026-08-24T21:16:31Z
   source_volume: uconsole-hyprland-integration-20260824
   source_mounted_read_only: true
   output_volume: uconsole-omarchy-prepared-image-20260824
   output_verified_empty: true
   explicit_build_flag: --build-synthetic-image
+  explicit_probe_flag: --probe-output
   network_during_build: disabled
   inspection_mounts_read_only: true
   expected_image_bytes: 8589934592
 storage_observed:
-  docker_free_gib: 2.0
-  host_free_gib: 2.7
-  recommended_docker_free_gib: 6.0
+  output_filesystem_free_kib: 483184
+  host_filesystem_free_kib: 1139840
+  minimum_output_free_kib: 6291456
+  recommended_output_free_kib: 10485760
+cleanup_inventory:
+  project_predecessor_volume: uconsole-base-system-integration-20260824
+  project_predecessor_volume_approx_bytes: 2378000000
+  project_predecessor_links: 0
+  prepared_source_volume: uconsole-hyprland-integration-20260824
+  prepared_source_volume_approx_bytes: 3925000000
+  prepared_source_must_be_retained: true
+  project_only_reclaim_meets_minimum: false
+  unrelated_docker_resources_touched: false
+  deletion_authorized: false
+external_output_candidate:
+  volume: /Volumes/SSDmini
+  reported_free_gib: 897
+  required_directory_namespace: uconsole-omarchy-prepared-image-*
+  directory_created: false
+  docker_bind_mount_tested: false
+  loop_device_tested: false
+  existing_data_modified: false
 limits:
   - A bootable image artifact has not been assembled from this prepared root.
   - The prior 4 GiB base-layer image test does not prove this larger desktop-ready image.

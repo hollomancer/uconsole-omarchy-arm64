@@ -5,10 +5,11 @@ desktop experience on a ClockworkPi uConsole with a Raspberry Pi Compute Module
 5. It is not an Omarchy ISO port.
 
 The current repository state contains research, architecture, read-only
-validation, a reproducible local hardware package and an offline-root hardware
-installer. Installer apply mode has been exercised only against deterministic
-fixtures. No script has been run against a real SD card or live system, and the
-existing bootable SD card has not been touched.
+validation, a reproducible local hardware package, an offline-root hardware
+installer and a version-locked minimal Hyprland installer. Installer apply
+mode has been exercised only against deterministic fixtures. No script has
+been run against a real SD card or live system, and the existing bootable SD
+card has not been touched.
 
 ## Status
 
@@ -35,6 +36,8 @@ Research snapshot: **2026-08-24**
 - Reusable lessons from the closest Quattro ARM fork are in
   [`docs/omarchy-arm-adaptation-audit.md`](docs/omarchy-arm-adaptation-audit.md).
 - The safe Phase 1 plan is in [`docs/installation.md`](docs/installation.md).
+- The Phase 2 direct package set and repository snapshot are recorded in
+  [`research/hyprland-package-lock.yaml`](research/hyprland-package-lock.yaml).
 
 The validator is read-only and phase-aware:
 
@@ -73,10 +76,27 @@ The installer defaults to read-only plan mode, rejects `/` and `/dev`, and
 activates the uConsole boot include only after the exact DKMS release and both
 overlays are present.
 
+After the real CM5 passes the hardware and accelerated-graphics gates, plan the
+minimal Hyprland transaction against its mounted development root:
+
+```sh
+scripts/install-hyprland.sh --plan \
+  --root /mnt/uconsole-root \
+  --user alarm
+```
+
+This checks all 21 direct package versions against the target's Arch Linux ARM
+repositories. Apply mode installs the package set and a minimal Lua config but
+does not enable autologin, a display manager or UWSM. It refuses to overwrite a
+different user config. Transitive dependency versions and payload hashes are
+not yet frozen, so this is a controlled bring-up transaction rather than a
+complete offline package snapshot.
+
 ## Proposed repository structure
 
 The files marked `future` must not be implemented until their prerequisite
-layer has passed on real hardware.
+layer has passed on real hardware. The current Hyprland installer is ready for
+that gate but has not been applied to a card.
 
 ```text
 .
@@ -88,6 +108,7 @@ layer has passed on real hardware.
 │   │   ├── packages.toml                 # future: substitutions and omissions
 │   │   ├── pacman/                       # future: ARM repo/drop-in policy
 │   │   └── omarchy/                      # future: minimal userland overrides
+│   ├── hyprland/                         # current: direct lock + minimal Lua config
 │   └── uconsole-hardware/                # current: boot fragment + package lock
 ├── docs/
 │   ├── architecture.md
@@ -108,6 +129,7 @@ layer has passed on real hardware.
 │   │   └── build-dkms-inside.sh
 │   ├── dkms-build-results.yaml
 │   ├── custom-kernel-delta.yaml
+│   ├── hyprland-package-lock.yaml
 │   ├── phase1-inputs.yaml
 │   ├── upstream-lock.yaml
 │   └── package-audit/                    # future: generated CSV and provenance
@@ -116,11 +138,12 @@ layer has passed on real hardware.
 ├── scripts/
 │   ├── bootstrap-arch.sh                 # current: verified image-only scaffold
 │   ├── install-uconsole-hardware.sh      # current: offline kernel/DT layer
-│   ├── install-hyprland.sh               # future: minimal compositor layer
+│   ├── install-hyprland.sh               # current: minimal compositor layer
 │   ├── install-omarchy-arm64.sh          # future: userland only
 │   └── validate-system.sh                # current: read-only PASS/WARN/FAIL report
 └── tests/
     ├── test-bootstrap-arch.sh             # current image safety test
+    ├── test-install-hyprland.sh           # current package/config safety test
     ├── test-install-uconsole-hardware.sh  # current transaction safety test
     ├── test-validate-system.sh            # current deterministic test
     └── fixtures/                          # current captured probe fixtures

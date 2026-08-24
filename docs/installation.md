@@ -232,10 +232,61 @@ behavior are documented.
 
 ## Phase 2 handoff
 
-Only after Phase 1 passes, install the smallest ALARM Hyprland set: Hyprland,
-Aquamarine, UWSM, xdg-desktop-portal-hyprland, a terminal and diagnostic tools.
-Run the requested `uname`, `glxinfo`, `vulkaninfo`, `lsmod`, `lspci`, `/dev/dri`
-and `hyprctl systeminfo` checks before any Omarchy userland enters the image.
+Only after Phase 1 passes, plan the smallest ALARM Hyprland set:
+
+```sh
+scripts/install-hyprland.sh --plan \
+  --root /mnt/uconsole-root \
+  --user alarm
+```
+
+The script requires the exact `linux-rpi-16k`/uConsole hardware-selection
+state, verifies all 21 direct package versions against the target's sync
+databases, and reports the one user config it would create. Plan mode writes
+nothing. Inspect that output and the saved live hardware validation before
+changing `--plan` to `--apply`.
+
+Apply mode installs Hyprland, Aquamarine, portals, Foot, PipeWire/WirePlumber,
+Mesa/V3DV and the requested input/graphics diagnostics. It installs
+`~/.config/hypr/hyprland.lua` only when that path is absent or already exactly
+matches the repository template. A different config is a hard error. It does
+not enable a display manager, autologin or UWSM.
+
+The default config covers both connector names observed in related uConsole
+work: DSI-1 and DSI-2 use transform 3, while the fallback output rule leaves
+external displays unrotated. Blur, shadows and animations are disabled during
+bring-up. Log in at a local TTY and start the first session explicitly:
+
+```sh
+start-hyprland
+```
+
+Inside the session, save the exact requested evidence:
+
+```sh
+uname -m
+uname -r
+getconf PAGESIZE
+glxinfo -B
+vulkaninfo --summary
+lsmod
+lspci -nnk
+ls -l /dev/dri
+hyprctl systeminfo
+hyprctl monitors all
+libinput list-devices
+wpctl status
+```
+
+Then run `scripts/validate-system.sh --phase hyprland`. Any llvmpipe, softpipe
+or lavapipe result stops progression. Do not add Omarchy until the native panel
+mode/orientation, keyboard and trackball have been exercised in Wayland and the
+Hyprland validator exits successfully.
+
+The current lock proves direct repository selection, not a fully offline
+dependency closure. Before producing a distributable image, archive and hash
+the resolved package payloads and all transitive versions, then sign the local
+repository metadata.
 
 ## Read-only validation command
 

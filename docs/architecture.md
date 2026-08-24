@@ -31,7 +31,8 @@ not a partial success.
 | Pi EEPROM/firmware boot flow, FAT boot partition | Raspberry Pi/Arch hardware layer | No |
 | uConsole kernel, initramfs, DTB and overlays | Locally pinned Arch hardware package | No |
 | Wi-Fi/Bluetooth firmware and Mesa/DRM userspace | Arch Linux ARM repositories | Through normal ALARM upgrades after hardware validation, never through x86 Omarchy mirrors |
-| Hyprland, Aquamarine, Quickshell and portals | Arch Linux ARM first; local ARM repo only when needed | Yes, within a tested version window |
+| Hyprland, Aquamarine and portals | Version-locked Arch Linux ARM packages; local ARM repo only when needed | Yes, within a tested version window |
+| Quickshell and Omarchy desktop services | Omarchy userland layer plus explicit ARM substitutions | Yes, only after G4 |
 | Omarchy shell/Lua/QML, themes, keybindings and CLI | Omarchy upstream plus minimal overrides | Yes |
 | Missing optional applications | ARM compatibility manifest | Only when the manifest declares the replacement or omission |
 
@@ -130,3 +131,10 @@ for current Pi kernels but can break proprietary binaries and some AppImages;
 
 No gate is bypassed by `|| true`, suppressed stderr, or an undocumented package
 replacement.
+
+The Phase 2 installer encodes G3 as an operational prerequisite, even though it
+cannot prove live GPU behavior while editing an offline root. It requires the
+exact selected hardware state, locks and verifies every direct package version,
+and stages only a plain user session. Apply is prohibited by procedure until a
+saved on-device hardware report has no required failures and identifies V3D or
+V3DV rather than a software renderer.

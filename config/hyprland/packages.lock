@@ -1,0 +1,23 @@
+# name|version|architecture|repository|role
+# Direct package versions observed in the 2026-08-24 Arch Linux ARM sync DBs.
+hyprland|0.56.1-3|aarch64|extra|core
+aquamarine|0.14.0-2|aarch64|extra|core
+uwsm|0.26.7-1|any|extra|handoff
+xdg-desktop-portal-hyprland|1.4.1-1|aarch64|extra|core
+xdg-desktop-portal-gtk|1.15.3-1|aarch64|extra|core
+foot|1.27.0-1|aarch64|extra|core
+mesa|1:26.2.1-1|aarch64|extra|graphics
+mesa-utils|9.0.0-7|aarch64|extra|diagnostic
+vulkan-broadcom|1:26.2.1-1|aarch64|extra|graphics
+vulkan-tools|1.4.357.0-1|aarch64|extra|diagnostic
+libdrm|2.4.134-1|aarch64|extra|graphics
+libinput|1.31.3-1|aarch64|extra|input
+evtest|1.36-1|aarch64|extra|diagnostic
+pciutils|3.15.0-1|aarch64|core|diagnostic
+usbutils|019-1|aarch64|core|diagnostic
+brightnessctl|0.5.1-3|aarch64|extra|hardware
+pipewire|1:1.6.8-1|aarch64|extra|audio
+pipewire-pulse|1:1.6.8-1|aarch64|extra|audio
+wireplumber|0.5.15-1|aarch64|extra|audio
+polkit|127-3|aarch64|extra|session
+xorg-xwayland|24.1.13-1|aarch64|extra|core

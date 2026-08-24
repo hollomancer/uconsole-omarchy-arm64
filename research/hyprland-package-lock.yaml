@@ -1,0 +1,29 @@
+schema: 1
+observed_at: "2026-08-24"
+architecture: aarch64
+source:
+  project: Arch Linux ARM
+  base_url: https://mirror.archlinuxarm.org/aarch64
+  databases:
+    - repository: core
+      url: https://mirror.archlinuxarm.org/aarch64/core/core.db
+      sha256: e1dc3339e7b9baf3a715509837aff8e73495cfba2d04833ee41525892b3c1b96
+    - repository: extra
+      url: https://mirror.archlinuxarm.org/aarch64/extra/extra.db
+      sha256: 2a587fefde8735bbe6c0c5cb7304a2b666268ec947a33743e30d2c8517684964
+    - repository: alarm
+      url: https://mirror.archlinuxarm.org/aarch64/alarm/alarm.db
+      sha256: 783c630bc48aafde125542c3a981379d2cdbc515303e68b3a523bd1a484406f2
+    - repository: aur
+      url: https://mirror.archlinuxarm.org/aarch64/aur/aur.db
+      sha256: bdd038c7c32dc6de8977c65659249f3ca4b498c303ded46750eb6ab6f1dad187
+direct_lock: ../config/hyprland/packages.lock
+limits:
+  - Direct package versions are locked and verified before and after installation.
+  - Transitive dependency versions and package payload hashes are not yet locked.
+  - A rolling mirror can remove a locked package; a reproducible package cache is still required.
+sources_checked:
+  - https://archlinuxarm.org/packages/aarch64/hyprland
+  - https://wiki.hypr.land/Configuring/Basics/Monitors/
+  - https://wiki.hypr.land/Configuring/Basics/Binds/
+  - https://github.com/hyprwm/Hyprland/blob/main/example/hyprland.lua

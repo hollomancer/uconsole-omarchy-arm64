@@ -36,6 +36,24 @@ The script must refuse empty variables, globbed devices, partitions instead of
 whole devices, mounted targets, and targets whose identity changes between
 inspection and write. Destructive commands will never be implicit or hidden.
 
+The current [`bootstrap-arch.sh`](../scripts/bootstrap-arch.sh) implements only
+the non-device subset of that contract. It verifies a local rootfs SHA-256,
+optionally verifies the detached signature, prints the pinned next stages and
+can create a **new** sparse regular `.img` file with an explicit action. It
+rejects physical-device options and existing output paths. Partitioning,
+mounting, rootfs extraction and SD writing remain deliberately unimplemented.
+
+Example after the moving rootfs has been downloaded, signature-verified and
+assigned an immutable SHA-256 in the build lock:
+
+```sh
+scripts/bootstrap-arch.sh \
+  --rootfs downloads/ArchLinuxARM-rpi-aarch64-YYYYMMDD.tar.gz \
+  --rootfs-sha256 '<64-hex-digit pinned digest>' \
+  --signature downloads/ArchLinuxARM-rpi-aarch64-YYYYMMDD.tar.gz.sig \
+  --plan
+```
+
 ## Concrete Phase 1 implementation plan
 
 ### P1.0 — Establish recovery and provenance

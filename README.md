@@ -40,6 +40,11 @@ It reports PASS, WARN or FAIL for all requested hardware, graphics, desktop and
 package checks. Deterministic fixtures exercise both success and software-GPU
 failure paths with `tests/test-validate-system.sh`.
 
+`scripts/bootstrap-arch.sh` is currently a safe bootstrap scaffold. It verifies
+a pinned local rootfs, optionally verifies its detached signature, prints the
+image-build stages and can create a new sparse regular image. It cannot
+partition, mount or write a physical device.
+
 ## Proposed repository structure
 
 The files marked `future` must not be implemented until their prerequisite
@@ -69,12 +74,13 @@ layer has passed on real hardware.
 │   ├── upstream-lock.yaml
 │   └── package-audit/                    # future: generated CSV and provenance
 ├── scripts/
-│   ├── bootstrap-arch.sh                 # future: image/rootfs construction
+│   ├── bootstrap-arch.sh                 # current: verified image-only scaffold
 │   ├── install-uconsole-hardware.sh      # future: kernel/DT/firmware only
 │   ├── install-hyprland.sh               # future: minimal compositor layer
 │   ├── install-omarchy-arm64.sh          # future: userland only
 │   └── validate-system.sh                # current: read-only PASS/WARN/FAIL report
 └── tests/
+    ├── test-bootstrap-arch.sh             # current image safety test
     ├── test-validate-system.sh            # current deterministic test
     └── fixtures/                          # current captured probe fixtures
 ```

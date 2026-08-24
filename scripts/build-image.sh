@@ -31,6 +31,7 @@ DISK_ID=''
 BOOT_ID=''
 ROOT_UUID=''
 SOURCE_DATE_EPOCH=''
+REQUIRE_OMARCHY_PREPARED=0
 FSTAB_TEMPLATE="$REPO_ROOT/config/image/fstab.template"
 CMDLINE_TEMPLATE="$REPO_ROOT/config/image/cmdline.txt.template"
 BASE_PACKAGE_LOCK="$REPO_ROOT/config/base-system/packages.lock"
@@ -53,6 +54,8 @@ usage() {
     'Options:' \
     '  --size-mib N             Image size in MiB (default: 8192; minimum: 2048)' \
     '  --boot-mib N             FAT boot size in MiB (default: 512; minimum: 256)' \
+    '  --require-omarchy-prepared' \
+    '                           Require the exact inactive Hyprland/Omarchy user seed' \
     '  --fstab-template FILE    Alternate complete template (tests)' \
     '  --cmdline-template FILE  Alternate complete template (tests)' \
     '  --help                   Show this help' \
@@ -82,6 +85,7 @@ while (($# > 0)); do
     --boot-id) (($# >= 2)) || install_common_die '--boot-id requires eight hexadecimal characters'; BOOT_ID=$2; shift 2 ;;
     --root-uuid) (($# >= 2)) || install_common_die '--root-uuid requires a UUID'; ROOT_UUID=$2; shift 2 ;;
     --source-date-epoch) (($# >= 2)) || install_common_die '--source-date-epoch requires an integer'; SOURCE_DATE_EPOCH=$2; shift 2 ;;
+    --require-omarchy-prepared) REQUIRE_OMARCHY_PREPARED=1; shift ;;
     --fstab-template) (($# >= 2)) || install_common_die '--fstab-template requires a file'; FSTAB_TEMPLATE=$2; shift 2 ;;
     --cmdline-template) (($# >= 2)) || install_common_die '--cmdline-template requires a file'; CMDLINE_TEMPLATE=$2; shift 2 ;;
     --device|--write-device|--i-understand-this-erases-the-device)
@@ -217,6 +221,72 @@ if [[ "$WIFI_PRESEED" == yes ]]; then
 else
   [[ ! -e "$WIFI_DEST" && ! -L "$WIFI_DEST" ]] || install_common_die 'bootstrap Wi-Fi connection exists despite selection state'
 fi
+
+OMARCHY_IMAGE_STATE='not-required'
+if [[ $REQUIRE_OMARCHY_PREPARED -eq 1 ]]; then
+  # This gate deliberately proves only that the reviewed desktop payload and
+  # user seed are present. It also proves that no session handoff was enabled.
+  # Live CM5 GPU validation remains a separate prerequisite for activation.
+  HYPRLAND_STATE="$ROOT_TREE/var/lib/uconsole-omarchy-arm64/hyprland-selection"
+  OMARCHY_SHELL_STATE="$ROOT_TREE/var/lib/uconsole-omarchy-arm64/omarchy-shell-selection"
+  OMARCHY_USER_STATE="$ROOT_TREE/var/lib/uconsole-omarchy-arm64/user-preparation-$ADMIN_USER"
+  install_common_require_file 'Hyprland selection state' "$HYPRLAND_STATE"
+  install_common_require_file 'Omarchy shell selection state' "$OMARCHY_SHELL_STATE"
+  install_common_require_file 'Omarchy user-preparation state' "$OMARCHY_USER_STATE"
+
+  exact_state_field() {
+    local state_file=$1
+    local key=$2
+    awk -F '=' -v wanted="$key" '$1 == wanted { count++; value=substr($0, index($0, "=") + 1) } END { if (count == 1 && value != "") print value; else exit 1 }' "$state_file"
+  }
+
+  [[ $(exact_state_field "$HYPRLAND_STATE" hyprland_version) == '0.56.1-3' ]] || install_common_die 'Hyprland state has an unexpected version'
+  [[ $(exact_state_field "$HYPRLAND_STATE" package_lock_sha256) == '1d469713047d2226bf934586f23073812c698c538a7085e8e4782dee38eba09e' ]] || install_common_die 'Hyprland direct package lock changed'
+  [[ $(exact_state_field "$HYPRLAND_STATE" transaction_lock_sha256) == '2bd6232e8e90da7f10e9245fb306f5d7578840e9452d42726607cf52483c1bc7' ]] || install_common_die 'Hyprland transaction lock changed'
+  [[ $(exact_state_field "$HYPRLAND_STATE" config_sha256) == 'f944368040661e3d88746e6c521c978a85e5b5beaeb62cf30ef460548adf0b60' ]] || install_common_die 'Hyprland configuration state changed'
+  [[ $(exact_state_field "$HYPRLAND_STATE" target_user) == "$ADMIN_USER" ]] || install_common_die 'Hyprland state belongs to a different user'
+  [[ $(exact_state_field "$HYPRLAND_STATE" session_start) == 'start-hyprland' ]] || install_common_die 'Hyprland state has an unexpected manual session handoff'
+  [[ $(exact_state_field "$HYPRLAND_STATE" uwsm_enabled) == no ]] || install_common_die 'Hyprland state reports UWSM activation'
+
+  [[ $(exact_state_field "$OMARCHY_SHELL_STATE" userland_version) == '4.0.0.alpha-3' ]] || install_common_die 'Omarchy shell state has an unexpected userland version'
+  [[ $(exact_state_field "$OMARCHY_SHELL_STATE" userland_sha256) == '4824a5b829cf6633e0d329307341398353fe14881c9642730e96bb7c31d93b71' ]] || install_common_die 'Omarchy shell package digest changed'
+  [[ $(exact_state_field "$OMARCHY_SHELL_STATE" upstream_commit) == 'd99d4fc6de0bc99d48c9935724fa19d7fb41ae54' ]] || install_common_die 'Omarchy shell state has an unexpected upstream commit'
+  [[ $(exact_state_field "$OMARCHY_SHELL_STATE" transaction_lock_sha256) == '9cdf7f52c8f5da8a857ebd1fd3c90a7e299965396b9a2ca4fb0116f633a546e3' ]] || install_common_die 'Omarchy shell transaction lock changed'
+  [[ $(exact_state_field "$OMARCHY_SHELL_STATE" runtime_policy_sha256) == '5c5c8e3e01b4217294210a1442af8c3b42d42f4f1b97f29cec85ded8296c724d' ]] || install_common_die 'Omarchy runtime policy changed'
+  [[ $(exact_state_field "$OMARCHY_SHELL_STATE" target_user) == "$ADMIN_USER" ]] || install_common_die 'Omarchy shell state belongs to a different user'
+  [[ $(exact_state_field "$OMARCHY_SHELL_STATE" home_seeded) == no ]] || install_common_die 'Omarchy package transaction unexpectedly reports a user seed'
+  [[ $(exact_state_field "$OMARCHY_SHELL_STATE" session_activated) == no ]] || install_common_die 'Omarchy shell state reports session activation'
+  [[ $(exact_state_field "$OMARCHY_SHELL_STATE" uwsm_enabled) == no ]] || install_common_die 'Omarchy shell state reports UWSM activation'
+  [[ $(exact_state_field "$OMARCHY_SHELL_STATE" hardware_owned) == no ]] || install_common_die 'Omarchy shell state reports hardware ownership'
+  [[ $(exact_state_field "$OMARCHY_SHELL_STATE" updates_owned) == no ]] || install_common_die 'Omarchy shell state reports update ownership'
+
+  [[ $(exact_state_field "$OMARCHY_USER_STATE" target_user) == "$ADMIN_USER" ]] || install_common_die 'Omarchy user-preparation state belongs to a different user'
+  [[ $(exact_state_field "$OMARCHY_USER_STATE" upstream_commit) == 'd99d4fc6de0bc99d48c9935724fa19d7fb41ae54' ]] || install_common_die 'Omarchy user-preparation commit changed'
+  [[ $(exact_state_field "$OMARCHY_USER_STATE" shell_sha256) == 'b8f1995c5fbfe55252463c47f21cce833154f905a92d493a03981a21eac8ac9a' ]] || install_common_die 'prepared Omarchy shell configuration digest changed'
+  [[ $(exact_state_field "$OMARCHY_USER_STATE" foot_sha256) == 'a5165f8a0a93c6d7262aaae6c00c11617ffb2f35bafca73f458b6549a9dca5cf' ]] || install_common_die 'prepared Foot configuration digest changed'
+  [[ $(exact_state_field "$OMARCHY_USER_STATE" migration_count) == 87 ]] || install_common_die 'prepared migration baseline count changed'
+  [[ $(exact_state_field "$OMARCHY_USER_STATE" migration_lock_sha256) == 'bf1cd979738bc9035731e881fae95072d64caf2bacb3705f9a47433a0aa7b143' ]] || install_common_die 'prepared migration baseline lock changed'
+  [[ $(exact_state_field "$OMARCHY_USER_STATE" historical_migrations_run) == no ]] || install_common_die 'prepared state reports historical migration execution'
+  [[ $(exact_state_field "$OMARCHY_USER_STATE" initial_theme) == 'tokyo-night' ]] || install_common_die 'prepared initial theme changed'
+  [[ $(exact_state_field "$OMARCHY_USER_STATE" session_modified) == no ]] || install_common_die 'prepared state reports session modification'
+  [[ $(exact_state_field "$OMARCHY_USER_STATE" activation) == no ]] || install_common_die 'prepared state reports activation'
+
+  ADMIN_HYPR_CONFIG="$ROOT_TREE$ADMIN_HOME/.config/hypr/hyprland.lua"
+  ADMIN_SHELL_CONFIG="$ROOT_TREE$ADMIN_HOME/.config/omarchy/shell.json"
+  ADMIN_FOOT_CONFIG="$ROOT_TREE$ADMIN_HOME/.config/foot/foot.ini"
+  ADMIN_OMARCHY_CURRENT="$ROOT_TREE$ADMIN_HOME/.local/state/omarchy/current"
+  install_common_require_file 'prepared Hyprland configuration' "$ADMIN_HYPR_CONFIG"
+  install_common_require_file 'prepared Omarchy shell configuration' "$ADMIN_SHELL_CONFIG"
+  install_common_require_file 'prepared Foot configuration' "$ADMIN_FOOT_CONFIG"
+  [[ $(install_common_sha256 "$ADMIN_HYPR_CONFIG") == 'f944368040661e3d88746e6c521c978a85e5b5beaeb62cf30ef460548adf0b60' ]] || install_common_die 'prepared Hyprland configuration differs from selection state'
+  [[ $(install_common_sha256 "$ADMIN_SHELL_CONFIG") == 'b8f1995c5fbfe55252463c47f21cce833154f905a92d493a03981a21eac8ac9a' ]] || install_common_die 'prepared Omarchy shell configuration differs from selection state'
+  [[ $(install_common_sha256 "$ADMIN_FOOT_CONFIG") == 'a5165f8a0a93c6d7262aaae6c00c11617ffb2f35bafca73f458b6549a9dca5cf' ]] || install_common_die 'prepared Foot configuration differs from selection state'
+  [[ -L "$ADMIN_OMARCHY_CURRENT/theme" && $(readlink "$ADMIN_OMARCHY_CURRENT/theme") == '/usr/share/omarchy-arm64/themes/tokyo-night' ]] || install_common_die 'prepared initial theme link differs'
+  [[ -L "$ADMIN_OMARCHY_CURRENT/background" && $(readlink "$ADMIN_OMARCHY_CURRENT/background") == '/usr/share/omarchy-arm64/themes/tokyo-night/backgrounds/0-winding-road.webp' ]] || install_common_die 'prepared initial background link differs'
+  [[ -f "$ADMIN_OMARCHY_CURRENT/theme.name" && ! -L "$ADMIN_OMARCHY_CURRENT/theme.name" ]] || install_common_die 'prepared initial theme name is missing or unsafe'
+  [[ $(sed -n '1p' "$ADMIN_OMARCHY_CURRENT/theme.name") == 'tokyo-night' ]] || install_common_die 'prepared initial theme name differs'
+  OMARCHY_IMAGE_STATE='prepared-inactive'
+fi
 HOST_KEY=$(find "$ROOT_TREE/etc/ssh" -maxdepth 1 -type f -name 'ssh_host_*' -print -quit) || install_common_die 'unable to inspect SSH host keys'
 [[ -z "$HOST_KEY" ]] || install_common_die 'prepared root contains an SSH host key that would be cloned'
 
@@ -266,6 +336,7 @@ printf '%s\n' \
   '[PASS] prepared root         Arch Linux ARM identity and exact hardware state present' \
   "[PASS] first-boot policy    admin=$ADMIN_USER key-only SSH; source accounts locked; network=$WIFI_PRESEED" \
   '[PASS] boot artifacts        kernel, CM5 DTB, uConsole overlays and managed include present' \
+  "[PASS] Omarchy image state   $OMARCHY_IMAGE_STATE" \
   "[PASS] output safety        new regular image path under $OUTPUT_PARENT" \
   "[PASS] root headroom        content=$ROOT_BYTES capacity=$ROOT_CAPACITY" \
   "[PASS] boot headroom        content=$BOOT_BYTES capacity=$BOOT_CAPACITY" \
@@ -415,6 +486,7 @@ CMDLINE_SHA=$(sha256sum "$CMDLINE_TEMPLATE" | awk '{print $1}')
   printf 'boot_id=%s\n' "$BOOT_ID"
   printf 'root_uuid=%s\n' "$ROOT_UUID"
   printf 'source_date_epoch=%s\n' "$SOURCE_DATE_EPOCH"
+  printf 'omarchy_image_state=%s\n' "$OMARCHY_IMAGE_STATE"
   printf 'fstab_template_sha256=%s\n' "$FSTAB_SHA"
   printf 'cmdline_template_sha256=%s\n' "$CMDLINE_SHA"
 } > "$IMAGE_STATE_DIR/image-selection" || install_common_fail 'unable to write image selection state'
@@ -479,6 +551,7 @@ MANIFEST_TMP="${MANIFEST_OUTPUT}.partial.$$"
   printf '  "image_size": %s,\n' "$IMAGE_BYTES"
   printf '  "image_sha256": "%s",\n' "$IMAGE_SHA"
   printf '  "source_date_epoch": %s,\n' "$SOURCE_DATE_EPOCH"
+  printf '  "omarchy_image_state": "%s",\n' "$OMARCHY_IMAGE_STATE"
   printf '  "disk_id": "%s",\n' "$DISK_ID"
   printf '  "boot": {"start_sector": %s, "sectors": %s, "partuuid": "%s", "volume_id": "%s"},\n' "$FIRST_SECTOR" "$BOOT_SECTORS" "$BOOT_PARTUUID" "$BOOT_ID"
   printf '  "root": {"start_sector": %s, "sectors": %s, "partuuid": "%s", "uuid": "%s"},\n' "$ROOT_START" "$ROOT_SECTORS" "$ROOT_PARTUUID" "$ROOT_UUID"

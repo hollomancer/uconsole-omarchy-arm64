@@ -102,6 +102,52 @@ ln -s /usr/share/zoneinfo/UTC "$ROOT/etc/localtime"
 printf 'options cfg80211 ieee80211_regdom=US\n' > "$ROOT/etc/modprobe.d/90-uconsole-regdom.conf"
 cp "$REPO_ROOT/config/base-system/NetworkManager.conf" "$ROOT/etc/NetworkManager/conf.d/10-uconsole.conf"
 
+cat > "$ROOT/var/lib/uconsole-omarchy-arm64/hyprland-selection" <<'STATE'
+hyprland_version=0.56.1-3
+package_lock_sha256=1d469713047d2226bf934586f23073812c698c538a7085e8e4782dee38eba09e
+transaction_lock_sha256=2bd6232e8e90da7f10e9245fb306f5d7578840e9452d42726607cf52483c1bc7
+transaction_packages=204
+config_sha256=f944368040661e3d88746e6c521c978a85e5b5beaeb62cf30ef460548adf0b60
+target_user=fixture
+session_start=start-hyprland
+uwsm_enabled=no
+STATE
+cat > "$ROOT/var/lib/uconsole-omarchy-arm64/omarchy-shell-selection" <<'STATE'
+userland_version=4.0.0.alpha-3
+userland_sha256=4824a5b829cf6633e0d329307341398353fe14881c9642730e96bb7c31d93b71
+upstream_commit=d99d4fc6de0bc99d48c9935724fa19d7fb41ae54
+direct_lock_sha256=019a79e470a26a7b3c34adb5209f02269eca3cb4df78e70a15aa41619f097159
+transaction_lock_sha256=9cdf7f52c8f5da8a857ebd1fd3c90a7e299965396b9a2ca4fb0116f633a546e3
+transaction_packages=24
+runtime_policy_sha256=5c5c8e3e01b4217294210a1442af8c3b42d42f4f1b97f29cec85ded8296c724d
+runtime_commands=51
+target_user=fixture
+home_seeded=no
+session_activated=no
+uwsm_enabled=no
+hardware_owned=no
+updates_owned=no
+STATE
+cat > "$ROOT/var/lib/uconsole-omarchy-arm64/user-preparation-fixture" <<'STATE'
+target_user=fixture
+upstream_commit=d99d4fc6de0bc99d48c9935724fa19d7fb41ae54
+shell_sha256=b8f1995c5fbfe55252463c47f21cce833154f905a92d493a03981a21eac8ac9a
+foot_sha256=a5165f8a0a93c6d7262aaae6c00c11617ffb2f35bafca73f458b6549a9dca5cf
+migration_count=87
+migration_lock_sha256=bf1cd979738bc9035731e881fae95072d64caf2bacb3705f9a47433a0aa7b143
+historical_migrations_run=no
+initial_theme=tokyo-night
+session_modified=no
+activation=no
+STATE
+mkdir -p "$ROOT/home/fixture/.config/hypr" "$ROOT/home/fixture/.config/omarchy" "$ROOT/home/fixture/.config/foot" "$ROOT/home/fixture/.local/state/omarchy/current"
+cp "$REPO_ROOT/config/hyprland/minimal.lua" "$ROOT/home/fixture/.config/hypr/hyprland.lua"
+cp "$REPO_ROOT/config/arm64-overrides/shell.json" "$ROOT/home/fixture/.config/omarchy/shell.json"
+cp "$REPO_ROOT/config/arm64-overrides/foot.ini" "$ROOT/home/fixture/.config/foot/foot.ini"
+ln -s /usr/share/omarchy-arm64/themes/tokyo-night "$ROOT/home/fixture/.local/state/omarchy/current/theme"
+ln -s /usr/share/omarchy-arm64/themes/tokyo-night/backgrounds/0-winding-road.webp "$ROOT/home/fixture/.local/state/omarchy/current/background"
+printf 'tokyo-night\n' > "$ROOT/home/fixture/.local/state/omarchy/current/theme.name"
+
 COMMON_ARGS=(
   --root-tree "$ROOT"
   --disk-id c0decafe
@@ -126,8 +172,27 @@ printf '%s\n' "$PLAN_OUTPUT" | grep -Fq 'loop devices and physical devices were 
   printf 'Plan did not report its read-only boundary\n' >&2
   exit 1
 }
+printf '%s\n' "$PLAN_OUTPUT" | grep -Fq '[PASS] Omarchy image state   not-required' || {
+  printf 'Base plan did not preserve the optional Omarchy boundary\n' >&2
+  exit 1
+}
 [[ ! -e "$OUTPUT_DIR/fixture.img" && ! -e "$OUTPUT_DIR/fixture.img.manifest.json" ]] || {
   printf 'Plan mode created output artifacts\n' >&2
+  exit 1
+}
+
+OMARCHY_PLAN_OUTPUT=''
+if ! OMARCHY_PLAN_OUTPUT=$("$BUILDER" "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/omarchy.img" --require-omarchy-prepared --plan); then
+  printf '%s\n' "$OMARCHY_PLAN_OUTPUT" >&2
+  printf 'Expected prepared-but-inactive Omarchy image plan to pass\n' >&2
+  exit 1
+fi
+printf '%s\n' "$OMARCHY_PLAN_OUTPUT" | grep -Fq '[PASS] Omarchy image state   prepared-inactive' || {
+  printf 'Omarchy image plan did not report the inactive desktop gate\n' >&2
+  exit 1
+}
+[[ ! -e "$OUTPUT_DIR/omarchy.img" && ! -e "$OUTPUT_DIR/omarchy.img.manifest.json" ]] || {
+  printf 'Omarchy plan mode created output artifacts\n' >&2
   exit 1
 }
 
@@ -161,6 +226,12 @@ mv "$TEST_TMP/hardware-selection" "$ROOT/var/lib/uconsole-omarchy-arm64/hardware
 mv "$ROOT/var/lib/uconsole-omarchy-arm64/base-system-selection" "$TEST_TMP/base-system-selection"
 expect_rejected 'missing base-system selection gate' "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/no-base-gate.img" --plan
 mv "$TEST_TMP/base-system-selection" "$ROOT/var/lib/uconsole-omarchy-arm64/base-system-selection"
+
+sed 's/^activation=no$/activation=yes/' "$ROOT/var/lib/uconsole-omarchy-arm64/user-preparation-fixture" > "$TEST_TMP/user-preparation-fixture"
+mv "$TEST_TMP/user-preparation-fixture" "$ROOT/var/lib/uconsole-omarchy-arm64/user-preparation-fixture"
+expect_rejected 'activated Omarchy preparation' "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/activated-omarchy.img" --require-omarchy-prepared --plan
+sed 's/^activation=yes$/activation=no/' "$ROOT/var/lib/uconsole-omarchy-arm64/user-preparation-fixture" > "$TEST_TMP/user-preparation-fixture"
+mv "$TEST_TMP/user-preparation-fixture" "$ROOT/var/lib/uconsole-omarchy-arm64/user-preparation-fixture"
 
 cp "$ROOT/etc/shadow" "$TEST_TMP/shadow"
 sed 's/^root:![^:]*/root:unlocked/' "$TEST_TMP/shadow" > "$ROOT/etc/shadow"

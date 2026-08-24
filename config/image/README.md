@@ -20,6 +20,13 @@ key-only SSH policy, locale/radio/network selections and the absence of SSH
 host keys. A hardware-only root with Arch Linux ARM's source credentials is a
 hard failure, even in plan mode.
 
+`--require-omarchy-prepared` is an opt-in later-layer gate. It additionally
+requires the exact Hyprland, Omarchy shell and user-preparation states plus the
+reviewed user configuration hashes and initial theme links. It rejects UWSM or
+session activation; satisfying this gate prepares an image source but does not
+enable the desktop. Build mode records `prepared-inactive` or `not-required` in
+both the embedded selection state and external manifest.
+
 Disk IDs, FAT volume IDs and ext4 UUIDs are explicit inputs, not random values.
 They must change when creating a distinct image lineage to avoid collisions.
 The ext4 label is `uconsole-root`; account names never determine filesystem

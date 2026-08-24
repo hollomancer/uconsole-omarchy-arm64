@@ -1,0 +1,45 @@
+schema: 1
+verified_at: 2026-08-24
+target:
+  kind: disposable-off-target-root
+  architecture: aarch64
+  selected_admin: integration
+  live_cm5: false
+builder:
+  script: ../scripts/build-image.sh
+  action: plan
+  require_omarchy_prepared: true
+  output_created: false
+geometry:
+  image_mib: 8192
+  boot_mib: 512
+  root_content_bytes: 4186845184
+  root_capacity_bytes: 8047820800
+  boot_content_bytes: 74489856
+  boot_capacity_bytes: 536870912
+  disk_id: c05e2026
+  boot_partuuid: c05e2026-01
+  root_partuuid: c05e2026-02
+  root_uuid: 7a4cc8d5-70df-4f98-a88d-3b89c9f21561
+validation:
+  arch_linux_arm_identity: pass
+  exact_hardware_state: pass
+  exact_base_system_state: pass
+  exact_hyprland_state: pass
+  exact_omarchy_shell_state: pass
+  exact_user_preparation_state: pass
+  user_config_hashes: pass
+  prepared_session_inactive: pass
+  required_root_headroom: pass
+  required_boot_headroom: pass
+  physical_devices_touched: false
+result: PASS
+build_status: not_run_insufficient_disposable_storage
+storage_observed:
+  docker_free_gib: 2.0
+  host_free_gib: 2.7
+  recommended_docker_free_gib: 6.0
+limits:
+  - A bootable image artifact has not been assembled from this prepared root.
+  - The prior 4 GiB base-layer image test does not prove this larger desktop-ready image.
+  - A completed image must still be mounted read-only and inspected before it is considered a development-SD candidate.

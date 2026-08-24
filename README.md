@@ -6,10 +6,10 @@ desktop experience on a ClockworkPi uConsole with a Raspberry Pi Compute Module
 
 The current repository state contains research, architecture, read-only
 validation, a reproducible local hardware package, an offline-root hardware
-installer and a version-locked minimal Hyprland installer. Installer apply
-mode has been exercised only against deterministic fixtures. No script has
-been run against a real SD card or live system, and the existing bootable SD
-card has not been touched.
+installer, a version-locked minimal Hyprland installer, and an inert Omarchy
+source-staging transaction. Installer apply mode has been exercised only
+against deterministic fixtures. No script has been run against a real SD card
+or live system, and the existing bootable SD card has not been touched.
 
 ## Status
 
@@ -38,6 +38,8 @@ Research snapshot: **2026-08-24**
 - The safe Phase 1 plan is in [`docs/installation.md`](docs/installation.md).
 - The Phase 2 direct package set and repository snapshot are recorded in
   [`research/hyprland-package-lock.yaml`](research/hyprland-package-lock.yaml).
+- The first missing core package build is recorded in
+  [`research/xdg-terminal-exec-inputs.yaml`](research/xdg-terminal-exec-inputs.yaml).
 
 The validator is read-only and phase-aware:
 
@@ -92,6 +94,21 @@ different user config. Transitive dependency versions and payload hashes are
 not yet frozen, so this is a controlled bring-up transaction rather than a
 complete offline package snapshot.
 
+The Omarchy script currently has one intentionally narrow operation: verify a
+pinned upstream archive and stage selected audit trees outside `PATH`.
+
+```sh
+scripts/install-omarchy-arm64.sh --plan \
+  --root /mnt/uconsole-root \
+  --user alarm \
+  --source-archive /path/to/omarchy-quattro.tar.gz
+```
+
+Even in apply mode it does not expose commands, seed a home, launch Quickshell,
+enable services or initialize migrations. `--activate` is rejected. This lets
+the compatibility audit proceed without turning staged upstream code into an
+accidental installer.
+
 ## Proposed repository structure
 
 The files marked `future` must not be implemented until their prerequisite
@@ -105,7 +122,9 @@ that gate but has not been applied to a card.
 │   ├── arm64-overrides/
 │   │   ├── README.md
 │   │   ├── omarchy-core.packages         # current validation baseline
-│   │   ├── packages.toml                 # future: substitutions and omissions
+│   │   ├── packages.toml                 # current: substitutions and omissions
+│   │   ├── omarchy-source.lock           # current: pinned Quattro archive
+│   │   ├── omarchy-staged-paths.lock     # current: inert staging allowlist
 │   │   ├── pacman/                       # future: ARM repo/drop-in policy
 │   │   └── omarchy/                      # future: minimal userland overrides
 │   ├── hyprland/                         # current: direct lock + minimal Lua config
@@ -132,18 +151,21 @@ that gate but has not been applied to a card.
 │   ├── hyprland-package-lock.yaml
 │   ├── phase1-inputs.yaml
 │   ├── upstream-lock.yaml
+│   ├── xdg-terminal-exec-inputs.yaml
 │   └── package-audit/                    # future: generated CSV and provenance
 ├── packaging/
-│   └── uconsole-cm5-dkms/                # current: local-evaluation PKGBUILD
+│   ├── uconsole-cm5-dkms/                # current: local-evaluation PKGBUILD
+│   └── xdg-terminal-exec/                # current: reproducible ARM build
 ├── scripts/
 │   ├── bootstrap-arch.sh                 # current: verified image-only scaffold
 │   ├── install-uconsole-hardware.sh      # current: offline kernel/DT layer
 │   ├── install-hyprland.sh               # current: minimal compositor layer
-│   ├── install-omarchy-arm64.sh          # future: userland only
+│   ├── install-omarchy-arm64.sh          # current: inert userland source stage
 │   └── validate-system.sh                # current: read-only PASS/WARN/FAIL report
 └── tests/
     ├── test-bootstrap-arch.sh             # current image safety test
     ├── test-install-hyprland.sh           # current package/config safety test
+    ├── test-install-omarchy-arm64.sh      # current inert-staging safety test
     ├── test-install-uconsole-hardware.sh  # current transaction safety test
     ├── test-validate-system.sh            # current deterministic test
     └── fixtures/                          # current captured probe fixtures

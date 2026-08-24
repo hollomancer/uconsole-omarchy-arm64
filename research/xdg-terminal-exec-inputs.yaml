@@ -1,0 +1,35 @@
+schema: 1
+observed_at: "2026-08-24"
+package: xdg-terminal-exec
+version: 0.14.3-1
+architecture: any
+source:
+  url: https://gitlab.freedesktop.org/Vladimir-csp/xdg-terminal-exec/-/archive/v0.14.3/xdg-terminal-exec-v0.14.3.tar.gz
+  sha256: bfa291f6ad70fc61abd0b45510b799cb24c1c11f0b5cdc7b7538169688f1df79
+  license: GPL-3.0-or-later
+build_dependencies:
+  - name: scdoc
+    version: 1.11.5-1
+    filename: scdoc-1.11.5-1-aarch64.pkg.tar.xz
+    sha256: d8afceb6ff7714f0b0086062a26c0296661f7532e69ec2143155fdbbd466175b
+  - name: bats
+    version: 1.14.0-1
+    filename: bats-1.14.0-1-any.pkg.tar.xz
+    sha256: 7bc31235cfe496b982698980b14c9c14b3e17f2b71ee13f72a58271ed199710a
+  - name: parallel
+    version: 20260722-1
+    filename: parallel-20260722-1-any.pkg.tar.xz
+    sha256: d7109181105460a5d5fbac92d27638c285431e11c9f43832abaa345445e24a76
+builder:
+  image: menci/archlinuxarm:base-devel-20260819.32222611223
+  arm64_manifest_digest: sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
+result:
+  status: PASS_WITH_WARNING
+  tests: "24 reported; 23 pass and Turkish-collation case skips because tr_TR.UTF-8 is absent"
+  repeated_builds: 2
+  byte_identical: true
+  package: xdg-terminal-exec-0.14.3-1-any.pkg.tar.xz
+  package_sha256: 1359a9bb531c4014a1324d9fdefc5c8350e39c587be2592eacb56eda352cca4d
+  package_ownership: root:root
+  signed: false
+  warning: "First emulated build printed one intermittent libfakeroot 'payload not recognized' warning; second did not. Both package bytes and root ownership match. Recheck once in a native ARM builder before signing."

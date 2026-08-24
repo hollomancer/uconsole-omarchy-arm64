@@ -1,0 +1,145 @@
+schema = 1
+observed_at = "2026-08-24"
+omarchy_commit = "d99d4fc6de0bc99d48c9935724fa19d7fb41ae54"
+
+# This is the reviewed override boundary, not a complete dependency closure.
+# Activation must fail when a required consumer is absent from this file or the
+# generated full package matrix.
+
+[[package]]
+upstream = "omarchy"
+consumer = "Omarchy CLI, Quickshell userland, themes and migrations"
+category = "omarchy-userland"
+required_group = "core"
+status = "thin-arm-package-required"
+replacement = "pinned upstream userland plus ARM-safe packaging"
+functional_difference = "No Limine/Snapper dependencies, no Omarchy mirror ownership, and no update activation until audited"
+source = "https://github.com/basecamp/omarchy"
+pin = "d99d4fc6de0bc99d48c9935724fa19d7fb41ae54"
+
+[[package]]
+upstream = "omarchy-settings"
+consumer = "System defaults and user seed files"
+category = "system-policy"
+required_group = "partial-core"
+status = "split-required"
+replacement = "allowlisted user/session settings only"
+functional_difference = "Broad /etc, initramfs, Limine, Snapper, SDDM-autologin and boot settings are excluded"
+source = "https://github.com/omacom-io/omarchy-pkgs"
+pin = "40ddd6be195a704c1e4187fc7ecd3f2c8091e37b"
+
+[[package]]
+upstream = "nvim"
+consumer = "Editor launch commands and optional Omarchy Neovim configuration"
+category = "shell-tooling"
+required_group = "optional-editor"
+status = "replacement"
+replacement = "neovim"
+replacement_version = "0.12.5-1"
+functional_difference = "Arch Linux ARM package name differs; installed command remains nvim"
+source = "Arch Linux ARM extra"
+
+[[package]]
+upstream = "ttf-jetbrains-mono-nerd-basic"
+consumer = "Hyprland, Quickshell and terminal icon/text font"
+category = "visual"
+required_group = "core"
+status = "replacement"
+replacement = "ttf-jetbrains-mono-nerd"
+replacement_version = "3.5.1-2"
+functional_difference = "ALARM package includes the full family rather than Omarchy's four-font basic subset"
+source = "Arch Linux ARM extra"
+
+[[package]]
+upstream = "xdg-terminal-exec"
+consumer = "Default terminal dispatch from desktop files and Omarchy commands"
+category = "desktop-integration"
+required_group = "core"
+status = "source-build-passed-with-warning"
+replacement = "xdg-terminal-exec"
+replacement_version = "0.14.3-1"
+functional_difference = "None expected; package must be built and signed locally because it is absent from ALARM sync repositories"
+source = "https://gitlab.freedesktop.org/Vladimir-csp/xdg-terminal-exec"
+pin = "v0.14.3"
+package_sha256 = "1359a9bb531c4014a1324d9fdefc5c8350e39c587be2592eacb56eda352cca4d"
+build_note = "Two byte-identical ARM64-container builds; native ARM recheck required because one emulated build printed an intermittent fakeroot warning"
+
+[[package]]
+upstream = "limine"
+consumer = "Upstream Omarchy boot chain"
+category = "boot"
+required_group = "forbidden"
+status = "omit"
+replacement = "Raspberry Pi firmware boot chain"
+functional_difference = "Omarchy boot/snapshot UI and Limine refresh commands are unavailable"
+source = "uConsole hardware layer"
+
+[[package]]
+upstream = "limine-mkinitcpio-hook"
+consumer = "Upstream Omarchy boot entry generation"
+category = "boot"
+required_group = "forbidden"
+status = "omit"
+replacement = "hardware-owned Pi kernel/initramfs transaction"
+functional_difference = "No Omarchy-generated Limine entries"
+source = "uConsole hardware layer"
+
+[[package]]
+upstream = "limine-snapper-sync"
+consumer = "Upstream Omarchy snapshot/boot synchronization"
+category = "boot"
+required_group = "forbidden"
+status = "omit"
+replacement = "none"
+functional_difference = "Snapshot boot-entry synchronization is disabled"
+source = "not applicable"
+
+[[package]]
+upstream = "snapper"
+consumer = "Upstream root snapshot workflow"
+category = "storage"
+required_group = "deferred"
+status = "omit-initially"
+replacement = "image-level recovery and known-good SD card"
+functional_difference = "No Omarchy snapshot/factory-reset workflow during bring-up"
+source = "development recovery plan"
+
+[[package]]
+upstream = "sddm"
+consumer = "Graphical login and Omarchy session launch"
+category = "session"
+required_group = "deferred"
+status = "omit-initially"
+replacement = "start-hyprland from a local TTY"
+functional_difference = "No graphical login or autologin until the compositor is hardware-proven"
+source = "Phase 2 session policy"
+
+[[package]]
+upstream = "qemu-user-static-binfmt"
+consumer = "Cross-architecture build support"
+category = "build-host"
+required_group = "build-only"
+status = "omit-target"
+replacement = "native aarch64 or isolated binfmt build environment"
+functional_difference = "Target cannot act as the project's cross-build host by default"
+source = "build environment"
+
+[[package]]
+upstream = "asdcontrol"
+consumer = "Apple Studio Display controls"
+category = "optional-hardware"
+required_group = "not-applicable"
+status = "omit"
+replacement = "none"
+functional_difference = "Apple Studio Display controls are unavailable"
+source = "uConsole hardware scope"
+
+[[package]]
+upstream = "yay"
+consumer = "AUR installation and parts of the upstream update path"
+category = "update-infrastructure"
+required_group = "deferred"
+status = "omit-initially"
+replacement = "clean off-device package builds plus a signed local repository"
+functional_difference = "No on-target AUR compilation or implicit AUR updates"
+source = "ARM update policy"

@@ -60,7 +60,7 @@ build result.
 | `ttfx` | font utility | Omarchy PKGBUILD declares aarch64 | build/test | Supporting |
 | `tzupdate` | automatic timezone | Omarchy PKGBUILD is x86_64-only | audit source build; otherwise manual/systemd alternative | Optional |
 | `ufw-docker` | firewall/container integration | Omarchy PKGBUILD is `any` | build only if Docker group is selected | Optional |
-| `xdg-terminal-exec` | default terminal dispatch | Omarchy PKGBUILD is `any` | build/test | Core integration |
+| `xdg-terminal-exec` | default terminal dispatch | Omarchy PKGBUILD is `any`; 0.14.3-1 passes 23 tests with one unavailable-locale skip and builds byte-identically twice in the pinned ARM64 container | locally package, native-ARM recheck, then sign | Core integration |
 | `yaru-icon-theme` | icon theme | Omarchy PKGBUILD is `any` | build/package | Visual core |
 | `yay` | AUR helper/update path | Omarchy PKGBUILD declares aarch64 | build in clean environment; never use as root | Update tooling, conditional |
 

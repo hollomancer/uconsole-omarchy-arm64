@@ -288,6 +288,58 @@ dependency closure. Before producing a distributable image, archive and hash
 the resolved package payloads and all transitive versions, then sign the local
 repository metadata.
 
+## Inert Omarchy source audit
+
+The next repository operation is deliberately not Omarchy activation. Given
+the pinned Quattro archive, the script can verify and stage selected source
+trees for audit:
+
+```sh
+scripts/install-omarchy-arm64.sh --plan \
+  --root /mnt/uconsole-root \
+  --user alarm \
+  --source-archive /path/to/omarchy-quattro.tar.gz
+```
+
+The locked archive is commit `d99d4fc6de0bc99d48c9935724fa19d7fb41ae54`,
+version-file value `4.0.0.alpha`, SHA-256
+`3b60bb6d5694478963c167571457ee266cdba1e7791395a80f2f26074d72d6eb`
+and size 70,979,927 bytes. Apply mode stages only the allowlisted audit paths
+under `/usr/share/uconsole-omarchy-arm64/upstream/<commit>`, generates a
+per-file manifest, and records `activation=blocked`.
+
+It does not create `/usr/bin/omarchy`, modify `PATH`/`OMARCHY_PATH`, copy a
+config into the target home, enable UWSM/SDDM, run Quickshell, initialize
+migration markers, install packages or touch `/boot`. A modified staged tree
+is a hard error on rerun. There is no implemented activation flag.
+
+This staging step lets command consumers, QML dependencies, themes and user
+defaults be audited against one immutable source without bypassing G3/G4. The
+actual core-userland activation will be a separate transaction after the real
+hardware gates pass and the command/package allowlists close.
+
+### First ARM-built Omarchy dependency
+
+`xdg-terminal-exec` is core terminal-dispatch infrastructure and has no current
+ALARM sync-repository package. Build it off-device with the pinned source and
+exact hashed `scdoc`, `bats` and `parallel` inputs:
+
+```sh
+research/build-xdg-terminal-exec.sh --check \
+  --source /path/to/xdg-terminal-exec-v0.14.3.tar.gz \
+  --scdoc /path/to/scdoc-1.11.5-1-aarch64.pkg.tar.xz \
+  --bats /path/to/bats-1.14.0-1-any.pkg.tar.xz \
+  --parallel /path/to/parallel-20260722-1-any.pkg.tar.xz
+```
+
+Two builds produced byte-identical
+`xdg-terminal-exec-0.14.3-1-any.pkg.tar.xz` payloads with SHA-256
+`1359a9bb531c4014a1324d9fdefc5c8350e39c587be2592eacb56eda352cca4d`.
+Twenty-three tests passed and the Turkish-collation test skipped because that
+locale is absent from the minimal builder. One build printed an intermittent
+fakeroot warning under emulation; the other did not, and both archives contain
+root-owned files. Rebuild on native ARM before signing and installation.
+
 ## Read-only validation command
 
 At each gate, save the complete output of the repository validator:

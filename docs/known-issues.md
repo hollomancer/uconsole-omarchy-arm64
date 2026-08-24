@@ -22,6 +22,8 @@ These items are unresolved until hardware or build evidence closes them.
 | Aquamarine/Hyprland on Pi 5 is not an upstream board guarantee | Generic DRM/GLES support does not prove atomic KMS, modifiers or stable scanout on this panel | On-device Phase 2 gate; use Aquamarine workaround variables only diagnostically |
 | Phase 2 package lock is direct-only | The 21 requested packages are exact, but rolling transitive dependencies and payload files are not content-pinned | Preflight and postflight exact direct versions; build a signed package cache before calling the image reproducible offline |
 | Current Hyprland config uses Lua APIs from 0.56 | Arch ARM has the matching release, but the config has only passed syntax and fixture tests, not an on-device config load | Keep the version lock; capture `start-hyprland` stderr and `hyprctl systeminfo` before adding Omarchy |
+| Omarchy source is staged but intentionally inactive | Default Quattro autostart reaches provisioning, power-profile, monitor-watch, hook and update commands that have not passed the ARM ownership audit | Stage selected trees outside `PATH`; reject activation, home seeding, services and migrations in the current installer |
+| `xdg-terminal-exec` emulated fakeroot warning | One of two builds printed an intermittent fakeroot payload warning, although the second was clean and both package bytes/ownership match | Keep the reproducible hash, but rebuild once on native ARM before signing or installing it |
 | GPU false positives | A desktop can start with llvmpipe/lavapipe | Treat any software renderer as FAIL and stop before Omarchy |
 | Battery/power patch maturity | AXP20x reporting and power key behavior are board-specific and still evolving in community kernels | Charge/discharge and shutdown tests; compare active kernel lineages |
 | Suspend/wake is unknown | An apparent suspend can strand the device or drain battery | Do not automate; test only with recovery and preserve journals |
@@ -45,3 +47,5 @@ These items are unresolved until hardware or build evidence closes them.
 - A required package remains `unknown` in the compatibility manifest.
 - A locked direct Hyprland package has disappeared or advanced on the rolling
   mirror before its payload has been archived.
+- Staged Omarchy source is added to `PATH`, selected as `OMARCHY_PATH`, or
+  copied into a user home before its activation audit closes.

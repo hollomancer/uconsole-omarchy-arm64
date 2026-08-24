@@ -1,8 +1,8 @@
 # ARM64 override boundary
 
-This directory will contain the complete, small compatibility layer between
-Arch Linux ARM and Omarchy. It must not contain kernel, device-tree, bootloader,
-firmware, display timing or board-power fixes.
+This directory contains the small compatibility boundary between Arch Linux
+ARM and Omarchy. It must not contain kernel, device-tree, bootloader, firmware,
+display timing or board-power fixes.
 
 Every future override must identify:
 
@@ -13,4 +13,14 @@ Every future override must identify:
 - source/version/checksum;
 - test and last verification date.
 
-No active overrides exist during the research phase.
+Current files:
+
+- `packages.toml` records reviewed replacements, omissions and deferred groups;
+- `omarchy-source.lock` pins the upstream Quattro audit archive;
+- `omarchy-staged-paths.lock` is the exact inert-source staging allowlist;
+- `ACTIVATION-BLOCKED.md` records the gates before any staged code can run;
+- `omarchy-core.packages` remains the validator's target core inventory.
+
+These are active audit controls, not proof of a runnable Omarchy session. An
+entry with `deferred`, `omit-initially`, `split-required` or
+`thin-arm-package-required` must remain unavailable until its own gate closes.

@@ -1,0 +1,27 @@
+# Adapted from omacom-io/omarchy-pkgs at commit
+# 40ddd6be195a704c1e4187fc7ecd3f2c8091e37b (MIT repository license).
+
+pkgname=xdg-terminal-exec
+pkgver=0.14.3
+pkgrel=1
+pkgdesc='Proposed standard for launching desktop applications with Terminal=true'
+arch=('any')
+url="https://gitlab.freedesktop.org/Vladimir-csp/${pkgname}"
+license=('GPL-3.0-or-later')
+makedepends=('scdoc')
+checkdepends=('bats')
+source=("${pkgname}-v${pkgver}.tar.gz::${url}/-/archive/v${pkgver}/${pkgname}-v${pkgver}.tar.gz")
+sha256sums=('bfa291f6ad70fc61abd0b45510b799cb24c1c11f0b5cdc7b7538169688f1df79')
+
+check() {
+  cd "${pkgname}-v${pkgver}"
+  bats test/
+}
+
+build() {
+  make -C "${pkgname}-v${pkgver}"
+}
+
+package() {
+  make -C "${pkgname}-v${pkgver}" prefix="$pkgdir/usr" install
+}

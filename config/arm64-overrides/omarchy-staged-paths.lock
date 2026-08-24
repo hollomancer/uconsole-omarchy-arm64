@@ -1,0 +1,15 @@
+# relative-path|disposition|reason
+LICENSE|stage|upstream license provenance
+version|stage|upstream version provenance
+bin|stage-inactive|required for command and consumer audit; never added to PATH
+config|stage-inactive|candidate user defaults; never copied into a home
+shell|stage-inactive|Quickshell userland candidate; never launched
+themes|stage-inactive|visual assets; never activated
+applications|stage-inactive|launcher audit inputs; never installed
+default/hypr|stage-inactive|Hyprland defaults; never loaded
+default/themed|stage-inactive|theme templates; never rendered
+default/foot|stage-inactive|terminal candidate; never installed
+icon.png|stage|upstream identity asset
+icon.txt|stage|upstream identity asset
+logo.svg|stage|upstream identity asset
+logo.txt|stage|upstream identity asset

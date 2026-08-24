@@ -13,6 +13,7 @@ HELP_OUTPUT=$($RUNNER --help)
 printf '%s\n' "$HELP_OUTPUT" | grep -Fq -- '--build-image'
 printf '%s\n' "$HELP_OUTPUT" | grep -Fq -- '--inspect-image'
 printf '%s\n' "$HELP_OUTPUT" | grep -Fq -- '--confirm-source-volume'
+printf '%s\n' "$HELP_OUTPUT" | grep -Fq -- '--identity-file'
 printf '%s\n' "$HELP_OUTPUT" | grep -Fq 'Hyprland and Omarchy state are forbidden'
 
 for forbidden in --device --write-device --publish --require-omarchy-prepared; do
@@ -24,6 +25,14 @@ for forbidden in --device --write-device --publish --require-omarchy-prepared; d
     [[ $status -eq 2 ]] || { printf 'Expected %s to exit 2; observed %s\n' "$forbidden" "$status" >&2; exit 1; }
   fi
 done
+
+if "$RUNNER" --identity-file "$REPO_ROOT/config/image/phase1-candidate.env" --disk-id a1b2c3d4 >/dev/null 2>&1; then
+  printf 'Expected mixed identity inputs to be rejected\n' >&2
+  exit 1
+else
+  status=$?
+  [[ $status -eq 2 ]] || { printf 'Expected mixed identity inputs to exit 2; observed %s\n' "$status" >&2; exit 1; }
+fi
 
 grep -Fq 'dst=/source,readonly' "$RUNNER"
 grep -Fq '^/Volumes/' "$RUNNER"

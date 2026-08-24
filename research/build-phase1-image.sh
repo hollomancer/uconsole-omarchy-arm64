@@ -20,6 +20,7 @@ DISK_ID=''
 BOOT_ID=''
 ROOT_UUID=''
 SOURCE_DATE_EPOCH=''
+IDENTITY_FILE=''
 DOSFSTOOLS=/private/tmp/dosfstools-4.2-5-aarch64.pkg.tar.xz
 MTOOLS='/private/tmp/mtools-1:4.0.49-1-aarch64.pkg.tar.xz'
 IMAGE='menci/archlinuxarm:base-devel-20260819.32222611223@sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0'
@@ -31,8 +32,8 @@ RECOMMENDED_FREE_KIB=10485760
 usage() {
   printf '%s\n' \
     'Usage: research/build-phase1-image.sh --source-volume V --output-directory DIR \' \
-    '  --disk-id HEX8 --boot-id HEX8 --root-uuid UUID \' \
-    '  --source-date-epoch EPOCH [action]' \
+    '  (--identity-file FILE | --disk-id HEX8 --boot-id HEX8 --root-uuid UUID \' \
+    '  --source-date-epoch EPOCH) [action]' \
     '' \
     'Actions:' \
     '  --check          Run the production image plan; output must remain empty (default)' \
@@ -40,6 +41,7 @@ usage() {
     '  --inspect-image  Reinspect an existing exact image and manifest read-only' \
     '' \
     'Options:' \
+    '  --identity-file FILE       Exact six-field candidate identity lock; replaces four identity options' \
     '  --confirm-source-volume V  Required with --build-image; exact repeat of source' \
     '  --dosfstools FILE           Pinned Arch Linux ARM package' \
     '  --mtools FILE               Pinned Arch Linux ARM package' \
@@ -76,6 +78,7 @@ while (($# > 0)); do
     --boot-id) (($# >= 2)) || die '--boot-id requires a value'; BOOT_ID=$2; shift 2 ;;
     --root-uuid) (($# >= 2)) || die '--root-uuid requires a value'; ROOT_UUID=$2; shift 2 ;;
     --source-date-epoch) (($# >= 2)) || die '--source-date-epoch requires a value'; SOURCE_DATE_EPOCH=$2; shift 2 ;;
+    --identity-file) (($# >= 2)) || die '--identity-file requires a file'; IDENTITY_FILE=$2; shift 2 ;;
     --dosfstools) (($# >= 2)) || die '--dosfstools requires a file'; DOSFSTOOLS=$2; shift 2 ;;
     --mtools) (($# >= 2)) || die '--mtools requires a file'; MTOOLS=$2; shift 2 ;;
     --check) set_action check; shift ;;
@@ -86,6 +89,24 @@ while (($# > 0)); do
     *) die "unknown option: $1" ;;
   esac
 done
+
+identity_field() {
+  local key=$1
+  awk -F '=' -v wanted="$key" '$1 == wanted { count++; value=substr($0, index($0, "=") + 1) } END { if (count == 1 && value != "") print value; else exit 1 }' "$IDENTITY_FILE"
+}
+
+if [[ -n "$IDENTITY_FILE" ]]; then
+  [[ -z "$DISK_ID" && -z "$BOOT_ID" && -z "$ROOT_UUID" && -z "$SOURCE_DATE_EPOCH" ]] || die '--identity-file cannot be combined with individual identity options'
+  [[ -f "$IDENTITY_FILE" && ! -L "$IDENTITY_FILE" ]] || die 'identity file is missing or unsafe'
+  [[ $(awk 'END { print NR }' "$IDENTITY_FILE") -eq 6 ]] || die 'identity file must contain exactly six fields'
+  [[ $(identity_field schema) == 1 ]] || die 'identity schema differs'
+  IDENTITY_LINEAGE=$(identity_field lineage) || die 'identity lineage is missing'
+  [[ "$IDENTITY_LINEAGE" =~ ^[A-Za-z0-9][A-Za-z0-9:._-]+$ ]] || die 'identity lineage is unsafe'
+  DISK_ID=$(identity_field disk_id) || die 'identity disk ID is missing'
+  BOOT_ID=$(identity_field boot_id) || die 'identity boot ID is missing'
+  ROOT_UUID=$(identity_field root_uuid) || die 'identity root UUID is missing'
+  SOURCE_DATE_EPOCH=$(identity_field source_date_epoch) || die 'identity source epoch is missing'
+fi
 
 [[ "$SOURCE_VOLUME" =~ ^uconsole-phase1-operator-pending-[0-9]{8}$ ]] || die 'source volume must use uconsole-phase1-operator-pending-YYYYMMDD'
 if [[ "$ACTION" == build ]]; then

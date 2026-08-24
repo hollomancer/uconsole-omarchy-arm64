@@ -5,3 +5,7 @@ H: Handlers=sysrq kbd event0
 I: Bus=0003 Vendor=1209 Product=0001 Version=0111
 N: Name="ClockworkPi uConsole Trackball"
 H: Handlers=mouse0 event1
+
+I: Bus=0019 Vendor=0000 Product=0001 Version=0000
+N: Name="axp20x-pek"
+H: Handlers=kbd event2

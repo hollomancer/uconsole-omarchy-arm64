@@ -54,6 +54,10 @@ Research snapshot: **2026-08-24**
   [`research/phase1-image-media-handoff-results.yaml`](research/phase1-image-media-handoff-results.yaml).
   The unconfigured retained root is rejected without output, `SSDmini` is
   rejected as non-removable, and no development SD is currently inserted.
+- The first real development-image lineage is pinned in
+  [`config/image/phase1-candidate.env`](config/image/phase1-candidate.env).
+  Its deterministic public filesystem IDs eliminate copy/pasted example
+  values; no image has yet been built with them.
 - The configured full-root regular-image build and read-only inspection are in
   [`research/full-image-results.yaml`](research/full-image-results.yaml).
 - Reproducible 4 KiB/16 KiB DKMS build results are in
@@ -189,8 +193,7 @@ regular 8 GiB image in a new namespaced directory on `SSDmini`:
 research/build-phase1-image.sh --check \
   --source-volume uconsole-phase1-operator-pending-20260824 \
   --output-directory /Volumes/SSDmini/uconsole-phase1-image-YYYYMMDD \
-  --disk-id HEX8 --boot-id HEX8 --root-uuid UUID \
-  --source-date-epoch EPOCH
+  --identity-file config/image/phase1-candidate.env
 ```
 
 The explicit `--build-image` action also requires the same source volume via
@@ -481,6 +484,7 @@ that gate but has not been applied to a card.
     ├── test-omarchy-prepared-image-runner.sh # current image-runner safety test
     ├── test-plan-omarchy-update.sh        # current update-boundary safety test
     ├── test-plan-sd-write-macos.sh        # current read-only macOS media safety test
+    ├── test-phase1-image-identity.sh      # current deterministic candidate identity test
     ├── test-phase1-image-runner.sh        # current real Phase 1 image safety test
     ├── test-prepare-omarchy-user.sh       # current inactive-home safety test
     ├── test-validate-system.sh            # current deterministic test

@@ -332,15 +332,12 @@ new empty namespaced directory on `SSDmini` and run the Phase 1-only plan:
 research/build-phase1-image.sh --check \
   --source-volume uconsole-phase1-operator-pending-20260824 \
   --output-directory /Volumes/SSDmini/uconsole-phase1-image-YYYYMMDD \
-  --disk-id a1b2c3d4 \
-  --boot-id A1B2C3D4 \
-  --root-uuid 11111111-2222-4333-8444-555555555555 \
-  --source-date-epoch 1787544000
+  --identity-file config/image/phase1-candidate.env
 ```
 
-Generate new identity values for the actual image lineage; the values above
-are examples only. Review the successful plan, repeat the exact arguments with
-`--build-image`, and add:
+The committed identity lock reserves one deterministic disk ID, FAT ID, ext4
+UUID and source epoch for this candidate. Review the successful plan, repeat
+the exact arguments with `--build-image`, and add:
 
 ```sh
 --confirm-source-volume uconsole-phase1-operator-pending-20260824

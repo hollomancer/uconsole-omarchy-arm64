@@ -23,6 +23,20 @@ phase1_image_runner:
     mtools_sha256: 27b3fec3314df29d943d80f97e060d852dd60ba840f8188f25c5993e85c34f3b
   contract_test: tests/test-phase1-image-runner.sh
   contract_test_result: PASS
+  candidate_identity:
+    file: config/image/phase1-candidate.env
+    schema: 1
+    lineage: uconsole-omarchy-arm64:phase1-cm5:2026-08-24
+    disk_id: 807ccd66
+    boot_id: 680EC8E0
+    root_uuid: d80e3d51-a838-4e81-966f-6a93172f75bb
+    source_date_epoch: 1787544000
+    derivation_test: tests/test-phase1-image-identity.sh
+    derivation_test_result: PASS
+    live_gate_result: FAIL_SAFE
+    live_gate_expected_failure: "real operator configuration state is missing"
+    live_gate_output_entries: 0
+    state: reserved-not-built
   fail_safe_test:
     source_volume: uconsole-phase1-operator-pending-20260824
     source_configuration_applied: false
@@ -95,4 +109,33 @@ effects:
   physical_media_touched: false
   image_created: false
   retained_source_configured: false
+validation_readiness:
+  script: scripts/validate-system.sh
+  fixture_test: tests/test-validate-system.sh
+  fixture_test_result: PASS
+  added_read_only_checks:
+    - active local TTY1 getty
+    - active SSH recovery service
+    - dynamically numbered DRM card and render nodes
+    - external-power online telemetry
+    - advertised freeze or suspend-to-RAM state
+    - power-key input visibility
+  manual_evidence_still_required:
+    - actual local console legibility and orientation
+    - SSH connection from a second machine after cold boot
+    - speaker, headphone and microphone behavior
+    - charge and discharge behavior
+    - controlled suspend, wake and power-button behavior
+failures_recorded:
+  - attempt: candidate-identity-live-gate-1
+    result: FAIL_SAFE
+    finding: "The disposable output directory did not use the enforced uconsole-phase1-image-* namespace"
+    smallest_change: "Repeat the unchanged command with an exact namespaced directory; do not relax the boundary"
+    output_entries: 0
+    directory_removed: true
+  - attempt: candidate-identity-live-gate-2
+    result: PASS
+    finding: "The committed identity parsed and the intentionally unconfigured source stopped at the expected gate"
+    output_entries: 0
+    directory_removed: true
 next_gate: "Collect operator inputs, run configuration plan/apply plus inspection, build and inspect the regular Phase 1 image, then insert and identify a fresh removable development SD"

@@ -32,6 +32,16 @@ They must change when creating a distinct image lineage to avoid collisions.
 The ext4 label is `uconsole-root`; account names never determine filesystem
 identity.
 
+`phase1-candidate.env` reserves the first real development-image lineage. The
+disk ID is the first eight hexadecimal characters of
+`SHA-256("<lineage>:disk")`; the FAT ID is derived the same way from
+`<lineage>:boot` and uppercased. The ext4 UUID comes from
+`SHA-256("<lineage>:root")` with its version and variant bits normalized to an
+RFC 4122 version-4 UUID. The source epoch is the start of the dated research
+snapshot (`2026-08-24T04:00:00Z`). These values are public filesystem identity,
+not credentials. Rebuilds of this candidate reuse the lock; a distinct image
+lineage must add a new lock with different identifiers.
+
 For the retained real Phase 1 root, `research/build-phase1-image.sh` is the
 bounded host handoff. It permits only a namespaced direct child of an external
 volume, mounts the source read-only, disables networking, forbids desktop state

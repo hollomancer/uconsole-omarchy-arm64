@@ -47,8 +47,8 @@ All of the following are required before installing Hyprland:
 
 ```sh
 test "$(uname -m)" = aarch64
-test -e /dev/dri/card0
-test -e /dev/dri/renderD128
+test -n "$(find /dev/dri -maxdepth 1 -name 'card[0-9]*' -print -quit)"
+test -n "$(find /dev/dri -maxdepth 1 -name 'renderD[0-9]*' -print -quit)"
 lsmod | grep -E '(^| )(vc4|v3d)( |$)'
 glxinfo -B
 vulkaninfo --summary
@@ -62,12 +62,15 @@ are the useful evidence.
 
 [`../scripts/validate-system.sh`](../scripts/validate-system.sh) reports PASS,
 WARN or FAIL for architecture, the exact selected hardware state/running
-kernel, page size, DT model/overlays, board modules, DRM nodes, GPU modules,
-OpenGL/Vulkan software-renderer detection, PCI inventory, display, backlight,
-audio, networking, radios, battery, input devices, Hyprland, orientation,
-Wayland input classes, the Hyprland portal, Omarchy userland and missing core
-packages. Unknown or unavailable evidence is WARN/FAIL, never silently
-omitted. Use `--phase hardware`, then `--phase hyprland`, then `--phase
-omarchy`. In the Hyprland and Omarchy phases, missing GL/Vulkan probes, native
-orientation, compositor input or portal state are hard failures rather than
-warnings.
+kernel, page size, DT model/overlays, local TTY and SSH recovery, board modules,
+dynamically numbered DRM nodes, GPU modules, OpenGL/Vulkan software-renderer
+detection, PCI inventory, display, backlight, audio, networking, radios,
+battery plus external-power telemetry, advertised suspend states, input and
+power-key devices, Hyprland, orientation, Wayland input classes, the Hyprland
+portal, Omarchy userland and missing core packages. Unknown or unavailable
+evidence is WARN/FAIL, never silently omitted. The suspend and power-key probes
+report capability only; actual suspend/wake and button behavior remain manual
+tests with recovery present. Use `--phase hardware`, then `--phase hyprland`,
+then `--phase omarchy`. In the Hyprland and Omarchy phases, missing GL/Vulkan
+probes, native orientation, compositor input or portal state are hard failures
+rather than warnings.

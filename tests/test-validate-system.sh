@@ -46,12 +46,24 @@ if ! printf '%s\n' "$PASS_OUTPUT" | grep -Fq 'FAIL=0'; then
   printf 'PASS fixture reported a failure\n' >&2
   exit 1
 fi
-for required_pass in hardware-selection uconsole-modules wayland-input hyprland-portal; do
+for required_pass in hardware-selection local-console ssh-recovery uconsole-modules drm-nodes external-power suspend-capability power-key wayland-input hyprland-portal; do
   if ! printf '%s\n' "$PASS_OUTPUT" | grep -Fq "[PASS] $required_pass"; then
     printf 'PASS fixture did not report %s PASS\n' "$required_pass" >&2
     exit 1
   fi
 done
+
+DRM_FIXTURE="$TEST_TMP/dynamic-drm"
+cp -R "$PASS_FIXTURE" "$DRM_FIXTURE"
+mv "$DRM_FIXTURE/root/dev/dri/card0" "$DRM_FIXTURE/root/dev/dri/card1"
+mv "$DRM_FIXTURE/root/dev/dri/renderD128" "$DRM_FIXTURE/root/dev/dri/renderD129"
+DRM_OUTPUT=''
+if ! DRM_OUTPUT=$("$VALIDATOR" --phase hardware --fixture "$DRM_FIXTURE" --packages-file "$PACKAGES"); then
+  printf '%s\nExpected dynamically numbered DRM fixture to pass\n' "$DRM_OUTPUT" >&2
+  exit 1
+fi
+printf '%s\n' "$DRM_OUTPUT" | grep -Fq '[PASS] drm-nodes' || { printf 'Dynamic DRM fixture did not pass node discovery\n' >&2; exit 1; }
+printf '%s\n' "$DRM_OUTPUT" | grep -Fq 'card1 and renderD129' || { printf 'Dynamic DRM fixture reported the wrong nodes\n' >&2; exit 1; }
 
 FAIL_OUTPUT=""
 FAIL_STATUS=0

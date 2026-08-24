@@ -269,6 +269,20 @@ else
   report WARN device-tree-uconsole 'no uConsole-specific compatible string found; inspect the live DT/overlay symbols'
 fi
 
+run_probe getty_status systemctl is-active getty@tty1.service
+if [[ $PROBE_STATUS -eq 0 && "$PROBE_OUTPUT" == active ]]; then
+  report PASS local-console 'getty@tty1.service is active'
+else
+  report FAIL local-console "TTY1 getty is inactive or unavailable: ${PROBE_OUTPUT:-no output}"
+fi
+
+run_probe sshd_status systemctl is-active sshd.service
+if [[ $PROBE_STATUS -eq 0 && "$PROBE_OUTPUT" == active ]]; then
+  report PASS ssh-recovery 'sshd.service is active'
+else
+  report FAIL ssh-recovery "SSH recovery service is inactive or unavailable: ${PROBE_OUTPUT:-no output}"
+fi
+
 MODULES=""
 if MODULES=$(read_text "$ROOT/proc/modules"); then
   if module_loaded vc4 && module_loaded v3d; then
@@ -290,10 +304,22 @@ else
   report FAIL uconsole-modules '/proc/modules is unreadable'
 fi
 
-if [[ -e "$ROOT/dev/dri/card0" && -e "$ROOT/dev/dri/renderD128" ]]; then
-  report PASS drm-nodes 'card0 and renderD128 present'
+DRM_CARD=''
+DRM_RENDER=''
+for DRM_NODE in "$ROOT"/dev/dri/card[0-9]*; do
+  [[ -e "$DRM_NODE" ]] || continue
+  DRM_CARD=${DRM_NODE##*/}
+  break
+done
+for DRM_NODE in "$ROOT"/dev/dri/renderD[0-9]*; do
+  [[ -e "$DRM_NODE" ]] || continue
+  DRM_RENDER=${DRM_NODE##*/}
+  break
+done
+if [[ -n "$DRM_CARD" && -n "$DRM_RENDER" ]]; then
+  report PASS drm-nodes "$DRM_CARD and $DRM_RENDER present"
 else
-  report FAIL drm-nodes 'required card0/renderD128 pair is absent'
+  report FAIL drm-nodes 'at least one DRM card and render node are required'
 fi
 
 run_probe lspci lspci -nnk
@@ -451,6 +477,40 @@ else
   report FAIL battery 'no Battery power_supply found'
 fi
 
+EXTERNAL_POWER_DETAIL=''
+for TYPE_FILE in "$ROOT"/sys/class/power_supply/*/type; do
+  [[ -f "$TYPE_FILE" ]] || continue
+  TYPE=$(read_text "$TYPE_FILE")
+  case "$TYPE" in Mains|USB|USB_*) ;; *) continue ;; esac
+  SUPPLY=${TYPE_FILE%/type}
+  NAME=${SUPPLY##*/}
+  ONLINE='unknown'
+  if [[ -r "$SUPPLY/online" ]]; then ONLINE=$(read_text "$SUPPLY/online"); fi
+  if [[ "$ONLINE" == 0 || "$ONLINE" == 1 ]]; then
+    EXTERNAL_POWER_DETAIL="$NAME type=$TYPE online=$ONLINE"
+  else
+    EXTERNAL_POWER_DETAIL="invalid:$NAME type=$TYPE online=$ONLINE"
+  fi
+  break
+done
+if [[ -n "$EXTERNAL_POWER_DETAIL" && "$EXTERNAL_POWER_DETAIL" != invalid:* ]]; then
+  report PASS external-power "$EXTERNAL_POWER_DETAIL"
+elif [[ "$EXTERNAL_POWER_DETAIL" == invalid:* ]]; then
+  report FAIL external-power "${EXTERNAL_POWER_DETAIL#invalid:}"
+else
+  report FAIL external-power 'no external power_supply telemetry found'
+fi
+
+if POWER_STATES=$(read_text "$ROOT/sys/power/state"); then
+  if [[ " $POWER_STATES " == *' mem '* || " $POWER_STATES " == *' freeze '* ]]; then
+    report PASS suspend-capability "advertised states: $POWER_STATES; an actual suspend/wake cycle remains manual"
+  else
+    report WARN suspend-capability "no freeze/mem state advertised: $POWER_STATES"
+  fi
+else
+  report WARN suspend-capability '/sys/power/state is unreadable; do not attempt suspend without recovery'
+fi
+
 INPUTS=""
 if INPUTS=$(read_text "$ROOT/proc/bus/input/devices"); then
   if [[ "$INPUTS" == *"kbd"* && "$INPUTS" == *"mouse"* ]]; then
@@ -458,8 +518,15 @@ if INPUTS=$(read_text "$ROOT/proc/bus/input/devices"); then
   else
     report FAIL input-devices 'keyboard and/or pointer handler absent'
   fi
+  INPUTS_LOWER=$(lower "$INPUTS")
+  if [[ "$INPUTS_LOWER" == *"power button"* || "$INPUTS_LOWER" == *"axp20x-pek"* || "$INPUTS_LOWER" == *"axp20x pek"* ]]; then
+    report PASS power-key 'power-key input device is visible; behavior still requires a controlled manual test'
+  else
+    report WARN power-key 'no identifiable power-key input device; inspect evtest before assigning logind behavior'
+  fi
 else
   report FAIL input-devices '/proc/bus/input/devices is unreadable'
+  report WARN power-key 'input inventory unavailable'
 fi
 
 run_probe hyprctl hyprctl systeminfo

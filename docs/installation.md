@@ -255,6 +255,18 @@ scripts/configure-base-system.sh --plan \
   --reg-domain US
 ```
 
+If a dedicated admin key is needed, create it before the configuration plan:
+
+```sh
+scripts/create-ssh-keypair.sh \
+  --output-private-key /secure/path/id_uconsole
+```
+
+Enter a non-empty passphrase when `ssh-keygen` prompts. The helper creates
+`id_uconsole` plus `id_uconsole.pub`, refuses existing paths, and prints the
+SHA-256 fingerprint. Keep the private key on the operator machine and supply
+only `id_uconsole.pub` to `--ssh-public-key`.
+
 Add `--wifi-keyfile /secure/path/bootstrap.nmconnection` only when Wi-Fi must
 associate before the first local login. The file must be a private
 NetworkManager WPA/SAE Personal connection; no secret should be placed in the
@@ -285,9 +297,9 @@ scripts/create-console-password-hash.sh \
 ```
 
 The helper prompts twice through `/dev/tty`, runs `openssl passwd -6 -stdin`
-inside the pinned network-disabled ARM64 builder and atomically creates a
-mode-0600 file outside the repository. It refuses plaintext/non-interactive
-password arguments and existing output paths.
+inside the pinned network-disabled ARM64 builder and directly creates a new
+mode-0600 file outside the repository with no-clobber semantics. It refuses
+plaintext/non-interactive password arguments and existing output paths.
 
 For the retained off-target Phase 1 volume, run the secret-safe wrapper rather
 than locating Docker's private volume mountpoint:

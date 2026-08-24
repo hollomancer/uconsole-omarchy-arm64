@@ -82,7 +82,7 @@ SECOND_PASSWORD=''
 
 if ! (set -o noclobber; printf '%s\n' "$HASH" > "$OUTPUT"); then
   HASH=''
-  die 'unable to create the new output file atomically'
+  die 'unable to create the new output file'
 fi
 HASH=''
 chmod 0600 "$OUTPUT" || die 'unable to set output mode 0600'

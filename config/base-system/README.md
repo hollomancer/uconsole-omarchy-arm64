@@ -31,6 +31,20 @@ a two-letter regulatory domain. A private NetworkManager keyfile is optional;
 omitting it leaves Wi-Fi enrollment for the local console. Plan mode validates
 all inputs without changing the root.
 
+If no suitable SSH key already exists, create a dedicated one outside the
+repository:
+
+```sh
+scripts/create-ssh-keypair.sh \
+  --output-private-key /private/path/id_uconsole
+```
+
+The helper creates only a new Ed25519 keypair, uses 64 KDF rounds, requires a
+non-empty passphrase entered directly through `ssh-keygen`, and prints the
+public-key fingerprint. Its output directory must not be writable by group or
+other. Keep the private file off the target; pass only the adjacent `.pub` file
+to `--ssh-public-key`.
+
 Create an optional bootstrap profile without putting its passphrase in shell
 history:
 

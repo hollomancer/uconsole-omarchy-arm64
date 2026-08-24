@@ -5,6 +5,29 @@ target:
   volume: uconsole-phase1-operator-pending-20260824
   real_operator_configuration_applied: false
   physical_media_touched: false
+  retained_root_reinspection:
+    access: read_only
+    network: disabled
+    result: PASS_WITH_EXPECTED_OPERATOR_WARNINGS
+    root_size_kib: 2477744
+    filesystem_entries: 69366
+    hardware_state_sha256: 88ed52d7ec67c9602e54f1d0bc2b4b48bf56b4fb453128231b909bcb667afc6b
+    base_packages_state_sha256: bbdc7bd2439d951bed3e035144dec34b2ac2af49ec69764202730f820482f12f
+    operator_configuration_present: false
+    target_changed: false
+ssh_keypair_helper:
+  script: scripts/create-ssh-keypair.sh
+  implementation: "OpenSSH Ed25519, 64 KDF rounds, TTY passphrase, no-clobber hard-link publication"
+  plaintext_process_argument: false
+  passphrase_shell_variable: false
+  empty_passphrase_rejected: true
+  private_key_mode: "0600"
+  public_key_mode: "0644"
+  contract_test: tests/test-create-ssh-keypair.sh
+  contract_test_result: PASS
+  functional_pty_test: PASS
+  blank_passphrase_cleanup_test: PASS
+  synthetic_private_files_removed: true
 password_hash_helper:
   script: scripts/create-console-password-hash.sh
   implementation: "Pinned network-disabled ARM64 builder, OpenSSL SHA-512 crypt over stdin"
@@ -144,8 +167,8 @@ failures_recorded:
     result: PASS
     finding: "Archive restore, production image-plan gate and effective policy inspection all passed"
 storage_after:
-  host_available_kib: 4860404
-  external_ssd_available_kib: 922879152
+  host_available_kib: 4767436
+  external_ssd_available_kib: 925424388
   additional_local_cleanup_required: false
   large_future_outputs: SSDmini
 remaining_operator_inputs:

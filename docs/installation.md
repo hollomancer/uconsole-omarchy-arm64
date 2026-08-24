@@ -205,7 +205,8 @@ references and manifest are internally consistent.
 The regular-image fixture passes this gate, including exact MBR geometry,
 filesystem IDs, fsck, read-only remount, rendered boot references and both
 manifests. The full hardware root has not been promoted to a development image
-because default credentials are intentionally still present pending P1.4.
+because the retained source deliberately does not contain operator
+credentials; P1.4 has been proven only on a disposable clone.
 
 ### P1.4 — Configure the minimal system
 
@@ -222,12 +223,57 @@ No Hyprland, display manager, Omarchy package or AUR helper is introduced.
 Gate: configuration is visible in the mounted image and SSH credentials have a
 documented recovery path.
 
-Current decision gate: the source root has enabled OpenSSH plus
-`systemd-networkd`/`wpa_supplicant`, Broadcom firmware, `iw` and the wireless
-regulatory database, but both `root` and `alarm` source passwords remain
-unlocked. Do not build or boot a card until the admin account name, SSH public
-key, Wi-Fi bootstrap method and NetworkManager-versus-networkd policy are
-explicitly selected and the default passwords are locked.
+The implementation now uses NetworkManager as the single network owner and is
+split so package installation cannot accidentally consume secret inputs. First
+stage the exact packages named in `config/base-system/packages.lock`, then run:
+
+```sh
+scripts/install-base-system-packages.sh --plan \
+  --root /mnt/uconsole-root \
+  --package-dir /path/to/locked-package-cache
+
+scripts/install-base-system-packages.sh --apply \
+  --root /mnt/uconsole-root \
+  --package-dir /path/to/locked-package-cache
+
+scripts/configure-base-system.sh --plan \
+  --root /mnt/uconsole-root \
+  --admin-user yourname \
+  --ssh-public-key /secure/path/id_ed25519.pub \
+  --console-password-hash-file /secure/path/console-password.hash \
+  --reg-domain US
+```
+
+Add `--wifi-keyfile /secure/path/bootstrap.nmconnection` only when Wi-Fi must
+associate before the first local login. The file must be a private
+NetworkManager WPA-PSK connection; no secret should be placed in the repository
+or command line. If Wi-Fi is omitted, enroll it from the local console.
+
+Generate the console recovery hash into a private file on the preparation host
+without putting plaintext in process arguments:
+
+```sh
+umask 077
+read -r -s -p 'Local console recovery password: ' UCONSOLE_RECOVERY_PASSWORD
+printf '\n'
+printf '%s\n' "$UCONSOLE_RECOVERY_PASSWORD" | openssl passwd -6 -stdin > /secure/path/console-password.hash
+unset UCONSOLE_RECOVERY_PASSWORD
+chmod 0600 /secure/path/console-password.hash
+```
+
+After reviewing plan output, rerun the same configuration arguments with
+`--apply`. Apply creates or validates the admin, installs its public key, locks
+`root` and the non-admin source `alarm` account, disables systemd-networkd
+activation, enables NetworkManager/systemd-resolved/sshd/Bluetooth, generates
+the locale and writes non-secret selection state. It refuses conflicting
+policy and leaves SSH host keys absent for unique generation on the device.
+
+The exact 21-package closure and this policy pass apply plus idempotent reapply
+on a disposable native-aarch64 clone of the real retained hardware root. See
+[`../research/base-system-results.yaml`](../research/base-system-results.yaml).
+The retained source remains unchanged. Before promoting it, the operator must
+still select the admin name, SSH public key, regulatory domain, recovery-hash
+file, and whether to provide a private bootstrap Wi-Fi keyfile.
 
 ### P1.5 — Write and boot the fresh SD
 

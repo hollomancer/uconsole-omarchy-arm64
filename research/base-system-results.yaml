@@ -1,0 +1,85 @@
+schema: 1
+observed_at: "2026-08-24"
+purpose: "Exact minimal Phase 1 access, network, Bluetooth, locale and recovery layer"
+target:
+  source: "retained verified Arch Linux ARM root after the selected hardware transaction"
+  source_access: read_only
+  integration_destination: "disposable Linux-volume clone"
+  execution_architecture: aarch64
+repository_databases:
+  core_sha256: e1dc3339e7b9baf3a715509837aff8e73495cfba2d04833ee41525892b3c1b96
+  extra_sha256: 2a587fefde8735bbe6c0c5cb7304a2b666268ec947a33743e30d2c8517684964
+package_transaction:
+  lock: config/base-system/packages.lock
+  incremental_packages: 21
+  required_runtime_packages:
+    - networkmanager=1.58.1-1
+    - sudo=1.9.17.p2-6
+    - bluez=5.87-2
+    - bluez-utils=5.87-2
+  preexisting_runtime_packages:
+    - openssh=10.4p1-3
+    - broadcom-wl-firmware
+    - wpa_supplicant
+    - iw
+    - wireless-regdb
+  resolution: "Complete missing dependency closure was resolved against the frozen databases and the real retained root, then every package payload was SHA-256 locked. Apply uses local pacman -U only."
+configuration_transaction:
+  script: scripts/configure-base-system.sh
+  synthetic_inputs_used_for_integration:
+    - generated Ed25519 public key
+    - SHA-512 crypt local-console recovery hash
+    - NetworkManager WPA-PSK keyfile
+  secret_boundary:
+    - plaintext passwords and private-key arguments are rejected
+    - secret input files must deny group and other access
+    - password hashes are sent to chpasswd over standard input
+    - Wi-Fi secrets are installed mode 0600 and excluded from selection state
+    - only the SSH public-key fingerprint is recorded in selection state
+  resulting_policy:
+    - non-root wheel admin with key-only SSH and a local-console recovery password
+    - root and the non-admin source alarm account locked
+    - NetworkManager and systemd-resolved enabled; systemd-networkd activation disabled
+    - sshd and bluetooth enabled
+    - en_US.UTF-8 locale, explicit keymap/timezone and cfg80211 regulatory domain
+integration:
+  runner: research/test-base-system.sh
+  final_result: PASS
+  verified:
+    - all 21 locked package versions, architectures and SHA-256 values
+    - exact lower-layer kernel and board-source state gate
+    - one offline pacman transaction with no mirror resolution
+    - package dependency satisfaction and persisted non-secret package state
+    - configuration plan made no changes
+    - apply plus idempotent second apply
+    - admin ownership, wheel membership and authorized_keys mode/content
+    - root and source alarm accounts locked
+    - encrypted local-console recovery hash installed without logging its value
+    - effective OpenSSH key-only, root-denied and user-allowlist policy
+    - effective NetworkManager systemd-resolved DNS policy
+    - NetworkManager connection mode and absence of its PSK from public state
+    - required service enablement and networkd disablement
+    - generated locale and regulatory-domain policy
+    - no baked SSH host keys
+    - retained source root unchanged
+  failures_recorded:
+    - attempt: 1
+      result: FAIL
+      finding: "The deliberately small pinned outer builder did not contain ssh-keygen for a synthetic test identity."
+      smallest_change: "Generate the integration-only key with the already installed OpenSSH tools inside the target root."
+    - attempt: 2
+      result: FAIL
+      finding: "Public-key validation assumed ssh-keygen existed on the preparation host."
+      smallest_change: "Allow target ssh-keygen only when the supplied public key already resides inside the offline root; ordinary external keys still require host-side validation."
+    - attempt: 3
+      result: FAIL
+      finding: "OpenSSH 10.4 sshd -T emits canonical-capitalized directive names, while the harness expected lowercase."
+      smallest_change: "Compare exact directive/value pairs case-insensitively."
+    - attempt: 4
+      result: PASS
+      finding: "The exact package, policy, secret-handling and source-boundary checks all passed."
+limitations:
+  - synthetic credentials and Wi-Fi data were used only in the disposable clone
+  - the retained hardware root still has its source accounts and awaits operator-selected private inputs
+  - no image containing these changes has been written to physical media
+  - no CM5 boot, network association, Bluetooth probe or SSH connection has occurred

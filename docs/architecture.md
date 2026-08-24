@@ -31,6 +31,7 @@ not a partial success.
 | Pi EEPROM/firmware boot flow, FAT boot partition | Raspberry Pi/Arch hardware layer | No |
 | uConsole kernel, initramfs, DTB and overlays | Locally pinned Arch hardware package | No |
 | Wi-Fi/Bluetooth firmware and Mesa/DRM userspace | Arch Linux ARM repositories | Through normal ALARM upgrades after hardware validation, never through x86 Omarchy mirrors |
+| Host identity, admin/SSH access, locale, NetworkManager and Bluetooth service policy | Minimal Arch base-system layer | No; Omarchy may consume networking but may not replace its owner |
 | Hyprland, Aquamarine and portals | Version-locked Arch Linux ARM packages; local ARM repo only when needed | Yes, within a tested version window |
 | Quickshell and Omarchy desktop services | Omarchy userland layer plus explicit ARM substitutions | Yes, only after G4 |
 | Omarchy shell/Lua/QML, themes, keybindings and CLI | Omarchy upstream plus minimal overrides | Yes |
@@ -89,6 +90,13 @@ verified signed Arch Linux ARM root in an isolated native-aarch64 environment.
 DKMS, the broad first-boot initramfs, both overlays and managed boot include
 pass offline verification. This closes a build/integration gate only; G1–G3
 remain open until the physical CM5 supplies boot, probe and V3D/V3DV evidence.
+
+The next Arch-owned layer also passes native-aarch64 integration on a
+disposable clone: an exact local NetworkManager/sudo/BlueZ closure, non-root
+admin, key-only SSH, locked source accounts, locale/time/radio policy and one
+network owner. Secret inputs are file-only and excluded from public selection
+state. This does not close G1 because the retained source has not received the
+operator's real inputs and no CM5 has booted it.
 
 The custom kernel is retained as a differential oracle and recovery fallback,
 not as the default package. Its proven boot settings, PMIC behavior and

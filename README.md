@@ -6,12 +6,13 @@ desktop experience on a ClockworkPi uConsole with a Raspberry Pi Compute Module
 
 The current repository state contains research, architecture, signed rootfs
 extraction, a regular-file image builder, a reproducible local hardware
-package, an offline-root hardware installer, a version-locked minimal
-Hyprland installer, and an inert Omarchy source-staging transaction. The real
-pinned Arch rootfs and selected hardware transaction have been exercised in an
-isolated aarch64 Linux volume; desktop installers remain fixture-only. No
-script has been run against a real SD card or live system, and the existing
-bootable SD card has not been touched.
+package, an offline-root hardware installer, an exact minimal base-system
+transaction, a version-locked minimal Hyprland installer, and an inert Omarchy
+source-staging transaction. The real pinned Arch rootfs, hardware transaction,
+and secret-safe base configuration have been exercised in isolated aarch64
+Linux volumes; desktop installers remain fixture-only. No script has been run
+against a real SD card or live system, and the existing bootable SD card has
+not been touched.
 
 ## Status
 
@@ -27,6 +28,9 @@ Research snapshot: **2026-08-24**
   are in [`research/image-builder-inputs.yaml`](research/image-builder-inputs.yaml).
 - The real offline-root kernel/DKMS transaction is recorded in
   [`research/phase1-hardware-install-results.yaml`](research/phase1-hardware-install-results.yaml).
+- The exact offline NetworkManager/sudo/Bluetooth closure and synthetic
+  first-boot configuration run are recorded in
+  [`research/base-system-results.yaml`](research/base-system-results.yaml).
 - Reproducible 4 KiB/16 KiB DKMS build results are in
   [`research/dkms-build-results.yaml`](research/dkms-build-results.yaml).
 - Closely related community attempts are assessed in
@@ -91,6 +95,32 @@ overlays are present. It generates a broad first-boot initramfs without
 builder-host autodetection. On-device boot, probe and acceleration evidence is
 still required.
 
+The minimal Phase 1 system layer is split into two reviewable operations. The
+first verifies and installs a 21-package, SHA-256-locked local closure; the
+second consumes private local files for the recovery hash and optional Wi-Fi
+connection plus a public SSH key:
+
+```sh
+scripts/install-base-system-packages.sh --plan \
+  --root /mnt/uconsole-root \
+  --package-dir /path/to/locked-package-cache
+
+scripts/configure-base-system.sh --plan \
+  --root /mnt/uconsole-root \
+  --admin-user yourname \
+  --ssh-public-key /secure/path/id_ed25519.pub \
+  --console-password-hash-file /secure/path/console-password.hash \
+  --reg-domain US
+```
+
+The configuration enables NetworkManager, systemd-resolved, OpenSSH and
+Bluetooth; installs key-only SSH policy; and locks the source `root` and
+non-admin `alarm` accounts. It never accepts plaintext password arguments or
+records a Wi-Fi secret in its public state. Full package/configuration apply
+and idempotent reapply pass on a disposable clone of the retained hardware
+root. Operator-selected credentials have deliberately not been applied to the
+retained source.
+
 `scripts/plan-sd-write.sh` is intentionally read-only. It verifies an image
 against its manifest and a stable `/dev/disk/by-id/…` whole-disk identity, then
 rejects mounted, undersized, read-only and system-root devices. There is no SD
@@ -145,6 +175,7 @@ that gate but has not been applied to a card.
 │   │   ├── omarchy-staged-paths.lock     # current: inert staging allowlist
 │   │   ├── pacman/                       # future: ARM repo/drop-in policy
 │   │   └── omarchy/                      # future: minimal userland overrides
+│   ├── base-system/                      # current: exact Phase 1 runtime/policy inputs
 │   ├── hyprland/                         # current: direct lock + minimal Lua config
 │   ├── image/                            # current: fstab/cmdline image templates
 │   └── uconsole-hardware/                # current: boot + package/prerequisite locks
@@ -165,6 +196,7 @@ that gate but has not been applied to a card.
 │   ├── container/
 │   │   ├── build-board-package-inside.sh
 │   │   └── build-dkms-inside.sh
+│   ├── base-system-results.yaml
 │   ├── dkms-build-results.yaml
 │   ├── custom-kernel-delta.yaml
 │   ├── hyprland-package-lock.yaml
@@ -181,6 +213,8 @@ that gate but has not been applied to a card.
 ├── scripts/
 │   ├── bootstrap-arch.sh                 # current: signed rootfs extraction
 │   ├── build-image.sh                    # current: regular image assembler
+│   ├── configure-base-system.sh          # current: secret-safe offline policy
+│   ├── install-base-system-packages.sh   # current: exact local runtime closure
 │   ├── install-uconsole-prerequisites.sh # current: exact offline build closure
 │   ├── install-uconsole-hardware.sh      # current: offline kernel/DT layer
 │   ├── install-hyprland.sh               # current: minimal compositor layer
@@ -190,6 +224,8 @@ that gate but has not been applied to a card.
 └── tests/
     ├── test-bootstrap-arch.sh             # current rootfs/input safety test
     ├── test-build-image.sh                # current image/device safety test
+    ├── test-configure-base-system.sh      # current account/network policy test
+    ├── test-install-base-system-packages.sh # current exact-closure test
     ├── test-install-hyprland.sh           # current package/config safety test
     ├── test-install-omarchy-arm64.sh      # current inert-staging safety test
     ├── test-install-uconsole-prerequisites.sh # current offline-closure safety test

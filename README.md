@@ -367,6 +367,28 @@ to a new artifact directory. The artifacts are not installed or signed. Live
 CM5/16 KiB tests and an explicit `Yaru-gray`/`Yaru-grey` policy still block
 activation.
 
+## Running the tests
+
+Every check under `tests/` is offline, uses fixtures only, and touches neither
+media nor a live system:
+
+```sh
+for t in tests/test-*.sh; do bash "$t" || echo "FAILED: $t"; done
+```
+
+The suite expects three things from its host. They are assumptions rather than
+defects, but each one fails in a way that is easy to misread:
+
+- **`bsdtar`** (libarchive) must be present. Fixture packages are synthesized as
+  `.pkg.tar.xz` archives; without it the tests report missing files and hash
+  mismatches rather than a missing tool.
+- **`ssh-keygen`** (OpenSSH client) must be present, for the base-system
+  configuration key fixtures.
+- **A non-root runner.** `tests/test-install-hyprland.sh` stamps the runner's own
+  UID into the fixture passwd database, and the installer correctly refuses a
+  UID-0 graphical session owner. The test now fails fast with an explicit
+  message instead of surfacing that rejection from inside the installer.
+
 ## Proposed repository structure
 
 The files marked `future` must not be implemented until their prerequisite

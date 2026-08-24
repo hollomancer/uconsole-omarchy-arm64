@@ -71,8 +71,16 @@ done < "$LOCK"
 
 mkdir -p "$ROOT/etc" "$ROOT/boot" "$ROOT/var/lib/pacman/local" "$ROOT/var/lib/uconsole-omarchy-arm64" "$ROOT/home/alarm" "$ROOT/home/other"
 printf '%s\n' 'NAME="Arch Linux ARM"' 'ID=archarm' > "$ROOT/etc/os-release"
+# The fixture stamps the runner's own UID/GID into the target passwd database so
+# that ownership assertions work without privileges. The installer legitimately
+# refuses a UID-0 graphical session owner, so a root runner would otherwise fail
+# deep inside the installer with a misleading message.
 CURRENT_UID=$(id -u)
 CURRENT_GID=$(id -g)
+[[ "$CURRENT_UID" -gt 0 ]] || {
+  printf 'This test must run as a non-root user; the fixture graphical owner cannot be UID 0.\n' >&2
+  exit 1
+}
 printf 'alarm:x:%s:%s:Fixture User:/home/alarm:/bin/bash\nother:x:%s:%s:Other User:/home/other:/bin/bash\n' "$CURRENT_UID" "$CURRENT_GID" "$CURRENT_UID" "$CURRENT_GID" > "$ROOT/etc/passwd"
 cat > "$ROOT/var/lib/uconsole-omarchy-arm64/hardware-selection" <<'STATE'
 kernel_package=linux-rpi-16k

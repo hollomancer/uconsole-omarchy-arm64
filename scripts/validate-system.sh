@@ -187,7 +187,7 @@ state_field() {
 hardware_lock_field() {
   local package_name=$1
   local field=$2
-  awk -F '|' -v wanted="$package_name" -v index="$field" '$0 !~ /^#/ && $1 == wanted {count++; value=$index} END {if (count == 1 && value != "") print value; else exit 1}' "$HARDWARE_PACKAGES_FILE"
+  awk -F '|' -v wanted="$package_name" -v field_index="$field" '$0 !~ /^#/ && $1 == wanted {count++; value=$field_index} END {if (count == 1 && value != "") print value; else exit 1}' "$HARDWARE_PACKAGES_FILE"
 }
 
 module_loaded() {

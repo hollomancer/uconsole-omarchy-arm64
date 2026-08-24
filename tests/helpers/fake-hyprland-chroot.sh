@@ -21,7 +21,7 @@ printf '\n' >> "$LOG"
 lock_field() {
   local name=$1
   local field=$2
-  awk -F '|' -v wanted="$name" -v index="$field" '$0 !~ /^#/ && $1 == wanted { print $index; exit }' "$LOCK"
+  awk -F '|' -v wanted="$name" -v field_index="$field" '$0 !~ /^#/ && $1 == wanted { print $field_index; exit }' "$LOCK"
 }
 
 [[ "$COMMAND" == 'pacman' ]] || { printf 'Unexpected fake command: %s\n' "$COMMAND" >&2; exit 91; }

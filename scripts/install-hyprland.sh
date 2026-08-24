@@ -28,6 +28,7 @@ CHROOT_COMMAND="arch-chroot"
 LOCK_FILE="$REPO_ROOT/config/hyprland/packages.lock"
 TRANSACTION_LOCK="$REPO_ROOT/config/hyprland/transaction.lock"
 PACKAGE_DIR=""
+PACKAGE_DIR_IN_ROOT=""
 CONFIG_TEMPLATE="$REPO_ROOT/config/hyprland/minimal.lua"
 BASE_PACKAGE_LOCK="$REPO_ROOT/config/base-system/packages.lock"
 EXPECTED_KERNEL='linux-rpi-16k'
@@ -56,6 +57,7 @@ usage() {
     '  --lock-file FILE         Alternate complete direct-package lock' \
     '  --transaction-lock FILE  Alternate content-pinned transaction lock' \
     '  --config-template FILE   Alternate complete config template (tests only)' \
+    '  --package-dir-in-root DIR  Existing read-only package bind inside the offline root' \
     '  --help                   Show this help' \
     '' \
     'The installer requires the exact hardware and configured-admin states. It' \
@@ -106,6 +108,11 @@ while (($# > 0)); do
       PACKAGE_DIR=$2
       shift 2
       ;;
+    --package-dir-in-root)
+      (($# >= 2)) || install_common_die '--package-dir-in-root requires an absolute directory'
+      PACKAGE_DIR_IN_ROOT=$2
+      shift 2
+      ;;
     --config-template)
       (($# >= 2)) || install_common_die '--config-template requires a path'
       CONFIG_TEMPLATE=$2
@@ -130,6 +137,10 @@ install_common_require_file 'Hyprland config template' "$CONFIG_TEMPLATE"
 ROOT=$(install_common_require_offline_arch_root "$ROOT")
 [[ -d "$PACKAGE_DIR" && ! -L "$PACKAGE_DIR" ]] || install_common_die "package directory is missing or a symlink: $PACKAGE_DIR"
 PACKAGE_DIR=$(cd -- "$PACKAGE_DIR" && pwd -P) || install_common_die 'unable to resolve package directory'
+if [[ -n "$PACKAGE_DIR_IN_ROOT" ]]; then
+  [[ "$PACKAGE_DIR_IN_ROOT" =~ ^/run/uconsole-[a-z0-9][a-z0-9._-]*$ ]] || install_common_die '--package-dir-in-root must be a dedicated /run/uconsole-* directory'
+  [[ -d "$ROOT$PACKAGE_DIR_IN_ROOT" && ! -L "$ROOT$PACKAGE_DIR_IN_ROOT" ]] || install_common_die 'package directory inside the offline root is missing or unsafe'
+fi
 
 HARDWARE_STATE="$ROOT/var/lib/uconsole-omarchy-arm64/hardware-selection"
 install_common_require_file 'hardware selection state' "$HARDWARE_STATE"
@@ -204,6 +215,7 @@ TRANSACTION_VERSIONS=()
 TRANSACTION_ARCHITECTURES=()
 TRANSACTION_REPOSITORIES=()
 TRANSACTION_PATHS=()
+TRANSACTION_CHROOT_PATHS=()
 TRANSACTION_DIRECT=()
 file_size() {
   if stat -c '%s' "$1" >/dev/null 2>&1; then stat -c '%s' "$1"
@@ -233,6 +245,14 @@ while IFS='|' read -r name version architecture repository kind digest signature
   TRANSACTION_ARCHITECTURES+=("$architecture")
   TRANSACTION_REPOSITORIES+=("$repository")
   TRANSACTION_PATHS+=("$package_path")
+  if [[ -n "$PACKAGE_DIR_IN_ROOT" ]]; then
+    in_root_package="$ROOT$PACKAGE_DIR_IN_ROOT/$filename"
+    [[ -f "$in_root_package" && ! -L "$in_root_package" ]] || install_common_die "mounted in-root package is missing or unsafe: $filename"
+    cmp -s "$package_path" "$in_root_package" || install_common_die "mounted in-root package differs from verified host payload: $filename"
+    TRANSACTION_CHROOT_PATHS+=("$PACKAGE_DIR_IN_ROOT/$filename")
+  else
+    TRANSACTION_CHROOT_PATHS+=("")
+  fi
   TRANSACTION_DIRECT+=("$direct_marker")
 done < "$TRANSACTION_LOCK"
 
@@ -318,19 +338,23 @@ done
 if [[ $PACKAGES_CURRENT -eq 1 ]]; then
   printf '[PASS] package transaction already current; skipping reinstall\n'
 else
-  mkdir -p "$ROOT/var/cache/pacman/pkg" || install_common_fail 'unable to create target package cache'
   TARGET_PACKAGES=()
-  for package_path in "${TRANSACTION_PATHS[@]}"; do
-    filename=${package_path##*/}
-    destination="$ROOT/var/cache/pacman/pkg/$filename"
-    if [[ -e "$destination" ]]; then
-      [[ -f "$destination" && ! -L "$destination" ]] || install_common_die "unsafe package cache entry: $destination"
-      cmp -s "$package_path" "$destination" || install_common_die "package cache entry differs: $destination"
-    else
-      install -m 0644 "$package_path" "$destination" || install_common_fail "unable to stage package: $filename"
-    fi
-    TARGET_PACKAGES+=("/var/cache/pacman/pkg/$filename")
-  done
+  if [[ -n "$PACKAGE_DIR_IN_ROOT" ]]; then
+    TARGET_PACKAGES=("${TRANSACTION_CHROOT_PATHS[@]}")
+  else
+    mkdir -p "$ROOT/var/cache/pacman/pkg" || install_common_fail 'unable to create target package cache'
+    for package_path in "${TRANSACTION_PATHS[@]}"; do
+      filename=${package_path##*/}
+      destination="$ROOT/var/cache/pacman/pkg/$filename"
+      if [[ -e "$destination" ]]; then
+        [[ -f "$destination" && ! -L "$destination" ]] || install_common_die "unsafe package cache entry: $destination"
+        cmp -s "$package_path" "$destination" || install_common_die "package cache entry differs: $destination"
+      else
+        install -m 0644 "$package_path" "$destination" || install_common_fail "unable to stage package: $filename"
+      fi
+      TARGET_PACKAGES+=("/var/cache/pacman/pkg/$filename")
+    done
+  fi
   if ! "$CHROOT_COMMAND" "$ROOT" pacman -U --needed --noconfirm "${TARGET_PACKAGES[@]}"; then
     install_common_fail 'Hyprland package transaction failed; no user config was written'
   fi

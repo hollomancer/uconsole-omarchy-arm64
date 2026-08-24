@@ -379,7 +379,7 @@ BOOT_DEVICE=$BOOT_LOOP_DEVICE
 ROOT_DEVICE=$ROOT_LOOP_DEVICE
 
 mkfs.fat -F 32 --invariant -i "$BOOT_ID" -n UCONSOLE "$BOOT_DEVICE" || install_common_fail 'FAT filesystem creation failed'
-E2FSPROGS_FAKE_TIME="$SOURCE_DATE_EPOCH" mkfs.ext4 -F -L alarm-root -U "$ROOT_UUID" \
+E2FSPROGS_FAKE_TIME="$SOURCE_DATE_EPOCH" mkfs.ext4 -F -L uconsole-root -U "$ROOT_UUID" \
   -E lazy_itable_init=0,lazy_journal_init=0 "$ROOT_DEVICE" || install_common_fail 'ext4 filesystem creation failed'
 
 mount -o noatime "$ROOT_DEVICE" "$MOUNT_ROOT" || install_common_fail 'unable to mount temporary root filesystem'

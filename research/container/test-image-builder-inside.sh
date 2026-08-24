@@ -153,6 +153,7 @@ ROOT_DEVICE=$ROOT_LOOP_DEVICE
 [[ $(blkid -s UUID -o value "$ROOT_DEVICE") == 11111111-2222-4333-8444-555555555555 ]] || fail 'ext4 UUID differs'
 [[ $(blkid -s TYPE -o value "$BOOT_DEVICE") == vfat ]] || fail 'boot filesystem type differs'
 [[ $(blkid -s TYPE -o value "$ROOT_DEVICE") == ext4 ]] || fail 'root filesystem type differs'
+[[ $(blkid -s LABEL -o value "$ROOT_DEVICE") == uconsole-root ]] || fail 'root filesystem label differs'
 
 MOUNT_ROOT=$(mktemp -d /work/inspect.XXXXXX) || fail 'unable to create inspection mount'
 mount -o ro "$ROOT_DEVICE" "$MOUNT_ROOT" || fail 'unable to mount completed root read-only'

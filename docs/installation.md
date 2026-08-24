@@ -84,6 +84,20 @@ userspace foundation when paired with a CM5/uConsole kernel.
 
 Gate: the build can be reproduced without silently advancing any input.
 
+Research has now pinned the August 2026 rootfs and detached signature in
+[`../research/phase1-inputs.yaml`](../research/phase1-inputs.yaml). Its
+SHA-256 is
+`f10903be472e2662e110f0f7bae2750a30914ce3dc0fcd38ec85d3405d8c8967`,
+the signature verifies under Arch Linux ARM's published build-system
+fingerprint, and the archive stream is valid. Repeat signature verification in
+the Linux builder; never resolve the moving `latest` URL during an image build.
+
+Archive inspection also confirms why the rootfs is only a userspace input. It
+contains CM5 DTBs, but installs generic `linux-aarch64` 7.1.6-1 and U-Boot,
+uses `/dev/mmcblk0p1` in `fstab`, and includes default `root`/`alarm` accounts.
+The image step must replace that boot path, render `fstab` from partition UUIDs
+and rotate/lock all default credentials before first boot.
+
 ### P1.2 — Select and build the hardware package
 
 Assumption under test: either the v7.0.9 `linux-clockwork-arch` CM5 patch set

@@ -1,0 +1,71 @@
+schema: 1
+observed_at: "2026-08-24"
+purpose: "Immutable Phase 1 input and verification record"
+
+rootfs:
+  name: ArchLinuxARM-2026.08-rpi-aarch64-rootfs.tar.gz
+  project_page: https://archlinuxarm.org/about/downloads
+  immutable_url: https://ca.us.mirror.archlinuxarm.org/os/rpi/ArchLinuxARM-2026.08-rpi-aarch64-rootfs.tar.gz
+  moving_url: https://ca.us.mirror.archlinuxarm.org/os/ArchLinuxARM-rpi-aarch64-latest.tar.gz
+  last_modified: "2026-08-05T12:55:04Z"
+  size_bytes: 850215189
+  sha256: f10903be472e2662e110f0f7bae2750a30914ce3dc0fcd38ec85d3405d8c8967
+  upstream_md5: 2ecc6c62970e0d48964368ee4a58a57d
+  signature:
+    url: https://ca.us.mirror.archlinuxarm.org/os/rpi/ArchLinuxARM-2026.08-rpi-aarch64-rootfs.tar.gz.sig
+    sha256: 4465948c272ef9d87e475032be6a107d08b0110053f64ff8c505b7b92c69ab4d
+    signer_fingerprint: 68B3537F39A313B3E574D06777193F152BDBE6A6
+    result: valid
+    verification_note: "PGPy 0.6.0 verified the detached signature; fingerprint matched the project signing page and current official trusted list; current official revoked list was empty. Repeat with gpgv in the Linux image builder."
+  keyring:
+    package: archlinuxarm-keyring-20240419-2-any.pkg.tar.xz
+    url: https://ca.us.mirror.archlinuxarm.org/aarch64/core/archlinuxarm-keyring-20240419-2-any.pkg.tar.xz
+    sha256: 3cb36869edfe413672a6e932cc55d7f8386e1a9d3b38663cfb3bc6fe0d146e21
+    trusted_fingerprint: 68B3537F39A313B3E574D06777193F152BDBE6A6
+  archive_inspection:
+    tar_stream_valid: true
+    cm5_dtbs_present:
+      - boot/bcm2712-rpi-cm5-cm4io.dtb
+      - boot/bcm2712-rpi-cm5-cm5io.dtb
+    installed_kernel: linux-aarch64-7.1.6-1
+    default_boot: "generic linux-aarch64 through U-Boot boot.scr; replace in image with selected direct-firmware hardware package"
+    pacman_architecture: aarch64
+    pacman_signature_policy: "Required DatabaseOptional"
+    default_accounts_present:
+      - root
+      - alarm
+    package_download_user_present: alpm
+    default_fstab_boot_device: /dev/mmcblk0p1
+
+archlinuxarm_kernels:
+  pkgbuilds_commit: a75cbace2e966c706fe02f98f538ff56f70b5d2b
+  raspberrypi_linux_commit: 65495647821026e14223095d1b0124aa3d502dec
+  packages:
+    - name: linux-rpi
+      version: 6.18.45-1
+      defconfig: bcm2711_defconfig
+      headers: linux-rpi-headers
+    - name: linux-rpi-16k
+      version: 6.18.45-1
+      defconfig: bcm2712_defconfig
+      headers: linux-rpi-16k-headers
+
+hardware_sources:
+  custom_kernel:
+    repository: https://github.com/OuinOuin74/linux-clockwork-arch.git
+    commit: eef4936b13e581bc91054eaae20e18fa4d2b6120
+    package_version: 7.0.9-1
+    raspberrypi_linux_commit: c2ad96e1f0a8e5f6b4fab8cfd4534b115eb83394
+    status: "provisional first-boot default; rebuild and packaging cleanup required"
+  stock_kernel_dkms:
+    repository: https://github.com/yota9/uconsole-cm5.git
+    commit: bf7a0ab55654c96b74d013520e1196d39f66391a
+    status: "preferred experiment; Arch header build, licensing and hardware validation pending"
+
+builders:
+  - name: archlinuxarm-aarch64-base-devel
+    image: menci/archlinuxarm:base-devel-20260819.32222611223
+    index_digest: sha256:ca84a8dbc78fff9f1fd12b64d9b2494dd284a64be02ed21364f158bcb25456e0
+    arm64_manifest_digest: sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
+    status: "Pinned but local pull/build interrupted by container-store exhaustion"
+

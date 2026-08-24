@@ -75,7 +75,10 @@ moving_inputs_to_pin_before_build:
     observed_last_modified: "2026-08-05"
     observed_size_bytes: 850215189
     observed_upstream_md5: 2ecc6c62970e0d48964368ee4a58a57d
-    requirement: "Verify detached signature and record SHA-256 before use"
+    requirement: "Satisfied by immutable August archive record in phase1-inputs.yaml"
+    pinned_name: ArchLinuxARM-2026.08-rpi-aarch64-rootfs.tar.gz
+    pinned_sha256: f10903be472e2662e110f0f7bae2750a30914ce3dc0fcd38ec85d3405d8c8967
+    signature_result: valid
 
 repository_probes:
   - url: https://pkgs.omarchy.org/stable/x86_64/omarchy.db

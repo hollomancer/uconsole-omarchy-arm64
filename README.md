@@ -14,6 +14,8 @@ Research snapshot: **2026-08-24**
 
 - Upstream projects and architecture assumptions are pinned in
   [`research/upstream-lock.yaml`](research/upstream-lock.yaml).
+- The signed August Arch Linux ARM rootfs and Phase 1 kernel/source inputs are
+  content-pinned in [`research/phase1-inputs.yaml`](research/phase1-inputs.yaml).
 - Closely related community attempts are assessed in
   [`docs/prior-art.md`](docs/prior-art.md).
 - The integration boundary and update ownership are defined in
@@ -71,6 +73,7 @@ layer has passed on real hardware.
 │   ├── prior-art.md
 │   └── upstream-inventory.md
 ├── research/
+│   ├── phase1-inputs.yaml
 │   ├── upstream-lock.yaml
 │   └── package-audit/                    # future: generated CSV and provenance
 ├── scripts/

@@ -7,10 +7,12 @@ TEST_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd) || exit 2
 REPO_ROOT=$(cd -- "$TEST_DIR/.." && pwd) || exit 2
 RUNNER="$REPO_ROOT/research/compare-omarchy-prepared-images.sh"
 INSIDE="$REPO_ROOT/research/container/compare-omarchy-prepared-images-inside.sh"
+DIAGNOSTIC_INSIDE="$REPO_ROOT/research/container/diagnose-omarchy-image-metadata-inside.sh"
 
-bash -n "$RUNNER" "$INSIDE"
+bash -n "$RUNNER" "$INSIDE" "$DIAGNOSTIC_INSIDE"
 HELP_OUTPUT=$($RUNNER --help)
 printf '%s\n' "$HELP_OUTPUT" | grep -Fq 'Both directories are mounted read-only'
+printf '%s\n' "$HELP_OUTPUT" | grep -Fq -- '--diagnose-metadata'
 
 for forbidden in --device --write-device --delete --publish; do
   "$RUNNER" "$forbidden" >/dev/null 2>&1
@@ -26,5 +28,8 @@ grep -Fq -- '--read-only' "$INSIDE"
 grep -Fq 'mount -o ro' "$INSIDE"
 grep -Fq 'semantic_inventory' "$INSIDE"
 grep -Fq 'filesystem bytes differ' "$INSIDE"
+grep -Fq 'timestamp_inventory' "$DIAGNOSTIC_INSIDE"
+grep -Fq 'dumpe2fs -h' "$DIAGNOSTIC_INSIDE"
+grep -Fq 'mount -o ro' "$DIAGNOSTIC_INSIDE"
 
 printf 'prepared image comparison contract tests: PASS\n'

@@ -112,7 +112,7 @@ reproducibility:
   procedural_repeatability: PASS
   semantic_repeatability: PASS
   byte_reproducibility: FAIL
-  requirement_decision: pending
+  requirement_decision: semantic-repeatability-accepted-for-bring-up
 limits:
   - The synthetic image has not booted on a CM5 or uConsole.
   - Synthetic credentials make this artifact ineligible for publication or physical media.

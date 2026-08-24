@@ -13,11 +13,14 @@ if ! REPO_ROOT=$(cd -- "$SCRIPT_DIR/.." && pwd); then printf 'Unable to resolve 
 
 IMAGE_A_DIR=''
 IMAGE_B_DIR=''
+ACTION=compare
 BUILDER_IMAGE='menci/archlinuxarm:base-devel-20260819.32222611223@sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0'
 
 usage() {
   printf '%s\n' \
     'Usage: research/compare-omarchy-prepared-images.sh --image-a-dir DIR --image-b-dir DIR' \
+    '' \
+    '  --diagnose-metadata  Skip content hashing and report timestamp/superblock variance' \
     '' \
     'Both directories are mounted read-only. No image or physical device is modified.'
 }
@@ -31,6 +34,7 @@ while (($# > 0)); do
   case "$1" in
     --image-a-dir) (($# >= 2)) || die '--image-a-dir requires a path'; IMAGE_A_DIR=$2; shift 2 ;;
     --image-b-dir) (($# >= 2)) || die '--image-b-dir requires a path'; IMAGE_B_DIR=$2; shift 2 ;;
+    --diagnose-metadata) ACTION=metadata; shift ;;
     --device|--write-device|--delete|--publish) die "$1 is forbidden by the read-only comparison boundary" ;;
     --help|-h) usage; exit 0 ;;
     *) die "unknown option: $1" ;;
@@ -58,9 +62,14 @@ command -v docker >/dev/null 2>&1 || die 'docker is required'
 
 printf '[PASS] image A directory   %s\n' "$IMAGE_A_DIR"
 printf '[PASS] image B directory   %s\n' "$IMAGE_B_DIR"
+if [[ "$ACTION" == metadata ]]; then
+  CONTAINER_RUNNER=/repo/research/container/diagnose-omarchy-image-metadata-inside.sh
+else
+  CONTAINER_RUNNER=/repo/research/container/compare-omarchy-prepared-images-inside.sh
+fi
 docker run --rm --privileged --platform linux/arm64 --network none \
   --mount "type=bind,src=$REPO_ROOT,dst=/repo,readonly" \
   --mount "type=bind,src=$IMAGE_A_DIR,dst=/image-a,readonly" \
   --mount "type=bind,src=$IMAGE_B_DIR,dst=/image-b,readonly" \
   "$BUILDER_IMAGE" \
-  /repo/research/container/compare-omarchy-prepared-images-inside.sh
+  "$CONTAINER_RUNNER"

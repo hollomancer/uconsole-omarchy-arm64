@@ -84,6 +84,18 @@ semantic repeatability—not byte-for-byte image reproducibility. Whether to
 normalize filesystem metadata/layout further is an explicit project decision;
 package and input locks remain byte-addressed regardless.
 
+The variance is not a single mutable superblock field. All 415 FAT entries
+have different creation/modification times; 109,513 of 109,514 ext4 entries
+have different ctimes; and ext4 carries different directory-hash seeds,
+mount/write times, lifetime writes and allocation counts. Exact image bytes
+would therefore require offline, controlled filesystem population rather than
+the current mount-and-copy builder. Semantic repeatability is the recommended
+bring-up boundary.
+
+The operator accepted that boundary on 2026-08-24. Byte-identical FAT/ext4
+images are deferred; this does not relax package hashes, source locks,
+per-file semantic comparison, read-only image inspection or hardware gates.
+
 ## Selected kernel baseline
 
 The initial research selected the source and patch set from

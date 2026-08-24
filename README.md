@@ -351,6 +351,7 @@ that gate but has not been applied to a card.
 │   │   ├── build-dkms-inside.sh
 │   │   ├── build-omarchy-core-packages-inside.sh
 │   │   ├── compare-omarchy-prepared-images-inside.sh
+│   │   ├── diagnose-omarchy-image-metadata-inside.sh
 │   │   ├── probe-image-output-inside.sh
 │   │   └── test-omarchy-prepared-image-inside.sh
 │   ├── base-system-results.yaml

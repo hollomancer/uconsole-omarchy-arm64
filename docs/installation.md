@@ -585,6 +585,11 @@ read-only. The current pair is semantically identical for every compared
 entry and manifest field, but is not byte-identical; see
 `research/omarchy-prepared-image-reproducibility-results.yaml`.
 
+Add `--diagnose-metadata` to skip the long content scan and report timestamp,
+FAT boot-sector and ext4 superblock variance. The current result shows that
+byte reproducibility needs a different offline filesystem-population strategy;
+it is not required for the recommended hardware bring-up path.
+
 The first live launch remains manual after Phase 2 evidence is saved. Keep the
 upstream autostart and Hyprland defaults out of the transaction; start only the
 reviewed shell wrapper from the existing minimal session. Re-run

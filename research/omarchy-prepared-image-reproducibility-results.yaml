@@ -46,13 +46,39 @@ read_only_comparison:
   normalized_external_manifest: PASS
   image_directories_mounted_read_only: true
   filesystem_mounts_read_only: true
+metadata_diagnostic:
+  flag: --diagnose-metadata
+  container_runner: container/diagnose-omarchy-image-metadata-inside.sh
+  result: PASS
+  boot_entries: 415
+  boot_path_mismatches: 0
+  boot_mtime_differences: 415
+  boot_ctime_differences: 415
+  fat_boot_sector_a_sha256: 36bdcfbc9b700e7aa8e995339b842a27ec9fbfe590139b623e1df355c122bff1
+  fat_boot_sector_b_sha256: 36bdcfbc9b700e7aa8e995339b842a27ec9fbfe590139b623e1df355c122bff1
+  root_entries: 109514
+  root_path_mismatches: 0
+  root_mtime_differences: 6
+  root_ctime_differences: 109513
+  ext4_superblock_a_sha256: 9cd62c0da9a0ae2195d2c80c32fbfede8ae6cd1780bb09bd7ee676f6c1f66bf2
+  ext4_superblock_b_sha256: 80c61d96c47d0ba34d7872ea9fa5aa4058906ad2207806a6d062a9972bef477b
+  ext4_free_blocks_a: 907973
+  ext4_free_blocks_b: 907978
+  ext4_directory_hash_seed_a: 52db92da-b6d9-4c31-87ab-1c2c66de7159
+  ext4_directory_hash_seed_b: 8f1be257-e853-4f06-beaa-c72e6fe77240
+  ext4_mount_write_times_differ: true
+  ext4_lifetime_writes_differ: true
+  diagnostic_mounts_read_only: true
 result:
   procedural_repeatability: PASS
   semantic_repeatability: PASS
   byte_reproducibility: FAIL
-  classification: filesystem-metadata-or-layout-variance
-  exact_variance_cause: not-yet-localized
-  byte_reproducibility_requirement: decision-pending
+  classification: localized-filesystem-metadata-and-layout-variance
+  exact_variance_cause: fat-entry-times-plus-ext4-ctimes-random-hash-seed-and-allocation
+  engineering_implication: byte-reproducibility-needs-offline-filesystem-population-redesign
+  byte_reproducibility_requirement: deferred-for-hardware-bring-up
+  operator_decision: semantic-repeatability-accepted
+  operator_decision_date: 2026-08-24
 artifact_policy:
   both_local_only: true
   published: false

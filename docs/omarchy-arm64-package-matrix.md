@@ -1,0 +1,97 @@
+# Omarchy ARM64 package compatibility matrix
+
+## Scope and method
+
+This preliminary audit compares the 148 unique, non-comment entries in
+Omarchy Quattro's `install/omarchy-base.packages` at commit `d99d4fc6` against
+the Arch Linux ARM aarch64 `core`, `extra`, `alarm` and `aur` sync databases
+observed on 2026-08-24.
+
+- **121/148** names have an exact aarch64 repository match.
+- **27/148** do not have an exact repository name match.
+- An exact match is inventory evidence, not proof that runtime behavior works.
+- A missing exact name is not necessarily incompatible; it may be an
+  Omarchy-owned package, an alternate Arch name, or an optional x86 application.
+
+## Core stack anchors
+
+| Package/component | Omarchy use | ARM64 status observed | Proposed source/replacement | Required |
+|---|---|---|---|---|
+| `hyprland` | compositor | ALARM aarch64 0.56.1-3 | ALARM | Yes, Phase 2 |
+| `aquamarine` | DRM backend | ALARM aarch64 0.14.0-2 | ALARM | Yes, transitive |
+| `quickshell` | bar, menu, OSD, notifications | ALARM aarch64 0.3.1-1 | ALARM | Yes, core Omarchy UX |
+| `uwsm` | Wayland session management | ALARM `any` 0.26.7-1 | ALARM | Yes |
+| `xdg-desktop-portal-hyprland` | portals/screenshare integration | ALARM aarch64 1.4.1-1 | ALARM | Yes |
+| `mesa` / `libdrm` | V3D graphics userspace | ALARM aarch64; Mesa 1:26.2.1-1, libdrm 2.4.134-1 | ALARM | Yes, Phase 1 gate |
+| `vulkan-broadcom` | V3DV Vulkan ICD | ALARM aarch64 1:26.2.1-1 | ALARM | Yes for requested validation |
+| `pipewire` / `wireplumber` | audio/session graph | ALARM aarch64 | ALARM | Yes |
+| `foot` | terminal | ALARM aarch64 1.27.0-1 | ALARM | Yes for core UX |
+| `omarchy` | commands and userland | PKGBUILD is `any`, but public aarch64 repo is absent and package hard-depends on Limine/Snapper boot machinery | rebuild thin ARM-safe package from pinned upstream | Yes, Phase 5 only |
+| `omarchy-settings` | broad `/etc` defaults | PKGBUILD is `any`; contents overlap boot, logind, networking and initramfs ownership | split/audit; install only approved settings | Partly; not wholesale |
+
+## Exact-name misses requiring classification
+
+“Omarchy PKGBUILD arch” describes build metadata found upstream, not a completed
+build result.
+
+| Package | Initial Omarchy role | Current ARM evidence | Candidate disposition | Core? |
+|---|---|---|---|---|
+| `aether` | desktop application | Omarchy PKGBUILD declares aarch64 | build/test from pinned PKGBUILD | Optional |
+| `asdcontrol` | Apple Studio Display control | Omarchy PKGBUILD is x86_64-only and hardware is irrelevant | explicitly omit | No |
+| `cliamp` | terminal media utility | Omarchy PKGBUILD declares aarch64 | build/test | Optional |
+| `dotnet-runtime` | application runtime | no exact current ALARM name in audit | resolve actual consumer/version; upstream ARM binary or omit consumer | Unknown |
+| `herdr` | Omarchy utility | Omarchy PKGBUILD declares aarch64 | build/test | To classify |
+| `hyprland-preview-share-picker` | screen-share picker | Omarchy PKGBUILD is x86_64-only | source-build audit or use portal-compatible picker | Optional functionality |
+| `localsend` | file sharing app | Omarchy PKGBUILD declares aarch64 | build/test; inspect bundled binaries | Optional |
+| `mise-bin` | development runtime manager | Omarchy PKGBUILD declares aarch64 | build/test or official upstream ARM64 binary | Optional/development |
+| `nvim` | editor command | no package by that exact name | use ALARM `neovim` after confirming it provides `nvim` | Optional/core shell tooling |
+| `obs-studio` | recording/streaming | missing in audited repos | source-build or omit; benchmark V3D encoding path | Optional |
+| `obsidian` | notes app | missing in audited repos | official ARM64 if compatible with 16 KiB pages, otherwise omit | Optional |
+| `omacalc` | Omarchy calculator utility | Omarchy PKGBUILD declares aarch64 | build/test | Likely core UX |
+| `omacut` | Omarchy capture utility | Omarchy PKGBUILD declares aarch64 | build/test with portal and clipboard | Likely core UX |
+| `omarchy-nvim` | editor configuration | Omarchy PKGBUILD is `any` | build after `neovim` mapping | Optional |
+| `omawrite` | writing application | Omarchy PKGBUILD declares aarch64 | build/test | Optional |
+| `pinta` | image editor | missing in audited repos | source-build or omit | Optional |
+| `qemu-user-static-binfmt` | emulation/build support | missing exact target package | keep on build host, not target, unless runtime use is proven | No for desktop |
+| `tensaku` | Omarchy utility | Omarchy PKGBUILD is x86_64-only | inspect source; build if portable, otherwise omit | Optional |
+| `tobi-try` | Omarchy utility | Omarchy PKGBUILD is `any` | build/test | To classify |
+| `ttf-ia-writer` | typography | Omarchy PKGBUILD is `any` | build/package font | Visual core |
+| `ttf-jetbrains-mono-nerd-basic` | terminal/icon font | Omarchy PKGBUILD is `any` | build/package font | Visual core |
+| `ttfx` | font utility | Omarchy PKGBUILD declares aarch64 | build/test | Supporting |
+| `tzupdate` | automatic timezone | Omarchy PKGBUILD is x86_64-only | audit source build; otherwise manual/systemd alternative | Optional |
+| `ufw-docker` | firewall/container integration | Omarchy PKGBUILD is `any` | build only if Docker group is selected | Optional |
+| `xdg-terminal-exec` | default terminal dispatch | Omarchy PKGBUILD is `any` | build/test | Core integration |
+| `yaru-icon-theme` | icon theme | Omarchy PKGBUILD is `any` | build/package | Visual core |
+| `yay` | AUR helper/update path | Omarchy PKGBUILD declares aarch64 | build in clean environment; never use as root | Update tooling, conditional |
+
+## Compatibility investigation plan
+
+The final matrix will be generated from pinned source, not maintained only by
+hand:
+
+1. Extract every package list, PKGBUILD dependency, systemd unit, shell command
+   invocation and Lua/QML external executable reference from the pinned Omarchy
+   tree.
+2. Assign each consumer to: visual configuration, shell tooling, system,
+   development, optional application, update infrastructure or Omarchy script.
+3. Resolve the complete dependency closure against pinned ALARM databases. Do
+   not equate the upstream Arch Linux x86 package set with ALARM.
+4. For every miss, inspect upstream release assets and PKGBUILD `arch`, then
+   follow the mandated preference order: ALARM, official ARM64 binary, AUR,
+   source build, compatible replacement, disable optional feature.
+5. Inspect binaries with `file` and `readelf`; inspect Electron/AppImage payloads
+   and native modules for aarch64 and 16 KiB-page compatibility.
+6. Build candidates in a clean native-aarch64 or full-system-QEMU Arch Linux ARM
+   environment. Record source commit, checksums, build log, license and
+   reproducible package hash.
+7. Test package install/uninstall and runtime behavior on the CM5. Record the
+   functional difference of every replacement.
+8. Emit a machine-readable CSV/JSON matrix and render this Markdown table from
+   it. CI fails on an unclassified dependency, an undocumented substitution or
+   a new x86-only artifact.
+
+Each final row will contain: package, version constraint, consumers, category,
+required group, repository evidence, declared architectures, binary
+architectures, build result, runtime result, 16 KiB-page result, replacement,
+functional delta, license, source pin and last verification date.
+

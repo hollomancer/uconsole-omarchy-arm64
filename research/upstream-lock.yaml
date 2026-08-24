@@ -1,0 +1,52 @@
+schema: 1
+observed_at: "2026-08-24"
+purpose: "Research baseline only; not yet a build lock"
+
+sources:
+  - name: omarchy
+    url: https://github.com/basecamp/omarchy.git
+    ref: quattro
+    commit: d99d4fc6de0bc99d48c9935724fa19d7fb41ae54
+    architecture_note: "Userland largely portable; package and boot integration not portable as-is"
+  - name: omarchy-v3
+    url: https://github.com/basecamp/omarchy.git
+    ref: master
+    commit: f4378f0de5b44d331ee943746a97872b718a6c18
+    architecture_note: "Legacy reference only"
+  - name: omarchy-pkgs
+    url: https://github.com/omacom-io/omarchy-pkgs.git
+    ref: master
+    commit: 40ddd6be195a704c1e4187fc7ecd3f2c8091e37b
+    architecture_note: "Build tooling contains aarch64 paths; public ARM repository absent at observation"
+  - name: omarchy-iso
+    url: https://github.com/omacom-io/omarchy-iso.git
+    ref: quattro
+    commit: 268bac16d351a21d867e37565738f458b11cb06c
+    architecture_note: "x86_64 ISO; ARM plan excludes Raspberry Pi/SBC boot"
+  - name: linux-clockwork-arch
+    url: https://github.com/OuinOuin74/linux-clockwork-arch.git
+    ref: main
+    commit: eef4936b13e581bc91054eaae20e18fa4d2b6120
+    release: v7.0.9
+    architecture_note: "Initial Arch CM5/uConsole kernel baseline; rebuild and audit required"
+
+moving_inputs_to_pin_before_build:
+  - url: https://ca.us.mirror.archlinuxarm.org/os/ArchLinuxARM-rpi-aarch64-latest.tar.gz
+    observed_last_modified: "2026-08-05"
+    observed_size_bytes: 850215189
+    observed_upstream_md5: 2ecc6c62970e0d48964368ee4a58a57d
+    requirement: "Verify detached signature and record SHA-256 before use"
+
+repository_probes:
+  - url: https://pkgs.omarchy.org/stable/x86_64/omarchy.db
+    observed_http_status: 200
+  - url: https://pkgs.omarchy.org/stable/aarch64/omarchy.db
+    observed_http_status: 404
+  - url: https://pkgs.omarchy.org/edge/x86_64/omarchy.db
+    observed_http_status: 200
+  - url: https://pkgs.omarchy.org/edge/aarch64/omarchy.db
+    observed_http_status: 404
+  - url: https://stable.mirror.omarchy.org/core/x86_64/core.db
+    observed_http_status: 200
+  - url: https://stable.mirror.omarchy.org/core/aarch64/core.db
+    observed_http_status: 404

@@ -505,11 +505,11 @@ else
   report WARN hyprland-portal 'not required during hardware phase'
 fi
 
-run_probe omarchy_version omarchy-version
-if [[ $PROBE_STATUS -eq 0 && -n "$PROBE_OUTPUT" ]]; then
+run_probe omarchy_version pacman -Q omarchy-arm64-userland
+if [[ $PROBE_STATUS -eq 0 && "$PROBE_OUTPUT" == 'omarchy-arm64-userland 4.0.0.alpha-3' ]]; then
   report PASS omarchy-userland "$PROBE_OUTPUT"
 elif phase_at_least omarchy; then
-  report FAIL omarchy-userland "required Omarchy command unavailable: ${PROBE_OUTPUT:-no output}"
+  report FAIL omarchy-userland "exact thin package unavailable: ${PROBE_OUTPUT:-no output}"
 else
   report WARN omarchy-userland 'not required before the Omarchy phase'
 fi

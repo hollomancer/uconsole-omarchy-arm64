@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
-# Seed only the reviewed Omarchy shell configuration and historical migration
-# baseline into a user on an offline root. Existing Omarchy configuration or
-# migration state is a hard conflict; this script never starts a session.
+# Seed only the reviewed Omarchy shell/Foot configuration and historical
+# migration baseline into a user on an offline root. Existing target
+# configuration or migration state is a hard conflict; this never starts a
+# session.
 
 set -u
 set -o pipefail
@@ -21,9 +22,15 @@ SOURCE_ARCHIVE=''
 MIGRATION_LOCK="$REPO_ROOT/config/arm64-overrides/omarchy-migration-baseline.lock"
 SHELL_CONFIG="$REPO_ROOT/config/arm64-overrides/shell.json"
 EXPECTED_PACKAGE_COMMIT='d99d4fc6de0bc99d48c9935724fa19d7fb41ae54'
+EXPECTED_USERLAND_VERSION='4.0.0.alpha-3'
+EXPECTED_SHELL_TRANSACTION_SHA256='9cdf7f52c8f5da8a857ebd1fd3c90a7e299965396b9a2ca4fb0116f633a546e3'
+EXPECTED_RUNTIME_POLICY_SHA256='5c5c8e3e01b4217294210a1442af8c3b42d42f4f1b97f29cec85ded8296c724d'
 EXPECTED_MIGRATION_COUNT=87
 EXPECTED_MIGRATION_LOCK_SHA256='bf1cd979738bc9035731e881fae95072d64caf2bacb3705f9a47433a0aa7b143'
 EXPECTED_SHELL_SHA256='b8f1995c5fbfe55252463c47f21cce833154f905a92d493a03981a21eac8ac9a'
+EXPECTED_FOOT_SHA256='a5165f8a0a93c6d7262aaae6c00c11617ffb2f35bafca73f458b6549a9dca5cf'
+EXPECTED_THEME_FOOT_SHA256='d20c424a3e0635011e683d8a379b1e3711abaf61f7d44cf9dd25409a04558667'
+EXPECTED_THEME_SHELL_SHA256='1343b48a969352eddb145e5acff00a8505d30f4f4007c4234d593b9d4b4a053b'
 INITIAL_THEME='tokyo-night'
 INITIAL_THEME_TARGET='/usr/share/omarchy-arm64/themes/tokyo-night'
 INITIAL_BACKGROUND_TARGET='/usr/share/omarchy-arm64/themes/tokyo-night/backgrounds/0-winding-road.webp'
@@ -34,7 +41,7 @@ usage() {
     'Usage: prepare-omarchy-user.sh --root DIR --user NAME --source-archive FILE [--plan|--apply]' \
     '' \
     'The root must be offline and already contain omarchy-arm64-userland.' \
-    'Existing ~/.config/omarchy or migration state is never overwritten.' \
+    'Existing ~/.config/omarchy, ~/.config/foot, or migration state is never overwritten.' \
     'No Hyprland file, service, session, migration script or system update is run.' \
     '--chown-command is a chown-compatible test/build hook; production uses chown.'
 }
@@ -78,14 +85,32 @@ PACKAGE_ROOT="$ROOT/usr/share/omarchy-arm64"
 PACKAGE_STATE="$PACKAGE_ROOT/ARM64-PACKAGE-STATE"
 install_common_require_file 'installed ARM userland state' "$PACKAGE_STATE"
 install_common_require_file 'installed ARM shell configuration' "$PACKAGE_ROOT/config/omarchy/shell.json"
+install_common_require_file 'installed Foot configuration' "$PACKAGE_ROOT/config/foot/foot.ini"
 [[ "$(install_common_sha256 "$PACKAGE_ROOT/config/omarchy/shell.json")" == "$EXPECTED_SHELL_SHA256" ]] || install_common_die 'installed shell configuration differs from reviewed ARM configuration'
+[[ "$(install_common_sha256 "$PACKAGE_ROOT/config/foot/foot.ini")" == "$EXPECTED_FOOT_SHA256" ]] || install_common_die 'installed Foot configuration differs from pinned Omarchy configuration'
 grep -Fxq "upstream_commit=$EXPECTED_PACKAGE_COMMIT" "$PACKAGE_STATE" || install_common_die 'installed ARM userland has an unexpected upstream commit'
 grep -Fxq 'activation=not-enabled' "$PACKAGE_STATE" || install_common_die 'installed ARM userland state is not inactive'
+grep -Fxq 'initial_theme=tokyo-night-rendered' "$PACKAGE_STATE" || install_common_die 'installed ARM userland lacks the rendered initial theme state'
+grep -Fxq 'terminal_config=home-seed-only' "$PACKAGE_STATE" || install_common_die 'installed ARM userland has an unexpected terminal ownership boundary'
+grep -Fxq 'fontconfig=package-owned' "$PACKAGE_STATE" || install_common_die 'installed ARM userland has an unexpected fontconfig boundary'
 grep -Fxq 'hyprland_owned=no' "$PACKAGE_STATE" || install_common_die 'installed package unexpectedly owns Hyprland'
 grep -Fxq 'updates_owned=no' "$PACKAGE_STATE" || install_common_die 'installed package unexpectedly owns updates'
 grep -Fxq 'hardware_owned=no' "$PACKAGE_STATE" || install_common_die 'installed package unexpectedly owns hardware'
 [[ -d "$ROOT$INITIAL_THEME_TARGET" && ! -L "$ROOT$INITIAL_THEME_TARGET" ]] || install_common_die 'initial packaged theme is missing or unsafe'
 install_common_require_file 'initial packaged background' "$ROOT$INITIAL_BACKGROUND_TARGET"
+install_common_require_file 'initial rendered Foot theme' "$ROOT$INITIAL_THEME_TARGET/foot.ini"
+install_common_require_file 'initial rendered shell theme' "$ROOT$INITIAL_THEME_TARGET/shell.toml"
+[[ "$(install_common_sha256 "$ROOT$INITIAL_THEME_TARGET/foot.ini")" == "$EXPECTED_THEME_FOOT_SHA256" ]] || install_common_die 'initial rendered Foot theme differs'
+[[ "$(install_common_sha256 "$ROOT$INITIAL_THEME_TARGET/shell.toml")" == "$EXPECTED_THEME_SHELL_SHA256" ]] || install_common_die 'initial rendered shell theme differs'
+
+SHELL_STATE="$ROOT/var/lib/uconsole-omarchy-arm64/omarchy-shell-selection"
+install_common_require_file 'installed Omarchy shell selection' "$SHELL_STATE"
+grep -Fxq "userland_version=$EXPECTED_USERLAND_VERSION" "$SHELL_STATE" || install_common_die 'Omarchy shell selection has an unexpected userland version'
+grep -Fxq "transaction_lock_sha256=$EXPECTED_SHELL_TRANSACTION_SHA256" "$SHELL_STATE" || install_common_die 'Omarchy shell selection has an unexpected official transaction'
+grep -Fxq "runtime_policy_sha256=$EXPECTED_RUNTIME_POLICY_SHA256" "$SHELL_STATE" || install_common_die 'Omarchy shell selection has an unexpected runtime boundary'
+grep -Fxq "target_user=$TARGET_USER" "$SHELL_STATE" || install_common_die 'Omarchy shell selection belongs to a different user'
+grep -Fxq 'home_seeded=no' "$SHELL_STATE" || install_common_die 'Omarchy shell selection already reports a home seed'
+grep -Fxq 'session_activated=no' "$SHELL_STATE" || install_common_die 'Omarchy shell selection reports session activation'
 
 PASSWD_FILE="$ROOT/etc/passwd"
 install_common_require_file 'target passwd database' "$PASSWD_FILE"
@@ -128,6 +153,8 @@ trap - EXIT
 
 CONFIG_DIR="$HOME_ROOT/.config/omarchy"
 TARGET_CONFIG="$CONFIG_DIR/shell.json"
+FOOT_CONFIG_DIR="$HOME_ROOT/.config/foot"
+TARGET_FOOT_CONFIG="$FOOT_CONFIG_DIR/foot.ini"
 MIGRATION_DIR="$HOME_ROOT/.local/state/omarchy/migrations"
 CURRENT_DIR="$HOME_ROOT/.local/state/omarchy/current"
 STATE_DIR="$ROOT/var/lib/uconsole-omarchy-arm64"
@@ -135,20 +162,19 @@ STATE_FILE="$STATE_DIR/user-preparation-$TARGET_USER"
 
 markers_match() {
   [[ -d "$MIGRATION_DIR" && ! -L "$MIGRATION_DIR" ]] || return 1
-  local observed="$STATE_DIR/.migration-markers-observed.$$"
-  local expected="$STATE_DIR/.migration-markers-expected.$$"
-  find "$MIGRATION_DIR" -maxdepth 1 -type f -size 0 -exec basename {} \; | LC_ALL=C sort > "$observed" || return 1
-  awk -F '|' '$0 !~ /^#/ && NF { print $1 }' "$MIGRATION_LOCK" | LC_ALL=C sort > "$expected" || return 1
-  local result=0
-  cmp -s "$observed" "$expected" || result=1
-  rm -f -- "$observed" "$expected"
-  [[ $(find "$MIGRATION_DIR" -mindepth 1 -maxdepth 1 ! -type f | wc -l | tr -d ' ') -eq 0 ]] || result=1
-  return "$result"
+  local observed=''
+  local expected=''
+  observed=$(find "$MIGRATION_DIR" -maxdepth 1 -type f -size 0 -exec basename {} \; | LC_ALL=C sort) || return 1
+  expected=$(awk -F '|' '$0 !~ /^#/ && NF { print $1 }' "$MIGRATION_LOCK" | LC_ALL=C sort) || return 1
+  [[ "$observed" == "$expected" ]] || return 1
+  [[ $(find "$MIGRATION_DIR" -mindepth 1 -maxdepth 1 ! -type f | wc -l | tr -d ' ') -eq 0 ]]
 }
 
 existing_seed_matches() {
   [[ -f "$TARGET_CONFIG" && ! -L "$TARGET_CONFIG" ]] || return 1
   [[ "$(install_common_sha256 "$TARGET_CONFIG")" == "$EXPECTED_SHELL_SHA256" ]] || return 1
+  [[ -f "$TARGET_FOOT_CONFIG" && ! -L "$TARGET_FOOT_CONFIG" ]] || return 1
+  [[ "$(install_common_sha256 "$TARGET_FOOT_CONFIG")" == "$EXPECTED_FOOT_SHA256" ]] || return 1
   markers_match || return 1
   [[ -d "$CURRENT_DIR" && ! -L "$CURRENT_DIR" ]] || return 1
   [[ -L "$CURRENT_DIR/theme" && "$(readlink "$CURRENT_DIR/theme")" == "$INITIAL_THEME_TARGET" ]] || return 1
@@ -159,16 +185,17 @@ existing_seed_matches() {
   grep -Fxq "target_user=$TARGET_USER" "$STATE_FILE" || return 1
   grep -Fxq "migration_count=$EXPECTED_MIGRATION_COUNT" "$STATE_FILE" || return 1
   grep -Fxq "migration_lock_sha256=$EXPECTED_MIGRATION_LOCK_SHA256" "$STATE_FILE" || return 1
+  grep -Fxq "foot_sha256=$EXPECTED_FOOT_SHA256" "$STATE_FILE" || return 1
   grep -Fxq 'historical_migrations_run=no' "$STATE_FILE" || return 1
   grep -Fxq 'session_modified=no' "$STATE_FILE" || return 1
   grep -Fxq "initial_theme=$INITIAL_THEME" "$STATE_FILE" || return 1
 }
 
-if [[ -e "$CONFIG_DIR" || -e "$MIGRATION_DIR" || -e "$CURRENT_DIR" || -e "$STATE_FILE" ]]; then
+if [[ -e "$CONFIG_DIR" || -e "$FOOT_CONFIG_DIR" || -e "$MIGRATION_DIR" || -e "$CURRENT_DIR" || -e "$STATE_FILE" ]]; then
   if existing_seed_matches; then
     EXISTING='exact-idempotent'
   else
-    install_common_die 'existing Omarchy user configuration or migration state conflicts with the exact seed; no files were changed'
+    install_common_die 'existing Omarchy, Foot, migration, visual, or preparation state conflicts with the exact seed; no files were changed'
   fi
 else
   EXISTING='none'
@@ -180,6 +207,7 @@ printf '%s\n' \
   "[PASS] user boundary        $TARGET_USER uid=$TARGET_UID gid=$TARGET_GID home=$TARGET_HOME existing=$EXISTING" \
   "[PASS] migration baseline   count=$MIGRATION_COUNT disposition=baseline-do-not-run" \
   "[PASS] shell configuration  sha256=$EXPECTED_SHELL_SHA256 plugins fail-closed" \
+  "[PASS] Foot configuration   sha256=$EXPECTED_FOOT_SHA256 theme=Tokyo-Night-rendered" \
   "[PASS] initial visual state theme=$INITIAL_THEME background=${INITIAL_BACKGROUND_TARGET##*/}" \
   '' \
   "Action: $ACTION" \
@@ -201,8 +229,9 @@ else
 fi
 
 mkdir -p "$HOME_ROOT/.config" "$HOME_ROOT/.local/state/omarchy" || install_common_fail 'unable to create user seed parents'
-[[ ! -e "$CONFIG_DIR" && ! -e "$MIGRATION_DIR" && ! -e "$CURRENT_DIR" ]] || install_common_fail 'user seed conflict appeared during transaction'
+[[ ! -e "$CONFIG_DIR" && ! -e "$FOOT_CONFIG_DIR" && ! -e "$MIGRATION_DIR" && ! -e "$CURRENT_DIR" ]] || install_common_fail 'user seed conflict appeared during transaction'
 mkdir "$CONFIG_DIR" || install_common_fail 'unable to create Omarchy config directory'
+mkdir "$FOOT_CONFIG_DIR" || install_common_fail 'unable to create Foot config directory'
 MIGRATION_STAGE="$HOME_ROOT/.local/state/omarchy/.migrations-arm64.$$"
 mkdir "$MIGRATION_STAGE" || install_common_fail 'unable to create migration marker stage'
 while IFS='|' read -r migration_name _ disposition _; do
@@ -210,8 +239,9 @@ while IFS='|' read -r migration_name _ disposition _; do
   [[ "$disposition" == 'baseline-do-not-run' ]] || install_common_fail 'migration policy changed during transaction'
   : > "$MIGRATION_STAGE/$migration_name" || install_common_fail "unable to create migration marker: $migration_name"
 done < "$MIGRATION_LOCK"
-chmod 0700 "$CONFIG_DIR" "$MIGRATION_STAGE" || install_common_fail 'unable to set user directory modes'
+chmod 0700 "$CONFIG_DIR" "$FOOT_CONFIG_DIR" "$MIGRATION_STAGE" || install_common_fail 'unable to set user directory modes'
 install -m 0644 "$SHELL_CONFIG" "$TARGET_CONFIG" || install_common_fail 'unable to install reviewed shell configuration'
+install -m 0644 "$PACKAGE_ROOT/config/foot/foot.ini" "$TARGET_FOOT_CONFIG" || install_common_fail 'unable to install pinned Foot configuration'
 chmod 0600 "$MIGRATION_STAGE"/* || install_common_fail 'unable to set migration marker modes'
 mv "$MIGRATION_STAGE" "$MIGRATION_DIR" || install_common_fail 'unable to publish migration baseline'
 CURRENT_STAGE="$HOME_ROOT/.local/state/omarchy/.current-arm64.$$"
@@ -223,13 +253,14 @@ chmod 0700 "$CURRENT_STAGE" || install_common_fail 'unable to set visual-state m
 chmod 0600 "$CURRENT_STAGE/theme.name" || install_common_fail 'unable to set theme-name mode'
 mv "$CURRENT_STAGE" "$CURRENT_DIR" || install_common_fail 'unable to publish initial visual state'
 
-"$CHOWN_COMMAND" -R "$TARGET_UID:$TARGET_GID" "$CONFIG_DIR" "$HOME_ROOT/.local/state/omarchy" || install_common_fail 'unable to set user seed ownership'
+"$CHOWN_COMMAND" -R "$TARGET_UID:$TARGET_GID" "$CONFIG_DIR" "$FOOT_CONFIG_DIR" "$HOME_ROOT/.local/state/omarchy" || install_common_fail 'unable to set user seed ownership'
 
 STATE_TMP="$STATE_DIR/.user-preparation-$TARGET_USER.$$"
 {
   printf 'target_user=%s\n' "$TARGET_USER"
   printf 'upstream_commit=%s\n' "$EXPECTED_PACKAGE_COMMIT"
   printf 'shell_sha256=%s\n' "$EXPECTED_SHELL_SHA256"
+  printf 'foot_sha256=%s\n' "$EXPECTED_FOOT_SHA256"
   printf 'migration_count=%s\n' "$EXPECTED_MIGRATION_COUNT"
   printf 'migration_lock_sha256=%s\n' "$EXPECTED_MIGRATION_LOCK_SHA256"
   printf 'historical_migrations_run=no\n'
@@ -243,6 +274,7 @@ mv "$STATE_TMP" "$STATE_FILE" || install_common_fail 'unable to publish preparat
 existing_seed_matches || install_common_fail 'published user preparation does not verify'
 printf '%s\n' \
   "[PASS] user shell seed       $TARGET_HOME/.config/omarchy/shell.json" \
+  "[PASS] user Foot seed        $TARGET_HOME/.config/foot/foot.ini" \
   "[PASS] migration markers    $EXPECTED_MIGRATION_COUNT zero-byte baseline markers; no migration executed" \
   "[PASS] initial visual state $INITIAL_THEME with packaged background" \
   "[PASS] preparation state    /var/lib/uconsole-omarchy-arm64/user-preparation-$TARGET_USER" \

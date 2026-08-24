@@ -1,0 +1,48 @@
+schema: 1
+verified_at: 2026-08-24
+target:
+  kind: disposable-off-target-root
+  architecture: aarch64
+  user: integration
+  uid: 1001
+  gid: 1001
+inputs:
+  source_commit: d99d4fc6de0bc99d48c9935724fa19d7fb41ae54
+  shell_sha256: b8f1995c5fbfe55252463c47f21cce833154f905a92d493a03981a21eac8ac9a
+  foot_sha256: a5165f8a0a93c6d7262aaae6c00c11617ffb2f35bafca73f458b6549a9dca5cf
+  migration_lock_sha256: bf1cd979738bc9035731e881fae95072d64caf2bacb3705f9a47433a0aa7b143
+  migration_count: 87
+result:
+  status: PASS
+  shell_config_seeded: true
+  foot_config_seeded: true
+  initial_theme: tokyo-night
+  background: 0-winding-road.webp
+  migration_markers: 87
+  historical_migrations_run: false
+  session_modified: false
+  activation: false
+  idempotent_reapply_byte_identical: true
+  lower_layer_state_byte_identical: true
+failures_recorded:
+  - attempt: 1
+    result: FAIL
+    finding: "The first integration assertion assumed UID/GID 1000, while the configured integration user is 1001:1001."
+    smallest_change: "Resolve numeric ownership from the target root's passwd database, matching the production script."
+  - attempt: 2
+    result: PASS
+    finding: "The exact seed and all 87 zero-byte baseline markers applied and reapplied without running migrations or changing session state."
+  - attempt: 3
+    result: FAIL
+    finding: "A later read-only recheck used the generic ARM builder image, which does not contain jq; the source audit failed before inspecting the target."
+    smallest_change: "Install the already content-locked jq/oniguruma payloads only into the ephemeral offline validation container."
+  - attempt: 4
+    result: WARN
+    finding: "The recheck passed but comm reported that C-sorted inputs were being compared under the container locale."
+    smallest_change: "Set LC_ALL=C inside the activation audit so sorting and comparison use the same deterministic collation."
+  - attempt: 5
+    result: PASS
+    finding: "The production preparation plan recognized the retained seed as exact-idempotent with no target writes or collation warnings."
+limits:
+  - The prepared shell remains inactive.
+  - Live visual, input and power behavior cannot be inferred from this filesystem-only test.

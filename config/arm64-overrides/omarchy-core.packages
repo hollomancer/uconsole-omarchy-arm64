@@ -1,19 +1,14 @@
-# Minimum repository package set used to validate the core Omarchy experience.
-# Omarchy's own userland is checked separately with `omarchy-version`.
-hyprland
-aquamarine
+# Exact direct package baseline for the selected first-run Omarchy shell.
+# Hyprland and inherited system dependencies are validated by their own layer;
+# Pacman also enforces the local thin package's explicit dependency metadata.
+omarchy-arm64-userland
 quickshell
-uwsm
-xdg-desktop-portal-hyprland
-xdg-terminal-exec
-foot
-neovim
+jq
+upower
+power-profiles-daemon
+wl-clipboard
+inotify-tools
 ttf-jetbrains-mono-nerd
-pipewire
-pipewire-pulse
-wireplumber
-zram-generator
-mesa
-libdrm
-vulkan-broadcom
-
+noto-fonts
+noto-fonts-emoji
+ttf-liberation

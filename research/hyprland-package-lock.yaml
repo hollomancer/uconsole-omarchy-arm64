@@ -52,6 +52,20 @@ native_plan:
     - all 204 detached-signature SHA-256 values
     - pciutils and polkit already installed at their direct-lock versions
     - no mirror access and no root mutation during plan
+native_application:
+  target: "disposable configured ARM64 clone"
+  result: PASS
+  packages_installed: 202
+  direct_packages_already_exact: 2
+  resulting_hyprland_version: 0.56.1-3
+  resulting_architecture: aarch64
+  config_sha256: f944368040661e3d88746e6c521c978a85e5b5beaeb62cf30ef460548adf0b60
+  verified:
+    - all package payload and detached-signature hashes matched the transaction lock
+    - Pacman applied the closure offline in a native ARM64 container
+    - exact hardware and base-system state remained byte-identical
+    - no display manager, autologin or UWSM activation was introduced
+    - the target user received only the reviewed minimal Hyprland configuration
 failures_recorded:
   - attempt: 1
     result: FAIL
@@ -68,10 +82,29 @@ failures_recorded:
   - attempt: 4
     result: PASS
     finding: "The content-pinned native plan validated all package/signature pairs without repository or target writes."
+  - attempt: 5
+    result: FAIL
+    finding: "The integration cache did not contain a convenience copy of transaction.lock."
+    smallest_change: "Mount the committed transaction lock explicitly; do not infer it from cache contents."
+  - attempt: 6
+    result: FAIL
+    finding: "Copying the complete package cache into the target exhausted the 226 MiB then available in Docker."
+    smallest_change: "Bind only the locked package payloads into the target cache for the duration of Pacman."
+  - attempt: 7
+    result: FAIL
+    finding: "Exposing detached signatures inside the target cache caused Pacman to require target trust initialization."
+    smallest_change: "Verify signatures with the pinned builder keyring before apply, then expose only content-locked package payloads to the offline target."
+  - attempt: 8
+    result: FAIL
+    finding: "The first package-only bind cleanup used non-recursive unmount and left nested binds, returning status 1 after an otherwise valid transaction."
+    smallest_change: "Use recursive unmount for the bounded package bind tree and verify cleanup."
+  - attempt: 9
+    result: PASS
+    finding: "The native ARM64 offline transaction completed and preserved all lower-layer state."
 limits:
   - The package cache is local build input and is not committed to Git.
   - Exact packages can disappear from the upstream mirror; archive them before discarding the retained local cache.
-  - The transaction has not been applied because live CM5 hardware and V3D/V3DV gates remain open.
+  - The transaction was applied only to a disposable off-target ARM64 clone. It has not been applied to live CM5 hardware because V3D/V3DV and Hyprland gates remain open.
   - Package signatures are verified while creating the cache; offline apply relies on the committed payload hashes and does not initialize target Pacman trust state.
 sources_checked:
   - https://archlinuxarm.org/packages/aarch64/hyprland

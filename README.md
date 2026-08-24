@@ -36,6 +36,12 @@ Research snapshot: **2026-08-24**
   are in [`research/image-builder-inputs.yaml`](research/image-builder-inputs.yaml).
 - The real offline-root kernel/DKMS transaction is recorded in
   [`research/phase1-hardware-install-results.yaml`](research/phase1-hardware-install-results.yaml).
+- Exact off-target DT overlay, kernel/module, initramfs and CM5 radio-firmware
+  validation is recorded in
+  [`research/phase1-offtarget-hardware-results.yaml`](research/phase1-offtarget-hardware-results.yaml).
+  It passes with two explicit warnings and makes no live-boot or GPU claim; the
+  evidence boundary is explained in
+  [`docs/off-target-testing.md`](docs/off-target-testing.md).
 - The exact offline NetworkManager/sudo/Bluetooth closure and synthetic
   first-boot configuration run are recorded in
   [`research/base-system-results.yaml`](research/base-system-results.yaml).
@@ -125,6 +131,17 @@ package checks. Enforced desktop phases fail on unavailable GPU probes, wrong
 panel orientation, missing Wayland input classes or an inactive portal.
 Deterministic fixtures exercise success, software-GPU and missing-session-
 evidence paths with `tests/test-validate-system.sh`.
+
+Before hardware is available, the exact retained boot artifacts can be checked
+without network, devices or persistent writes:
+
+```sh
+research/validate-phase1-offtarget-hardware.sh \
+  --volume uconsole-phase1-operator-pending-20260824
+```
+
+This is a static integration gate, not an emulated CM5 boot. QEMU currently has
+no Raspberry Pi 5/CM5 machine model, so a generic VM would cover userspace only.
 
 `scripts/bootstrap-arch.sh` verifies the rootfs digest and an explicit detached
 signature/keyring/fingerprint tuple, then can extract into a **new** offline
@@ -404,6 +421,7 @@ that gate but has not been applied to a card.
 │   ├── hardware-support.md
 │   ├── installation.md
 │   ├── known-issues.md
+│   ├── off-target-testing.md
 │   ├── omarchy-arm64-package-matrix.md
 │   ├── omarchy-arm-adaptation-audit.md
 │   ├── prior-art.md
@@ -421,6 +439,7 @@ that gate but has not been applied to a card.
 │   ├── inspect-phase1-configured-root.sh
 │   ├── install-phase1-base-packages.sh
 │   ├── test-phase1-configured-inspector.sh
+│   ├── validate-phase1-offtarget-hardware.sh
 │   ├── container/
 │   │   ├── archive-project-volume-inside.sh
 │   │   ├── build-board-package-inside.sh
@@ -450,6 +469,7 @@ that gate but has not been applied to a card.
 │   ├── phase1-inputs.yaml
 │   ├── phase1-operator-configuration-results.yaml
 │   ├── phase1-image-media-handoff-results.yaml
+│   ├── phase1-offtarget-hardware-results.yaml
 │   ├── phase1-operator-root-results.yaml
 │   ├── project-volume-archive-results.yaml
 │   ├── package-audit/                    # current generated matrix and pins
@@ -505,6 +525,7 @@ that gate but has not been applied to a card.
     ├── test-plan-sd-write-macos.sh        # current read-only macOS media safety test
     ├── test-phase1-image-identity.sh      # current deterministic candidate identity test
     ├── test-phase1-image-runner.sh        # current real Phase 1 image safety test
+    ├── test-phase1-offtarget-hardware.sh  # current exact-artifact static gate
     ├── test-prepare-omarchy-user.sh       # current inactive-home safety test
     ├── test-validate-system.sh            # current deterministic test
     └── fixtures/                          # current captured probe fixtures

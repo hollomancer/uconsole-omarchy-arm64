@@ -405,6 +405,19 @@ inserted and appears as a distinct removable external physical whole disk.
 
 ### P1.6 — Validate hardware in dependency order
 
+Before the unit is available, run the exact-artifact static gate against the
+retained root:
+
+```sh
+research/validate-phase1-offtarget-hardware.sh \
+  --volume uconsole-phase1-operator-pending-20260824
+```
+
+It must have no FAIL results. WARN remains acceptable for the recorded overlay
+unit-address diagnostics and absence of early-initramfs uConsole modules. This
+test does not advance any runtime subsystem to PASS; see
+[`off-target-testing.md`](off-target-testing.md).
+
 Test in this order so that failures remain in the correct layer:
 
 1. model/DT, kernel, modules and page size;

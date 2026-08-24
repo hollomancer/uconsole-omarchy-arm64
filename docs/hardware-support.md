@@ -36,10 +36,14 @@ Omarchy problem.
 The signed Arch Linux ARM root now contains the selected `linux-rpi-16k`
 kernel and headers, installed uConsole DKMS modules for the exact kernel
 release, both board overlays, Pi firmware/CM5 DTB, and a successfully generated
-broad first-boot initramfs. These are package/build PASS results only. Every
-subsystem in the table remains runtime UNKNOWN until the actual CM5 produces
-the listed validation evidence; in particular, compiled `vc4`/`v3d` support is
-not proof of accelerated scanout.
+broad first-boot initramfs. A network-disabled read-only test also applies both
+overlays to the exact CM5 DTB, checks the merged hardware nodes and fixups,
+closes every selected module dependency, inspects the initramfs and confirms
+the CM5 radio firmware paths. See
+[`off-target-testing.md`](off-target-testing.md). These are static/package PASS
+results only. Every subsystem in the table remains runtime UNKNOWN until the
+actual CM5 produces the listed validation evidence; in particular, compiled
+or initramfs-present `vc4`/`v3d` support is not proof of accelerated scanout.
 
 ## Graphics acceptance criteria
 

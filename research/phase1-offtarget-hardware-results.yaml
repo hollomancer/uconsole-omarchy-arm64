@@ -1,0 +1,35 @@
+schema: 1
+observed_at: "2026-08-24"
+runner: research/validate-phase1-offtarget-hardware.sh
+source_volume: uconsole-phase1-operator-pending-20260824
+execution:
+  image: "menci/archlinuxarm:base-devel-20260819.32222611223@sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0"
+  platform: linux/arm64
+  network: none
+  source_mount: read-only
+result: PASS_WITH_WARNINGS
+verified:
+  - "Target userspace and validation container are AArch64"
+  - "Both installed uConsole overlays apply to bcm2712-rpi-cm5-cm5io.dtb"
+  - "Merged tree retains no unresolved __fixups__ or 0xffffffff phandles"
+  - "Merged tree contains CM5, CWU50 panel, OCP8178 backlight, AXP228 battery/power and RP1 audio/amplifier evidence"
+  - "Exact kernel config selects 16 KiB pages, root storage, USB HID, VC4/V3D, brcmfmac and HCI UART"
+  - "depmod reports no unresolved symbols"
+  - "All nine local uConsole modules have exact 6.18.45-1-rpi-16k vermagic and GPL metadata"
+  - "uConsole, root-storage, VC4/V3D, Wi-Fi and Bluetooth module closures dry-resolve"
+  - "Initramfs contains root-storage, VC4/V3D, ext4 userspace and systemd/udev runtime files"
+  - "CM5 CYW43455 Wi-Fi/NVRAM and BCM4345C0 Bluetooth firmware paths exist"
+evidence:
+  merged_dtb_sha256: c310ad53068582afc2852dcc38075cca42cdf41f4aa2dab7977ccb794390c83d
+  initramfs_sha256: 52da5e81efcb3158d4b51c045867532f1cd9af733660711fb74387c51348cf28
+  base_dtc_warning_lines: 106
+  merged_dtc_warning_lines: 120
+  new_overlay_warning_lines: 14
+warnings:
+  - "The four overlay-created root nodes with @0 but no reg produce 14 differential DTC warnings through duplicate-address combinations"
+  - "Custom panel, backlight, power and audio modules are root-filesystem modules, not early-initramfs modules; early panel output is not proven"
+limitations:
+  - "No Raspberry Pi firmware boot, CM5 kernel execution or driver probe occurred"
+  - "No DRM device exists off-target, so V3D acceleration cannot pass"
+  - "Display timing/orientation, USB keyboard/trackball, audio routing, radio operation, battery readings and suspend remain hardware tests"
+  - "QEMU has no Raspberry Pi 5, CM5 or BCM2712 machine model"

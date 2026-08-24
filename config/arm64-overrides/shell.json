@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "idle": {
+    "screensaver": 0,
+    "lock": 0
+  },
+  "bar": {
+    "position": "top",
+    "transparent": false,
+    "centerAnchor": "omarchy.clock",
+    "layout": {
+      "left": [
+        { "id": "omarchy.menu" },
+        { "id": "omarchy.workspaces" }
+      ],
+      "center": [
+        { "id": "omarchy.clock", "format": "HH:mm", "formatAlt": "d MMMM yyyy", "verticalFormat": "HH\n—\nmm" },
+        { "id": "omarchy.keyboard-layout" }
+      ],
+      "right": [
+        { "id": "omarchy.tray" },
+        { "id": "omarchy.bluetooth" },
+        { "id": "omarchy.network" },
+        { "id": "omarchy.audio" },
+        { "id": "omarchy.monitor" },
+        { "id": "omarchy.power" }
+      ]
+    }
+  },
+  "plugins": [],
+  "disabledPlugins": [
+    "omarchy.active-window",
+    "omarchy.agents",
+    "omarchy.battery",
+    "omarchy.clipboard",
+    "omarchy.dev-gallery",
+    "omarchy.disk-speedtest",
+    "omarchy.dropbox",
+    "omarchy.emojis",
+    "omarchy.idle",
+    "omarchy.image-picker",
+    "omarchy.indicators",
+    "omarchy.lock",
+    "omarchy.microphone",
+    "omarchy.nightlight",
+    "omarchy.reminders",
+    "omarchy.spacer",
+    "omarchy.speedtest",
+    "omarchy.system-update",
+    "omarchy.tailscale",
+    "omarchy.weather",
+    "omarchy.wifiqr"
+  ]
+}

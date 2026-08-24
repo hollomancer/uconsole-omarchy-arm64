@@ -1,0 +1,41 @@
+# command|visibility|reason
+# Every upstream bin command not listed here is blocked by default. "expose"
+# means a wrapper may enter PATH; "internal" means it is callable only from
+# the packaged, reviewed shell tree under OMARCHY_PATH.
+omarchy-audio-input-set-default|internal|Enabled audio panel input selection.
+omarchy-audio-output-set-default|internal|Enabled audio and Bluetooth panel output selection.
+omarchy-audio-output-sink|internal|Enabled audio panel default-sink query.
+omarchy-audio-sink-availability|internal|Enabled audio panel sink availability query.
+omarchy-audio-tuning|internal|ARM safety implementation reports no laptop speaker tuning; no service or config mutation.
+omarchy-battery-status|internal|Enabled power panel battery query.
+omarchy-bluetooth-device|internal|Enabled Bluetooth panel device actions.
+omarchy-bluetooth-power|internal|Enabled Bluetooth panel adapter power action.
+omarchy-brightness-display|internal|Enabled monitor panel brightness action.
+omarchy-brightness-display-apple|internal|Upstream brightness dispatcher dependency; inactive for the internal DSI panel.
+omarchy-brightness-display-ddc|internal|Upstream brightness dispatcher dependency; inactive for the internal DSI panel.
+omarchy-cmd-present|internal|Enabled network panel capability probe.
+omarchy-display-text-size|internal|Enabled monitor panel text scaling action.
+omarchy-dns|internal|ARM safety implementation is query-only and rejects DNS mutation owned by Phase 1.
+omarchy-hw-display|internal|Backlight discovery consumed by the enabled monitor panel.
+omarchy-hw-laptop-closed|internal|Enabled Polkit agent lid-state guard.
+omarchy-hyprland-focus-app|internal|Enabled notification click-to-focus action.
+omarchy-hyprland-monitor-focused|internal|Focused-output query consumed by brightness control.
+omarchy-hyprland-monitor-focused-apple|internal|Upstream brightness dispatcher dependency; false for the uConsole panel.
+omarchy-hyprland-monitor-scaling|internal|Enabled monitor panel scaling action.
+omarchy-launch-floating-terminal-with-presentation|internal|ARM safety implementation rejects unreviewed terminal actions from enabled panels.
+omarchy-launch-shell|expose|Starts the reviewed Quickshell userland.
+omarchy-menu|expose|Core launcher IPC wrapper.
+omarchy-monitor-state|internal|Enabled monitor panel state query.
+omarchy-network-band|internal|Enabled network panel Wi-Fi band query and action.
+omarchy-network-status|internal|Enabled network panel status query.
+omarchy-notification-send|internal|Enabled monitor text-size feedback through the reviewed notification service.
+omarchy-osd|internal|Enabled monitor brightness feedback through reviewed shell IPC.
+omarchy-powerprofiles-list|internal|Enabled power panel profile query.
+omarchy-powerprofiles-set|internal|Enabled power panel profile action and battery hook.
+omarchy-remove-launcher-entry|internal|ARM safety implementation rejects package, Flatpak, webapp and TUI removal actions.
+omarchy-shell|expose|Reviewed Quickshell IPC client used by keybindings and widgets.
+omarchy-system-stats|internal|Enabled power panel system statistics query.
+omarchy-theme-bg-set|internal|ARM safety implementation rejects dynamic wallpaper mutation in the first session.
+omarchy-theme-bg-switcher|internal|ARM safety implementation rejects the unaudited image-picker path.
+omarchy-theme-set|internal|ARM safety implementation rejects broad upstream theme mutation.
+omarchy-theme-switcher|internal|ARM safety implementation rejects dynamic theme selection in the first session.

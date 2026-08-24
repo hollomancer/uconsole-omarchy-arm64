@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# NetworkManager/DNS policy belongs to the Phase 1 system layer. The panel may
+# display the initial DHCP state but cannot rewrite system DNS configuration.
+set -u
+if (($# == 0)); then
+  printf 'DHCP\n'
+  exit 0
+fi
+printf 'DNS changes are disabled by ARM system-ownership policy\n' >&2
+exit 2

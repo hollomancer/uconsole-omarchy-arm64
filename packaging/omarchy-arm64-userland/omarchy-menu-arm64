@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -u
+OMARCHY_PATH=/usr/share/omarchy-arm64
+export OMARCHY_PATH
+PATH="$OMARCHY_PATH/bin:$PATH"
+export PATH
+exec "$OMARCHY_PATH/bin/omarchy-menu" "$@"

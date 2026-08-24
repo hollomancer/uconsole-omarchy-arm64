@@ -1,0 +1,38 @@
+# id|kinds|disposition|reason
+omarchy.active-window|bar-widget|disable|Not required by the first runnable shell.
+omarchy.agents|bar-widget|disable|Optional AI integration has unreviewed application dependencies.
+omarchy.audio|bar-widget|enable|Core PipeWire audio control for the uConsole.
+omarchy.background|service|enable|Core Omarchy wallpaper and theme presentation.
+omarchy.bar|bar|enable|Core Omarchy shell bar.
+omarchy.battery|service|disable|Low-battery hooks are deferred; the power panel still reports battery state.
+omarchy.bluetooth|bar-widget|enable|Core Bluetooth control for the uConsole.
+omarchy.clipboard|overlay|disable|Clipboard history and paste helpers are deferred.
+omarchy.clock|bar-widget|enable|Core bar clock and calendar panel.
+omarchy.dev-gallery|panel|disable|Developer-only gallery is not part of the user experience.
+omarchy.disk-speedtest|panel|disable|Optional benchmark can write substantial data.
+omarchy.dropbox|bar-widget|disable|Optional proprietary service is not in the ARM core.
+omarchy.emojis|overlay|disable|Optional picker is deferred until clipboard integration is enabled.
+omarchy.idle|service|disable|Idle, screensaver and lock transitions require live power testing.
+omarchy.image-picker|overlay|disable|Optional picker is deferred until clipboard integration is enabled.
+omarchy.indicators|bar-widget|disable|Bundled indicator set invokes deferred reminder, capture and dictation paths.
+omarchy.keyboard-layout|bar-widget|enable|Core built-in keyboard state and layout control.
+omarchy.lock|service|disable|PAM and ext-session-lock behavior require live target validation.
+omarchy.media|bar-widget,service|enable|Core MPRIS and PipeWire media integration has no architecture-specific binaries.
+omarchy.menu|bar-widget,menu|enable|Core Omarchy launcher using the reduced ARM menu.
+omarchy.microphone|bar-widget|disable|Redundant with the enabled audio panel in the first layout.
+omarchy.monitor|bar-widget|enable|Core display state, scaling and brightness panel.
+omarchy.network|bar-widget|enable|Core NetworkManager Wi-Fi panel.
+omarchy.nightlight|service|disable|Optional color-temperature service requires target display validation.
+omarchy.notifications|service|enable|Core notification daemon and history.
+omarchy.osd|panel|enable|Core volume, brightness and media feedback.
+omarchy.polkit|service|enable|Core graphical authorization agent.
+omarchy.power|bar-widget|enable|Core battery and power-profile panel.
+omarchy.reminders|overlay|disable|Optional reminder workflow is outside the first runnable shell.
+omarchy.spacer|bar-widget|disable|Not used by the fixed first-run bar layout.
+omarchy.speedtest|panel|disable|Optional network benchmark is outside the first runnable shell.
+omarchy.system-update|bar-widget|disable|Upstream updater must never own ARM kernel or boot updates.
+omarchy.tailscale|bar-widget|disable|Optional third-party network service is not in the ARM core.
+omarchy.tray|bar-widget|enable|Core StatusNotifier tray integration.
+omarchy.weather|bar-widget|disable|Optional network-backed weather service is outside the ARM core.
+omarchy.wifiqr|panel|disable|Optional QR workflow is deferred.
+omarchy.workspaces|bar-widget|enable|Core Hyprland workspace control.

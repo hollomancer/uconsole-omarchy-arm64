@@ -1,0 +1,122 @@
+# Architecture-independent Omarchy Quickshell userland for the reviewed ARM64
+# activation surface. This is intentionally not the upstream Omarchy installer.
+
+pkgname=omarchy-arm64-userland
+pkgver=4.0.0.alpha
+pkgrel=2
+pkgdesc='Fail-closed Omarchy Quickshell userland for Arch Linux ARM'
+arch=('any')
+url='https://github.com/basecamp/omarchy'
+license=('MIT')
+depends=(
+  'bash'
+  'bluez'
+  'bluez-utils'
+  'brightnessctl'
+  'coreutils'
+  'fontconfig'
+  'gtk3'
+  'hyprland'
+  'iproute2'
+  'jq'
+  'libpulse'
+  'libxkbcommon'
+  'networkmanager'
+  'pipewire'
+  'pipewire-pulse'
+  'power-profiles-daemon'
+  'quickshell'
+  'systemd'
+  'uwsm'
+  'wireplumber'
+  'wl-clipboard'
+  'xkeyboard-config'
+)
+optdepends=(
+  'ddcutil: brightness control for a future external DDC/CI display'
+  'iw: additional Wi-Fi radio details in the network panel'
+)
+options=('!strip')
+
+_commit='d99d4fc6de0bc99d48c9935724fa19d7fb41ae54'
+source=(
+  "omarchy-${_commit}.tar.gz"
+  'omarchy-command-policy.tsv'
+  'omarchy-plugin-policy.tsv'
+  'shell.json'
+  'omarchy-menu.jsonc'
+  'omarchy-launch-shell-arm64'
+  'omarchy-shell-arm64'
+  'omarchy-menu-arm64'
+  'omarchy-audio-tuning'
+  'omarchy-dns'
+  'omarchy-launch-floating-terminal-with-presentation'
+  'omarchy-remove-launcher-entry'
+  'omarchy-theme-bg-set'
+  'omarchy-theme-bg-switcher'
+  'omarchy-theme-set'
+  'omarchy-theme-switcher'
+)
+sha256sums=(
+  '3b60bb6d5694478963c167571457ee266cdba1e7791395a80f2f26074d72d6eb'
+  '153e21bbf5eeb68962f0616a2cb2c6b73dc0c8479a0126e7d96bd3d122c5cd9d'
+  'b223194684dabac2a4f806cb0cdfc67a12de1e8b0d2bf578dddc60b8c0e93a81'
+  'b8f1995c5fbfe55252463c47f21cce833154f905a92d493a03981a21eac8ac9a'
+  '3be408d9e9cc1abde7dc3d25f1415b214cd306984c322890188f74b5fd70d2b2'
+  '4fbf3b9428d63ac4453a72ba139cc8001d1e6a1a5e80da6acaddc6769fbf06a4'
+  '296861f9cb05ed42fd75b3770014ef7f15a4c152f87ee83507368129d67a18bd'
+  '5ea28218bbf66789f53454afb8cbae77becf70e913cf5a4a2720f2e141233c31'
+  '32508ab6fbdb751e6e72e8ec94146f2059222c7d09464705dfe96f15aa0258b4'
+  '0a66a20d50181c799e88c59f724edcc8ea2c3962c8c67645a4cd273deb2de714'
+  '9e62ade081d749f50b78967ff1efe2f907d4c8de9a18e2d0672b741c81352b47'
+  '4d0fc640d6977bab4698272ecdfbbf6cd8f9821d1803811e601c34e8214ea3d4'
+  '5f12607e4d1401e6f4bd1d67198456422054dbc559817d71d683c2692e9cce13'
+  'ebfd23d4160b9df79283856bddb4a006f6985d974e7e97714b81997a3fc5b1c4'
+  'fcd2f22a3dd150315d90764021e02a1191e711808cc04404f34892ba34cf817f'
+  '42a9767f83ec9fd11dae01de1d41bd15bcb94b7496fb5433fc4bbe6ec0d06d83'
+)
+
+package() {
+  local upstream="$srcdir/omarchy-${_commit}"
+  local destination="$pkgdir/usr/share/omarchy-arm64"
+  local command_name=''
+  local visibility=''
+  local reason=''
+  local command_source=''
+
+  install -d "$destination/bin" "$destination/config/omarchy" "$destination/default/omarchy"
+  cp -a "$upstream/shell" "$destination/shell"
+  cp -a "$upstream/themes" "$destination/themes"
+  install -m 0644 "$upstream/default/omarchy/launcher.hides" "$destination/default/omarchy/launcher.hides"
+  install -m 0644 "$srcdir/omarchy-menu.jsonc" "$destination/default/omarchy/omarchy-menu.jsonc"
+  install -m 0644 "$srcdir/shell.json" "$destination/config/omarchy/shell.json"
+
+  while IFS='|' read -r command_name visibility reason; do
+    [[ -n "$command_name" && "$command_name" != \#* ]] || continue
+    case "$visibility" in internal|expose) ;; *) return 1 ;; esac
+    command_source="$upstream/bin/$command_name"
+    case "$command_name" in
+      omarchy-audio-tuning|omarchy-dns|omarchy-launch-floating-terminal-with-presentation|omarchy-remove-launcher-entry|omarchy-theme-bg-set|omarchy-theme-bg-switcher|omarchy-theme-set|omarchy-theme-switcher)
+        command_source="$srcdir/$command_name"
+        ;;
+    esac
+    [[ -f "$command_source" ]] || return 1
+    install -m 0755 "$command_source" "$destination/bin/$command_name"
+  done < "$srcdir/omarchy-command-policy.tsv"
+
+  install -Dm0755 "$srcdir/omarchy-launch-shell-arm64" "$pkgdir/usr/bin/omarchy-launch-shell"
+  install -Dm0755 "$srcdir/omarchy-shell-arm64" "$pkgdir/usr/bin/omarchy-shell"
+  install -Dm0755 "$srcdir/omarchy-menu-arm64" "$pkgdir/usr/bin/omarchy-menu"
+
+  install -Dm0644 "$upstream/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm0644 "$srcdir/omarchy-command-policy.tsv" "$pkgdir/usr/share/doc/$pkgname/omarchy-command-policy.tsv"
+  install -Dm0644 "$srcdir/omarchy-plugin-policy.tsv" "$pkgdir/usr/share/doc/$pkgname/omarchy-plugin-policy.tsv"
+  printf '%s\n' \
+    "upstream_commit=${_commit}" \
+    'activation=not-enabled' \
+    'home_seeded=no' \
+    'hyprland_owned=no' \
+    'updates_owned=no' \
+    'hardware_owned=no' \
+    > "$destination/ARM64-PACKAGE-STATE"
+}

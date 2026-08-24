@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# The uConsole has no reviewed laptop speaker-tuning graph. The enabled audio
+# panel only asks whether a fronted sink exists; report that it does not.
+set -u
+case "${1:-status}" in
+  fronted-sink|match) exit 1 ;;
+  status) printf 'Speaker tuning: disabled by ARM first-run policy\n' ;;
+  *) printf 'Speaker tuning changes are disabled by ARM first-run policy\n' >&2; exit 2 ;;
+esac

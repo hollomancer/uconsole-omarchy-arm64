@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+set -u
+printf 'Theme changes are disabled by ARM first-run policy\n' >&2
+exit 2

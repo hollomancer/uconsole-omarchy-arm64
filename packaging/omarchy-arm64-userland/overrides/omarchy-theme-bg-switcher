@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+set -u
+printf 'Wallpaper selection is disabled by ARM first-run policy\n' >&2
+exit 2

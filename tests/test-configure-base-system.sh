@@ -98,9 +98,9 @@ printf '%s\n' "$PLAN_OUTPUT" | grep -Fq 'Secret values were validated locally an
 
 FAKE_BASE_CHROOT_LOG="$LOG" "$CONFIGURER" "${ARGS[@]}" --apply >/dev/null || { printf 'Expected base config apply to pass\n' >&2; exit 1; }
 grep -Eq '^wheel:[^:]*:[^:]*:.*(^|,)codex(,|$)' "$ROOT/etc/group" || { printf 'Admin not added to wheel\n' >&2; exit 1; }
-awk -F ':' '$1=="root" { found=1; if ($2 !~ /^!/) exit 1 } END { exit !found }' "$ROOT/etc/shadow" || { printf 'Root not locked\n' >&2; exit 1; }
-awk -F ':' '$1=="alarm" { found=1; if ($2 !~ /^!/) exit 1 } END { exit !found }' "$ROOT/etc/shadow" || { printf 'Alarm not locked\n' >&2; exit 1; }
-awk -F ':' '$1=="codex" { found=1; if ($2 !~ /^\$6\$/) exit 1 } END { exit !found }' "$ROOT/etc/shadow" || { printf 'Admin recovery hash not installed\n' >&2; exit 1; }
+awk -F ':' '$1=="root" { found=1; valid=($2 ~ /^!/) } END { exit !(found && valid) }' "$ROOT/etc/shadow" || { printf 'Root not locked\n' >&2; exit 1; }
+awk -F ':' '$1=="alarm" { found=1; valid=($2 ~ /^!/) } END { exit !(found && valid) }' "$ROOT/etc/shadow" || { printf 'Alarm not locked\n' >&2; exit 1; }
+awk -F ':' '$1=="codex" { found=1; valid=($2 ~ /^\$6\$/) } END { exit !(found && valid) }' "$ROOT/etc/shadow" || { printf 'Admin recovery hash not installed\n' >&2; exit 1; }
 cmp -s "$SSH_PUBLIC_KEY" "$ROOT/home/codex/.ssh/authorized_keys" || { printf 'Authorized key differs\n' >&2; exit 1; }
 cmp -s "$WIFI_KEYFILE" "$ROOT/etc/NetworkManager/system-connections/uconsole-bootstrap.nmconnection" || { printf 'Wi-Fi keyfile differs\n' >&2; exit 1; }
 if stat -c '%a' "$ROOT/etc/NetworkManager/system-connections/uconsole-bootstrap.nmconnection" >/dev/null 2>&1; then

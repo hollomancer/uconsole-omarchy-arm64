@@ -22,7 +22,13 @@ pacman -U --needed --noconfirm "$DOSFSTOOLS" "$MTOOLS" || fail 'unable to instal
 
 mkdir -p \
   "$FIXTURE_ROOT/etc" \
+  "$FIXTURE_ROOT/etc/NetworkManager/conf.d" \
+  "$FIXTURE_ROOT/etc/NetworkManager/system-connections" \
+  "$FIXTURE_ROOT/etc/modprobe.d" \
+  "$FIXTURE_ROOT/etc/ssh/sshd_config.d" \
   "$FIXTURE_ROOT/boot/overlays" \
+  "$FIXTURE_ROOT/home/fixture/.ssh" \
+  "$FIXTURE_ROOT/usr/share/zoneinfo" \
   "$FIXTURE_ROOT/usr/share/uconsole-image-fixture" \
   "$FIXTURE_ROOT/var/lib/pacman/local" \
   "$FIXTURE_ROOT/var/lib/uconsole-omarchy-arm64" || fail 'unable to create fixture tree'
@@ -68,6 +74,32 @@ board_package=uconsole-cm5-dkms
 board_version=0.1.r0.gbf7a0ab-1
 board_source_commit=bf7a0ab55654c96b74d013520e1196d39f66391a
 STATE
+awk -F '|' '$0 !~ /^#/ { print $1 "=" $2 }' "$REPO_ROOT/config/base-system/packages.lock" > "$FIXTURE_ROOT/var/lib/uconsole-omarchy-arm64/base-system-packages" || fail 'unable to write base package state'
+cat > "$FIXTURE_ROOT/var/lib/uconsole-omarchy-arm64/base-system-selection" <<'STATE'
+admin_user=fixture
+hostname=uconsole-fixture
+timezone=UTC
+locale=en_US.UTF-8
+keymap=us
+reg_domain=US
+ssh_key_fingerprint=SHA256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+wifi_preseed=no
+network_manager=NetworkManager
+STATE
+printf 'root:x:0:0:root:/root:/usr/bin/bash\nalarm:x:1000:1000:Alarm:/home/alarm:/bin/bash\nfixture:x:1001:1001:Fixture:/home/fixture:/bin/bash\n' > "$FIXTURE_ROOT/etc/passwd" || fail 'unable to write passwd fixture'
+printf 'root:x:0:\nwheel:x:998:alarm,fixture\nalarm:x:1000:\nfixture:x:1001:\n' > "$FIXTURE_ROOT/etc/group" || fail 'unable to write group fixture'
+printf 'root:!fixture-root:20000:0:99999:7:::\nalarm:!fixture-alarm:20000:0:99999:7:::\nfixture:$6$fixture$fixturehash:20000:0:99999:7:::\n' > "$FIXTURE_ROOT/etc/shadow" || fail 'unable to write shadow fixture'
+chmod 0600 "$FIXTURE_ROOT/etc/shadow" || fail 'unable to secure shadow fixture'
+printf 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFixtureOnlyKey fixture\n' > "$FIXTURE_ROOT/home/fixture/.ssh/authorized_keys" || fail 'unable to write SSH fixture'
+chmod 0600 "$FIXTURE_ROOT/home/fixture/.ssh/authorized_keys" || fail 'unable to secure SSH fixture'
+sed 's/@ADMIN_USER@/fixture/g' "$REPO_ROOT/config/base-system/sshd_config.template" > "$FIXTURE_ROOT/etc/ssh/sshd_config.d/10-uconsole.conf" || fail 'unable to write sshd fixture'
+printf 'uconsole-fixture\n' > "$FIXTURE_ROOT/etc/hostname" || fail 'unable to write hostname fixture'
+printf 'LANG=en_US.UTF-8\n' > "$FIXTURE_ROOT/etc/locale.conf" || fail 'unable to write locale fixture'
+printf 'KEYMAP=us\n' > "$FIXTURE_ROOT/etc/vconsole.conf" || fail 'unable to write keymap fixture'
+printf 'fixture timezone\n' > "$FIXTURE_ROOT/usr/share/zoneinfo/UTC" || fail 'unable to write timezone fixture'
+ln -s /usr/share/zoneinfo/UTC "$FIXTURE_ROOT/etc/localtime" || fail 'unable to link timezone fixture'
+printf 'options cfg80211 ieee80211_regdom=US\n' > "$FIXTURE_ROOT/etc/modprobe.d/90-uconsole-regdom.conf" || fail 'unable to write regulatory fixture'
+cp "$REPO_ROOT/config/base-system/NetworkManager.conf" "$FIXTURE_ROOT/etc/NetworkManager/conf.d/10-uconsole.conf" || fail 'unable to write NetworkManager fixture'
 
 "$REPO_ROOT/scripts/build-image.sh" \
   --build \
@@ -135,6 +167,7 @@ grep -Fqx 'root_uuid=11111111-2222-4333-8444-555555555555' "$MOUNT_ROOT/var/lib/
 grep -Fq '"path": "kernel8.img"' "$MOUNT_ROOT/boot/uconsole-build-manifest.json" || fail 'boot manifest lacks kernel'
 grep -Fq '"path": "overlays/uconsole-cm5-base.dtbo"' "$MOUNT_ROOT/boot/uconsole-build-manifest.json" || fail 'boot manifest lacks board overlay'
 cmp -s "$FIXTURE_ROOT/var/lib/uconsole-omarchy-arm64/hardware-selection" "$MOUNT_ROOT/var/lib/uconsole-omarchy-arm64/hardware-selection" || fail 'hardware selection state was not preserved'
+cmp -s "$FIXTURE_ROOT/var/lib/uconsole-omarchy-arm64/base-system-selection" "$MOUNT_ROOT/var/lib/uconsole-omarchy-arm64/base-system-selection" || fail 'base-system selection state was not preserved'
 grep -Fqx 'fixture root payload' "$MOUNT_ROOT/usr/share/uconsole-image-fixture/payload.txt" || fail 'root payload is missing'
 
 grep -Fqx '# source fixture; must remain unchanged' "$FIXTURE_ROOT/etc/fstab" || fail 'builder mutated source fstab'

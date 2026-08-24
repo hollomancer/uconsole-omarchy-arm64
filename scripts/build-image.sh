@@ -33,6 +33,8 @@ ROOT_UUID=''
 SOURCE_DATE_EPOCH=''
 FSTAB_TEMPLATE="$REPO_ROOT/config/image/fstab.template"
 CMDLINE_TEMPLATE="$REPO_ROOT/config/image/cmdline.txt.template"
+BASE_PACKAGE_LOCK="$REPO_ROOT/config/base-system/packages.lock"
+SSHD_TEMPLATE="$REPO_ROOT/config/base-system/sshd_config.template"
 
 EXPECTED_KERNEL='linux-rpi-16k'
 EXPECTED_KERNEL_VERSION='6.18.45-1'
@@ -142,6 +144,82 @@ state_field() {
 [[ "$(state_field kernel_release)" == "$EXPECTED_KERNEL_RELEASE" ]] || install_common_die 'hardware state has an unexpected kernel release'
 [[ "$(state_field board_source_commit)" == "$EXPECTED_BOARD_COMMIT" ]] || install_common_die 'hardware state has an unaudited board source commit'
 
+# A development image must never be built from the signed source root while
+# its public default accounts are still usable. Require the exact completed
+# base-system transactions and verify their security-critical effects.
+BASE_PACKAGE_STATE="$ROOT_TREE/var/lib/uconsole-omarchy-arm64/base-system-packages"
+BASE_SELECTION_STATE="$ROOT_TREE/var/lib/uconsole-omarchy-arm64/base-system-selection"
+install_common_require_file 'base-system package state' "$BASE_PACKAGE_STATE"
+install_common_require_file 'base-system selection state' "$BASE_SELECTION_STATE"
+install_common_require_file 'base-system package lock' "$BASE_PACKAGE_LOCK"
+install_common_require_file 'sshd policy template' "$SSHD_TEMPLATE"
+
+EXPECTED_BASE_PACKAGES=$(awk -F '|' '$0 !~ /^#/ { print $1 "=" $2 }' "$BASE_PACKAGE_LOCK") || install_common_die 'unable to render expected base-system package state'
+OBSERVED_BASE_PACKAGES=$(sed -n '1,$p' "$BASE_PACKAGE_STATE") || install_common_die 'unable to read base-system package state'
+[[ "$OBSERVED_BASE_PACKAGES" == "$EXPECTED_BASE_PACKAGES" ]] || install_common_die 'base-system package state does not match the exact lock'
+
+base_state_field() {
+  local key=$1
+  awk -F '=' -v wanted="$key" '$1 == wanted { count++; value=substr($0, index($0, "=") + 1) } END { if (count == 1 && value != "") print value; else exit 1 }' "$BASE_SELECTION_STATE"
+}
+[[ $(awk 'END { print NR }' "$BASE_SELECTION_STATE") -eq 9 ]] || install_common_die 'base-system selection state must contain exactly nine fields'
+ADMIN_USER=$(base_state_field admin_user) || install_common_die 'base-system selection lacks one admin user'
+IMAGE_HOSTNAME=$(base_state_field hostname) || install_common_die 'base-system selection lacks one hostname'
+IMAGE_TIMEZONE=$(base_state_field timezone) || install_common_die 'base-system selection lacks one timezone'
+IMAGE_LOCALE=$(base_state_field locale) || install_common_die 'base-system selection lacks one locale'
+IMAGE_KEYMAP=$(base_state_field keymap) || install_common_die 'base-system selection lacks one keymap'
+IMAGE_REG_DOMAIN=$(base_state_field reg_domain) || install_common_die 'base-system selection lacks one regulatory domain'
+SSH_KEY_FINGERPRINT=$(base_state_field ssh_key_fingerprint) || install_common_die 'base-system selection lacks one SSH fingerprint'
+WIFI_PRESEED=$(base_state_field wifi_preseed) || install_common_die 'base-system selection lacks one Wi-Fi policy'
+[[ $(base_state_field network_manager) == NetworkManager ]] || install_common_die 'base-system selection does not assign networking to NetworkManager'
+
+[[ "$ADMIN_USER" =~ ^[a-z_][a-z0-9_-]{0,30}$ && "$ADMIN_USER" != root ]] || install_common_die 'base-system admin user is unsafe'
+[[ "$IMAGE_HOSTNAME" =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]] || install_common_die 'base-system hostname is unsafe'
+[[ "$IMAGE_TIMEZONE" =~ ^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)*$ ]] || install_common_die 'base-system timezone is unsafe'
+[[ "$IMAGE_LOCALE" == en_US.UTF-8 && "$IMAGE_KEYMAP" == us ]] || install_common_die 'base-system locale or keymap is unaudited'
+[[ "$IMAGE_REG_DOMAIN" =~ ^[A-Z]{2}$ ]] || install_common_die 'base-system regulatory domain is unsafe'
+[[ "$SSH_KEY_FINGERPRINT" =~ ^SHA256:[A-Za-z0-9+/]+={0,2}$ ]] || install_common_die 'base-system SSH fingerprint is unsafe'
+[[ "$WIFI_PRESEED" == yes || "$WIFI_PRESEED" == no ]] || install_common_die 'base-system Wi-Fi policy is unsafe'
+
+ADMIN_ENTRY=$(awk -F ':' -v wanted="$ADMIN_USER" '$1 == wanted { count++; uid=$3; home=$6 } END { if (count == 1) print uid ":" home; else exit 1 }' "$ROOT_TREE/etc/passwd") || install_common_die 'configured admin account is missing or duplicated'
+IFS=':' read -r ADMIN_UID ADMIN_HOME <<< "$ADMIN_ENTRY"
+((ADMIN_UID >= 1000)) || install_common_die 'configured admin account has a system or root UID'
+[[ "$ADMIN_HOME" == "/home/$ADMIN_USER" ]] || install_common_die 'configured admin account has an unexpected home'
+awk -F ':' '$1 == "root" { found=1; valid=($2 ~ /^!|^\*/) } END { exit !(found && valid) }' "$ROOT_TREE/etc/shadow" || install_common_die 'root account is not locked'
+awk -F ':' -v wanted="$ADMIN_USER" '$1 == wanted { found=1; valid=($2 ~ /^\$y\$|^\$6\$/) } END { exit !(found && valid) }' "$ROOT_TREE/etc/shadow" || install_common_die 'admin account lacks an encrypted local-console recovery hash'
+if [[ "$ADMIN_USER" != alarm ]]; then
+  awk -F ':' '$1 == "alarm" { found=1; valid=($2 ~ /^!|^\*/) } END { exit !(found && valid) }' "$ROOT_TREE/etc/shadow" || install_common_die 'non-admin source alarm account is not locked'
+fi
+grep -Eq "^wheel:[^:]*:[^:]*:.*(^|,)${ADMIN_USER}(,|$)" "$ROOT_TREE/etc/group" || install_common_die 'configured admin is not in wheel'
+
+AUTHORIZED_KEYS="$ROOT_TREE$ADMIN_HOME/.ssh/authorized_keys"
+[[ -s "$AUTHORIZED_KEYS" && -f "$AUTHORIZED_KEYS" && ! -L "$AUTHORIZED_KEYS" ]] || install_common_die 'configured admin authorized_keys is missing, empty or unsafe'
+file_mode() {
+  if stat -c '%a' "$1" >/dev/null 2>&1; then stat -c '%a' "$1"
+  else stat -f '%Lp' "$1"
+  fi
+}
+[[ $(file_mode "$AUTHORIZED_KEYS") == 600 ]] || install_common_die 'configured admin authorized_keys mode is not 0600'
+EXPECTED_SSHD_POLICY=$(sed "s/@ADMIN_USER@/$ADMIN_USER/g" "$SSHD_TEMPLATE") || install_common_die 'unable to render expected sshd policy'
+OBSERVED_SSHD_POLICY=$(sed -n '1,$p' "$ROOT_TREE/etc/ssh/sshd_config.d/10-uconsole.conf") || install_common_die 'unable to read configured sshd policy'
+[[ "$OBSERVED_SSHD_POLICY" == "$EXPECTED_SSHD_POLICY" ]] || install_common_die 'configured sshd policy differs from the audited template'
+[[ $(sed -n '1p' "$ROOT_TREE/etc/hostname") == "$IMAGE_HOSTNAME" ]] || install_common_die 'configured hostname differs from selection state'
+grep -Fqx "LANG=$IMAGE_LOCALE" "$ROOT_TREE/etc/locale.conf" || install_common_die 'configured locale differs from selection state'
+grep -Fqx "KEYMAP=$IMAGE_KEYMAP" "$ROOT_TREE/etc/vconsole.conf" || install_common_die 'configured keymap differs from selection state'
+[[ -L "$ROOT_TREE/etc/localtime" && $(readlink "$ROOT_TREE/etc/localtime") == "/usr/share/zoneinfo/$IMAGE_TIMEZONE" ]] || install_common_die 'configured timezone differs from selection state'
+grep -Fqx "options cfg80211 ieee80211_regdom=$IMAGE_REG_DOMAIN" "$ROOT_TREE/etc/modprobe.d/90-uconsole-regdom.conf" || install_common_die 'configured regulatory domain differs from selection state'
+grep -Fqx 'dns=systemd-resolved' "$ROOT_TREE/etc/NetworkManager/conf.d/10-uconsole.conf" || install_common_die 'configured NetworkManager DNS policy is missing'
+
+WIFI_DEST="$ROOT_TREE/etc/NetworkManager/system-connections/uconsole-bootstrap.nmconnection"
+if [[ "$WIFI_PRESEED" == yes ]]; then
+  [[ -s "$WIFI_DEST" && -f "$WIFI_DEST" && ! -L "$WIFI_DEST" ]] || install_common_die 'selected bootstrap Wi-Fi connection is missing or unsafe'
+  [[ $(file_mode "$WIFI_DEST") == 600 ]] || install_common_die 'bootstrap Wi-Fi connection mode is not 0600'
+else
+  [[ ! -e "$WIFI_DEST" && ! -L "$WIFI_DEST" ]] || install_common_die 'bootstrap Wi-Fi connection exists despite selection state'
+fi
+HOST_KEY=$(find "$ROOT_TREE/etc/ssh" -maxdepth 1 -type f -name 'ssh_host_*' -print -quit) || install_common_die 'unable to inspect SSH host keys'
+[[ -z "$HOST_KEY" ]] || install_common_die 'prepared root contains an SSH host key that would be cloned'
+
 for required in \
   "$ROOT_TREE/boot/config.txt" \
   "$ROOT_TREE/boot/kernel8.img" \
@@ -186,6 +264,7 @@ REQUIRED_BOOT_CAPACITY=$((BOOT_BYTES + 32 * 1024 * 1024))
 
 printf '%s\n' \
   '[PASS] prepared root         Arch Linux ARM identity and exact hardware state present' \
+  "[PASS] first-boot policy    admin=$ADMIN_USER key-only SSH; source accounts locked; network=$WIFI_PRESEED" \
   '[PASS] boot artifacts        kernel, CM5 DTB, uConsole overlays and managed include present' \
   "[PASS] output safety        new regular image path under $OUTPUT_PARENT" \
   "[PASS] root headroom        content=$ROOT_BYTES capacity=$ROOT_CAPACITY" \

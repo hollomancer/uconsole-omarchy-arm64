@@ -117,9 +117,9 @@ for disabled_unit in systemd-networkd.service systemd-networkd.socket systemd-ne
   ((unit_status != 0)) || fail "conflicting unit remains enabled: $disabled_unit"
 done
 
-awk -F ':' '$1=="root" { found=1; if ($2 !~ /^!/) exit 1 } END { exit !found }' "$ROOT/etc/shadow" || fail 'root account is not locked'
-awk -F ':' '$1=="alarm" { found=1; if ($2 !~ /^!/) exit 1 } END { exit !found }' "$ROOT/etc/shadow" || fail 'source alarm account is not locked'
-awk -F ':' '$1=="integration" { found=1; if ($2 !~ /^\$6\$/) exit 1 } END { exit !found }' "$ROOT/etc/shadow" || fail 'integration console account lacks encrypted recovery hash'
+awk -F ':' '$1=="root" { found=1; valid=($2 ~ /^!/) } END { exit !(found && valid) }' "$ROOT/etc/shadow" || fail 'root account is not locked'
+awk -F ':' '$1=="alarm" { found=1; valid=($2 ~ /^!/) } END { exit !(found && valid) }' "$ROOT/etc/shadow" || fail 'source alarm account is not locked'
+awk -F ':' '$1=="integration" { found=1; valid=($2 ~ /^\$6\$/) } END { exit !(found && valid) }' "$ROOT/etc/shadow" || fail 'integration console account lacks encrypted recovery hash'
 grep -Eq '^wheel:[^:]*:[^:]*:.*(^|,)integration(,|$)' "$ROOT/etc/group" || fail 'integration account is not in wheel'
 cmp -s "$SYNTHETIC_PUBLIC_KEY" "$ROOT/home/integration/.ssh/authorized_keys" || fail 'installed authorized key differs'
 [[ $(stat -c '%a' "$ROOT/home/integration/.ssh/authorized_keys") == 600 ]] || fail 'authorized_keys mode differs'

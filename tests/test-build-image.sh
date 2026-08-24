@@ -35,7 +35,13 @@ ROOT="$TEST_TMP/root"
 OUTPUT_DIR="$TEST_TMP/output"
 mkdir -p \
   "$ROOT/etc" \
+  "$ROOT/etc/NetworkManager/conf.d" \
+  "$ROOT/etc/NetworkManager/system-connections" \
+  "$ROOT/etc/modprobe.d" \
+  "$ROOT/etc/ssh/sshd_config.d" \
   "$ROOT/boot/overlays" \
+  "$ROOT/home/fixture/.ssh" \
+  "$ROOT/usr/share/zoneinfo" \
   "$ROOT/var/lib/pacman/local" \
   "$ROOT/var/lib/uconsole-omarchy-arm64" \
   "$OUTPUT_DIR"
@@ -69,6 +75,32 @@ board_package=uconsole-cm5-dkms
 board_version=0.1.r0.gbf7a0ab-1
 board_source_commit=bf7a0ab55654c96b74d013520e1196d39f66391a
 STATE
+awk -F '|' '$0 !~ /^#/ { print $1 "=" $2 }' "$REPO_ROOT/config/base-system/packages.lock" > "$ROOT/var/lib/uconsole-omarchy-arm64/base-system-packages"
+cat > "$ROOT/var/lib/uconsole-omarchy-arm64/base-system-selection" <<'STATE'
+admin_user=fixture
+hostname=uconsole-fixture
+timezone=UTC
+locale=en_US.UTF-8
+keymap=us
+reg_domain=US
+ssh_key_fingerprint=SHA256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+wifi_preseed=no
+network_manager=NetworkManager
+STATE
+printf 'root:x:0:0:root:/root:/usr/bin/bash\nalarm:x:1000:1000:Alarm:/home/alarm:/bin/bash\nfixture:x:1001:1001:Fixture:/home/fixture:/bin/bash\n' > "$ROOT/etc/passwd"
+printf 'root:x:0:\nwheel:x:998:alarm,fixture\nalarm:x:1000:\nfixture:x:1001:\n' > "$ROOT/etc/group"
+printf 'root:!fixture-root:20000:0:99999:7:::\nalarm:!fixture-alarm:20000:0:99999:7:::\nfixture:$6$fixture$fixturehash:20000:0:99999:7:::\n' > "$ROOT/etc/shadow"
+chmod 0600 "$ROOT/etc/shadow"
+printf 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFixtureOnlyKey fixture\n' > "$ROOT/home/fixture/.ssh/authorized_keys"
+chmod 0600 "$ROOT/home/fixture/.ssh/authorized_keys"
+sed 's/@ADMIN_USER@/fixture/g' "$REPO_ROOT/config/base-system/sshd_config.template" > "$ROOT/etc/ssh/sshd_config.d/10-uconsole.conf"
+printf 'uconsole-fixture\n' > "$ROOT/etc/hostname"
+printf 'LANG=en_US.UTF-8\n' > "$ROOT/etc/locale.conf"
+printf 'KEYMAP=us\n' > "$ROOT/etc/vconsole.conf"
+printf 'fixture timezone\n' > "$ROOT/usr/share/zoneinfo/UTC"
+ln -s /usr/share/zoneinfo/UTC "$ROOT/etc/localtime"
+printf 'options cfg80211 ieee80211_regdom=US\n' > "$ROOT/etc/modprobe.d/90-uconsole-regdom.conf"
+cp "$REPO_ROOT/config/base-system/NetworkManager.conf" "$ROOT/etc/NetworkManager/conf.d/10-uconsole.conf"
 
 COMMON_ARGS=(
   --root-tree "$ROOT"
@@ -125,6 +157,15 @@ expect_rejected 'output below source root' "${COMMON_ARGS[@]}" --output "$ROOT/i
 mv "$ROOT/var/lib/uconsole-omarchy-arm64/hardware-selection" "$TEST_TMP/hardware-selection"
 expect_rejected 'missing hardware selection gate' "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/no-gate.img" --plan
 mv "$TEST_TMP/hardware-selection" "$ROOT/var/lib/uconsole-omarchy-arm64/hardware-selection"
+
+mv "$ROOT/var/lib/uconsole-omarchy-arm64/base-system-selection" "$TEST_TMP/base-system-selection"
+expect_rejected 'missing base-system selection gate' "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/no-base-gate.img" --plan
+mv "$TEST_TMP/base-system-selection" "$ROOT/var/lib/uconsole-omarchy-arm64/base-system-selection"
+
+cp "$ROOT/etc/shadow" "$TEST_TMP/shadow"
+sed 's/^root:![^:]*/root:unlocked/' "$TEST_TMP/shadow" > "$ROOT/etc/shadow"
+expect_rejected 'unlocked root account' "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/unlocked-root.img" --plan
+mv "$TEST_TMP/shadow" "$ROOT/etc/shadow"
 
 ln -s kernel8.img "$ROOT/boot/unsafe-link"
 expect_rejected 'FAT symlink' "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/symlink.img" --plan

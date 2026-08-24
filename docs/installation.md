@@ -323,14 +323,31 @@ Only after Phase 1 passes, plan the smallest ALARM Hyprland set:
 ```sh
 scripts/install-hyprland.sh --plan \
   --root /mnt/uconsole-root \
-  --user yourname
+  --user yourname \
+  --package-dir /path/to/hyprland-package-cache
 ```
 
 The script requires the exact `linux-rpi-16k`/uConsole hardware-selection
-state, verifies all 21 direct package versions against the target's sync
-databases, and reports the one user config it would create. Plan mode writes
-nothing. Inspect that output and the saved live hardware validation before
-changing `--plan` to `--apply`.
+and Phase 1 base-system states. `--user` must equal the configured admin. It
+verifies the 21 direct requirements plus a 204-package incremental transaction
+from local files: 19 requested payloads, 185 dependencies, and the already
+exact `pciutils`/`polkit` packages. Every payload and detached signature is
+content-pinned. Plan mode writes nothing and contacts no mirror. Inspect that
+output and the saved live hardware validation before changing `--plan` to
+`--apply`.
+
+Recreate the local package cache from the frozen databases and configured
+Phase 1 root with:
+
+```sh
+research/resolve-hyprland-closure.sh \
+  --source-volume uconsole-configured-root \
+  --output-dir /new/empty/hyprland-package-cache
+```
+
+The resolver downloads into temporary storage, verifies official package
+signatures and publishes the cache only when its generated content lock equals
+`config/hyprland/transaction.lock` byte for byte.
 
 Apply mode installs Hyprland, Aquamarine, portals, Foot, PipeWire/WirePlumber,
 Mesa/V3DV and the requested input/graphics diagnostics. It installs
@@ -369,10 +386,9 @@ or lavapipe result stops progression. Do not add Omarchy until the native panel
 mode/orientation, keyboard and trackball have been exercised in Wayland and the
 Hyprland validator exits successfully.
 
-The current lock proves direct repository selection, not a fully offline
-dependency closure. Before producing a distributable image, archive and hash
-the resolved package payloads and all transitive versions, then sign the local
-repository metadata.
+The complete incremental closure is now offline-reproducible for the pinned
+Phase 1 root. A signed project repository remains future update/distribution
+work; the current installer intentionally consumes a reviewed local cache.
 
 ## Inert Omarchy source audit
 

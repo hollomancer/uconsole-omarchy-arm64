@@ -10,9 +10,10 @@ package, an offline-root hardware installer, an exact minimal base-system
 transaction, a version-locked minimal Hyprland installer, and an inert Omarchy
 source-staging transaction. The real pinned Arch rootfs, hardware transaction,
 secret-safe base configuration, and regular-image assembly have been exercised
-in isolated aarch64 Linux volumes; desktop installers remain fixture-only. No
-script has been run against a real SD card or live system, and the existing
-bootable SD card has not been touched.
+in isolated aarch64 Linux volumes. The content-pinned Hyprland plan also passes
+against a native configured ARM64 clone; desktop apply remains fixture-only and
+hardware-gated. No script has been run against a real SD card or live system,
+and the existing bootable SD card has not been touched.
 
 ## Status
 
@@ -140,15 +141,17 @@ minimal Hyprland transaction against its mounted development root:
 ```sh
 scripts/install-hyprland.sh --plan \
   --root /mnt/uconsole-root \
-  --user yourname
+  --user yourname \
+  --package-dir /path/to/hyprland-package-cache
 ```
 
-This checks all 21 direct package versions against the target's Arch Linux ARM
-repositories. Apply mode installs the package set and a minimal Lua config but
-does not enable autologin, a display manager or UWSM. It refuses to overwrite a
-different user config. Transitive dependency versions and payload hashes are
-not yet frozen, so this is a controlled bring-up transaction rather than a
-complete offline package snapshot.
+This requires the exact Phase 1 base state and selected admin, then verifies a
+204-package incremental closure from local files. All package payloads and
+detached signatures are content-pinned; plan mode makes no repository request.
+The frozen resolver and native ARM64 plan pass, but apply remains prohibited
+until live hardware and V3D/V3DV pass. Apply eventually installs the package
+set and a minimal Lua config without enabling autologin, a display manager or
+UWSM, and refuses to overwrite a different user config.
 
 The Omarchy script currently has one intentionally narrow operation: verify a
 pinned upstream archive and stage selected audit trees outside `PATH`.
@@ -184,7 +187,7 @@ that gate but has not been applied to a card.
 │   │   ├── pacman/                       # future: ARM repo/drop-in policy
 │   │   └── omarchy/                      # future: minimal userland overrides
 │   ├── base-system/                      # current: exact Phase 1 runtime/policy inputs
-│   ├── hyprland/                         # current: direct lock + minimal Lua config
+│   ├── hyprland/                         # current: direct/transaction locks + Lua config
 │   ├── image/                            # current: fstab/cmdline image templates
 │   └── uconsole-hardware/                # current: boot + package/prerequisite locks
 ├── docs/
@@ -213,6 +216,7 @@ that gate but has not been applied to a card.
 │   ├── phase1-hardware-install-results.yaml
 │   ├── phase1-inputs.yaml
 │   ├── rootfs-extraction-results.yaml
+│   ├── resolve-hyprland-closure.sh
 │   ├── test-full-image.sh
 │   ├── upstream-lock.yaml
 │   ├── xdg-terminal-exec-inputs.yaml

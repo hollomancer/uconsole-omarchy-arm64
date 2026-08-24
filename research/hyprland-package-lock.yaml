@@ -18,10 +18,61 @@ source:
       url: https://mirror.archlinuxarm.org/aarch64/aur/aur.db
       sha256: bdd038c7c32dc6de8977c65659249f3ca4b498c303ded46750eb6ab6f1dad187
 direct_lock: ../config/hyprland/packages.lock
+transaction:
+  lock: ../config/hyprland/transaction.lock
+  lock_sha256: 2bd6232e8e90da7f10e9245fb306f5d7578840e9452d42726607cf52483c1bc7
+  basis: "Configured Phase 1 root installed-package database plus the frozen core/extra databases above"
+  packages: 204
+  payload_bytes: 207932936
+  direct_payloads: 19
+  dependency_payloads: 185
+  direct_already_exact_in_phase1:
+    - pciutils=3.15.0-1
+    - polkit=127-3
+  repositories:
+    core: 5
+    extra: 199
+  detached_signatures: 204
+  package_payload_sha256_locked: true
+  detached_signature_sha256_locked: true
+  pacman_signature_verification: PASS
+resolver:
+  runner: research/resolve-hyprland-closure.sh
+  repeat_runs_compared: 2
+  matching_payload_and_signature_files: 408
+  result: PASS
+native_plan:
+  target: "disposable configured ARM64 clone mounted read-only"
+  selected_admin: integration
+  result: PASS
+  verified:
+    - exact Phase 1 hardware and base-system state
+    - target user equals the selected Phase 1 admin
+    - all 204 package payload names, versions, architectures, sizes and SHA-256 values
+    - all 204 detached-signature SHA-256 values
+    - pciutils and polkit already installed at their direct-lock versions
+    - no mirror access and no root mutation during plan
+failures_recorded:
+  - attempt: 1
+    result: FAIL
+    finding: "The configured root carried an older sync database with aquamarine 0.14.0-1 while the recorded frozen snapshot selected 0.14.0-2."
+    smallest_change: "Stop consulting mutable target sync databases during installation; resolve once from the recorded database hashes and require exact local package bytes."
+  - attempt: 2
+    result: FAIL
+    finding: "Pacman 7 DownloadUser=alpm could not apply its Landlock ruleset inside the unprivileged resolver container."
+    smallest_change: "Remove DownloadUser only in the ephemeral, unprivileged resolver; retain read-only inputs and use the pinned ARM builder keyring for signature verification."
+  - attempt: 3
+    result: FAIL
+    finding: "The first native offline plan used macOS-first stat syntax; GNU stat -f returned filesystem information rather than package size."
+    smallest_change: "Use GNU stat -c first with a macOS stat -f fallback."
+  - attempt: 4
+    result: PASS
+    finding: "The content-pinned native plan validated all package/signature pairs without repository or target writes."
 limits:
-  - Direct package versions are locked and verified before and after installation.
-  - Transitive dependency versions and package payload hashes are not yet locked.
-  - A rolling mirror can remove a locked package; a reproducible package cache is still required.
+  - The package cache is local build input and is not committed to Git.
+  - Exact packages can disappear from the upstream mirror; archive them before discarding the retained local cache.
+  - The transaction has not been applied because live CM5 hardware and V3D/V3DV gates remain open.
+  - Package signatures are verified while creating the cache; offline apply relies on the committed payload hashes and does not initialize target Pacman trust state.
 sources_checked:
   - https://archlinuxarm.org/packages/aarch64/hyprland
   - https://wiki.hypr.land/Configuring/Basics/Monitors/

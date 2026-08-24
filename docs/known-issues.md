@@ -24,7 +24,7 @@ These items are unresolved until hardware or build evidence closes them.
 | 16 KiB kernel page size | Some proprietary applications, Electron native modules and AppImages assume 4 KiB | Report page size; test every non-repository binary; prefer source packages |
 | Internal 720×1280 panel rotation | DT reports a portrait panel with 90° orientation; console and Wayland may interpret rotation differently | Validate early console, DRM mode and Hyprland transform separately |
 | Aquamarine/Hyprland on Pi 5 is not an upstream board guarantee | Generic DRM/GLES support does not prove atomic KMS, modifiers or stable scanout on this panel | On-device Phase 2 gate; use Aquamarine workaround variables only diagnostically |
-| Phase 2 package lock is direct-only | The 21 requested packages are exact, but rolling transitive dependencies and payload files are not content-pinned | Preflight and postflight exact direct versions; build a signed package cache before calling the image reproducible offline |
+| Phase 2 cache is not a signed project repository | The exact 204-package transaction and detached signatures are content-locked and resolver-verified, but update/distribution metadata is not project-signed | Use the reviewed local cache for bring-up only; design a separately signed ARM repository after live Hyprland passes |
 | Current Hyprland config uses Lua APIs from 0.56 | Arch ARM has the matching release, but the config has only passed syntax and fixture tests, not an on-device config load | Keep the version lock; capture `start-hyprland` stderr and `hyprctl systeminfo` before adding Omarchy |
 | Omarchy source is staged but intentionally inactive | Default Quattro autostart reaches provisioning, power-profile, monitor-watch, hook and update commands that have not passed the ARM ownership audit | Stage selected trees outside `PATH`; reject activation, home seeding, services and migrations in the current installer |
 | First-party Quickshell plugins default to enabled | An empty plugin list still loads non-bar infrastructure, expanding the command and package surface unexpectedly | First ARM shell config must carry an explicit `disabledPlugins` denylist and expose only allowlisted commands |
@@ -50,7 +50,7 @@ These items are unresolved until hardware or build evidence closes them.
 - An update modifies hardware-owned boot files without an approved hardware
   package transition.
 - A required package remains `unknown` in the compatibility manifest.
-- A locked direct Hyprland package has disappeared or advanced on the rolling
-  mirror before its payload has been archived.
+- The retained local Hyprland payload cache is discarded before a durable
+  project archive or signed repository exists.
 - Staged Omarchy source is added to `PATH`, selected as `OMARCHY_PATH`, or
   copied into a user home before its activation audit closes.

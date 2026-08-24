@@ -296,6 +296,11 @@ if [[ $PACKAGES_CURRENT -eq 0 ]]; then
   fi
 fi
 
+if ! "$CHROOT_COMMAND" "$ROOT" mkinitcpio -k "$KERNEL_RELEASE" -g /boot/initramfs-linux.img -S autodetect; then
+  install_common_fail 'broad first-boot linux-rpi-16k initramfs rebuild failed; boot include was not activated'
+fi
+[[ -s "$ROOT/boot/initramfs-linux.img" ]] || install_common_fail 'broad first-boot initramfs rebuild produced no image; boot include was not activated'
+
 DKMS_STATUS=""
 if ! DKMS_STATUS=$("$CHROOT_COMMAND" "$ROOT" dkms status -m uconsole-cm5 -v 0.1 -k "$KERNEL_RELEASE" 2>&1); then
   install_common_fail "DKMS status failed; boot include was not activated: $DKMS_STATUS"

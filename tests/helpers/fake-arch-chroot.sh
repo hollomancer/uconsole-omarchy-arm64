@@ -54,8 +54,9 @@ if [[ "$COMMAND" == 'pacman' ]]; then
   esac
 elif [[ "$COMMAND" == 'dkms' && "$1" == 'status' ]]; then
   printf 'uconsole-cm5/0.1, fixture-rpi-16k, aarch64: installed\n'
+elif [[ "$COMMAND" == 'mkinitcpio' && "$1" == '-k' && "$2" == 'fixture-rpi-16k' && "$3" == '-g' && "$4" == '/boot/initramfs-linux.img' && "$5" == '-S' && "$6" == 'autodetect' ]]; then
+  printf 'fixture initramfs\n' > "$ROOT/boot/initramfs-linux.img"
 else
   printf 'Unexpected fake chroot command: %s %s\n' "$COMMAND" "$*" >&2
   exit 91
 fi
-

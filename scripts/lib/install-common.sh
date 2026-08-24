@@ -64,11 +64,12 @@ install_common_package_field() {
   printf '%s\n' "$pkginfo" | awk -F ' = ' -v wanted="$field" '$1 == wanted { print $2; exit }'
 }
 
-install_common_assert_package() {
+install_common_assert_package_arch() {
   local package=$1
   local expected_name=$2
   local expected_version=$3
-  local expected_sha=$4
+  local expected_arch=$4
+  local expected_sha=$5
   local observed_name=""
   local observed_version=""
   local observed_arch=""
@@ -82,9 +83,13 @@ install_common_assert_package() {
   observed_arch=$(install_common_package_field "$package" arch) || install_common_die "cannot read package architecture: $package"
   [[ "$observed_name" == "$expected_name" ]] || install_common_die "expected package $expected_name; observed ${observed_name:-unknown}"
   [[ "$observed_version" == "$expected_version" ]] || install_common_die "expected $expected_name version $expected_version; observed ${observed_version:-unknown}"
-  [[ "$observed_arch" == 'aarch64' ]] || install_common_die "expected aarch64 package; observed ${observed_arch:-unknown} for $expected_name"
+  [[ "$observed_arch" == "$expected_arch" ]] || install_common_die "expected $expected_arch package; observed ${observed_arch:-unknown} for $expected_name"
 
   observed_sha=$(install_common_sha256 "$package") || install_common_die 'neither sha256sum nor shasum is available'
   [[ "$observed_sha" == "$expected_sha" ]] || install_common_die "SHA-256 mismatch for $expected_name: $observed_sha"
   printf '[PASS] %-24s %s %s sha256=%s\n' "$expected_name" "$observed_version" "$observed_arch" "$observed_sha"
+}
+
+install_common_assert_package() {
+  install_common_assert_package_arch "$1" "$2" "$3" aarch64 "$4"
 }

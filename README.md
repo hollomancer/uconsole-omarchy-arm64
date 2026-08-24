@@ -4,12 +4,14 @@ This repository defines a reproducible integration path for running the Omarchy
 desktop experience on a ClockworkPi uConsole with a Raspberry Pi Compute Module
 5. It is not an Omarchy ISO port.
 
-The current repository state contains research, architecture, read-only
-validation, a reproducible local hardware package, an offline-root hardware
-installer, a version-locked minimal Hyprland installer, and an inert Omarchy
-source-staging transaction. Installer apply mode has been exercised only
-against deterministic fixtures. No script has been run against a real SD card
-or live system, and the existing bootable SD card has not been touched.
+The current repository state contains research, architecture, signed rootfs
+extraction, a regular-file image builder, a reproducible local hardware
+package, an offline-root hardware installer, a version-locked minimal
+Hyprland installer, and an inert Omarchy source-staging transaction. The real
+pinned Arch rootfs and selected hardware transaction have been exercised in an
+isolated aarch64 Linux volume; desktop installers remain fixture-only. No
+script has been run against a real SD card or live system, and the existing
+bootable SD card has not been touched.
 
 ## Status
 
@@ -19,6 +21,12 @@ Research snapshot: **2026-08-24**
   [`research/upstream-lock.yaml`](research/upstream-lock.yaml).
 - The signed August Arch Linux ARM rootfs and Phase 1 kernel/source inputs are
   content-pinned in [`research/phase1-inputs.yaml`](research/phase1-inputs.yaml).
+- Signed-root extraction evidence is in
+  [`research/rootfs-extraction-results.yaml`](research/rootfs-extraction-results.yaml).
+- Regular image construction inputs, failures and passing integration evidence
+  are in [`research/image-builder-inputs.yaml`](research/image-builder-inputs.yaml).
+- The real offline-root kernel/DKMS transaction is recorded in
+  [`research/phase1-hardware-install-results.yaml`](research/phase1-hardware-install-results.yaml).
 - Reproducible 4 KiB/16 KiB DKMS build results are in
   [`research/dkms-build-results.yaml`](research/dkms-build-results.yaml).
 - Closely related community attempts are assessed in
@@ -53,13 +61,16 @@ It reports PASS, WARN or FAIL for all requested hardware, graphics, desktop and
 package checks. Deterministic fixtures exercise both success and software-GPU
 failure paths with `tests/test-validate-system.sh`.
 
-`scripts/bootstrap-arch.sh` is currently a safe bootstrap scaffold. It verifies
-a pinned local rootfs, optionally verifies its detached signature, prints the
-image-build stages and can create a new sparse regular image. It cannot
-partition, mount or write a physical device.
+`scripts/bootstrap-arch.sh` verifies the rootfs digest and an explicit detached
+signature/keyring/fingerprint tuple, then can extract into a **new** offline
+root with Linux ownership semantics. `scripts/build-image.sh` consumes an exact
+hardware-selection state and creates a new MBR/FAT/ext4 regular image with
+explicit partition/filesystem identities and embedded/external manifests. Both
+reject physical-device output and existing destinations.
 
 The selected Phase 1 hardware baseline is `linux-rpi-16k` plus the pinned
-`uconsole-cm5-dkms` package. Build and installation are separate:
+`uconsole-cm5-dkms` package. The compiler/DKMS closure is also content-locked.
+Build and installation are separate:
 
 ```sh
 research/build-uconsole-package.sh --check \
@@ -76,7 +87,14 @@ scripts/install-uconsole-hardware.sh --plan \
 
 The installer defaults to read-only plan mode, rejects `/` and `/dev`, and
 activates the uConsole boot include only after the exact DKMS release and both
-overlays are present.
+overlays are present. It generates a broad first-boot initramfs without
+builder-host autodetection. On-device boot, probe and acceleration evidence is
+still required.
+
+`scripts/plan-sd-write.sh` is intentionally read-only. It verifies an image
+against its manifest and a stable `/dev/disk/by-id/…` whole-disk identity, then
+rejects mounted, undersized, read-only and system-root devices. There is no SD
+write implementation yet.
 
 After the real CM5 passes the hardware and accelerated-graphics gates, plan the
 minimal Hyprland transaction against its mounted development root:
@@ -128,7 +146,8 @@ that gate but has not been applied to a card.
 │   │   ├── pacman/                       # future: ARM repo/drop-in policy
 │   │   └── omarchy/                      # future: minimal userland overrides
 │   ├── hyprland/                         # current: direct lock + minimal Lua config
-│   └── uconsole-hardware/                # current: boot fragment + package lock
+│   ├── image/                            # current: fstab/cmdline image templates
+│   └── uconsole-hardware/                # current: boot + package/prerequisite locks
 ├── docs/
 │   ├── architecture.md
 │   ├── custom-kernel-lessons.md
@@ -149,7 +168,10 @@ that gate but has not been applied to a card.
 │   ├── dkms-build-results.yaml
 │   ├── custom-kernel-delta.yaml
 │   ├── hyprland-package-lock.yaml
+│   ├── image-builder-inputs.yaml
+│   ├── phase1-hardware-install-results.yaml
 │   ├── phase1-inputs.yaml
+│   ├── rootfs-extraction-results.yaml
 │   ├── upstream-lock.yaml
 │   ├── xdg-terminal-exec-inputs.yaml
 │   └── package-audit/                    # future: generated CSV and provenance
@@ -157,15 +179,20 @@ that gate but has not been applied to a card.
 │   ├── uconsole-cm5-dkms/                # current: local-evaluation PKGBUILD
 │   └── xdg-terminal-exec/                # current: reproducible ARM build
 ├── scripts/
-│   ├── bootstrap-arch.sh                 # current: verified image-only scaffold
+│   ├── bootstrap-arch.sh                 # current: signed rootfs extraction
+│   ├── build-image.sh                    # current: regular image assembler
+│   ├── install-uconsole-prerequisites.sh # current: exact offline build closure
 │   ├── install-uconsole-hardware.sh      # current: offline kernel/DT layer
 │   ├── install-hyprland.sh               # current: minimal compositor layer
 │   ├── install-omarchy-arm64.sh          # current: inert userland source stage
+│   ├── plan-sd-write.sh                  # current: read-only media preflight
 │   └── validate-system.sh                # current: read-only PASS/WARN/FAIL report
 └── tests/
-    ├── test-bootstrap-arch.sh             # current image safety test
+    ├── test-bootstrap-arch.sh             # current rootfs/input safety test
+    ├── test-build-image.sh                # current image/device safety test
     ├── test-install-hyprland.sh           # current package/config safety test
     ├── test-install-omarchy-arm64.sh      # current inert-staging safety test
+    ├── test-install-uconsole-prerequisites.sh # current offline-closure safety test
     ├── test-install-uconsole-hardware.sh  # current transaction safety test
     ├── test-validate-system.sh            # current deterministic test
     └── fixtures/                          # current captured probe fixtures

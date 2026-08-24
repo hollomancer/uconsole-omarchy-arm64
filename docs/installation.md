@@ -20,10 +20,11 @@ same evidence with `diskutil list external physical`, but the reproducible image
 builder is planned for Linux because Arch ownership, loop-device and chroot
 semantics must match the target tooling.
 
-## Safety contract for future scripts
+## Safety contract
 
-`bootstrap-arch.sh` will build a regular image file by default. Writing a block
-device will require all of the following:
+`build-image.sh` creates a regular image and has no physical-device code.
+Writing a block device remains a separate future operation and will require all
+of the following:
 
 - `--device /dev/disk/by-id/<exact-device>` (not a mutable `/dev/sdX` alone);
 - `--write-device`;
@@ -36,12 +37,17 @@ The script must refuse empty variables, globbed devices, partitions instead of
 whole devices, mounted targets, and targets whose identity changes between
 inspection and write. Destructive commands will never be implicit or hidden.
 
-The current [`bootstrap-arch.sh`](../scripts/bootstrap-arch.sh) implements only
-the non-device subset of that contract. It verifies a local rootfs SHA-256,
-optionally verifies the detached signature, prints the pinned next stages and
-can create a **new** sparse regular `.img` file with an explicit action. It
-rejects physical-device options and existing output paths. Partitioning,
-mounting, rootfs extraction and SD writing remain deliberately unimplemented.
+The current [`bootstrap-arch.sh`](../scripts/bootstrap-arch.sh) verifies a
+local rootfs SHA-256 and requires an explicit detached signature, trusted
+keyring and exact signer fingerprint before extraction. Extraction is
+Linux/root-only and accepts only a new offline-root destination.
+
+[`build-image.sh`](../scripts/build-image.sh) creates a new regular image,
+partitions it with a deterministic MBR, formats FAT32/ext4, copies the prepared
+root, renders PARTUUID-based boot/fstab configuration, runs both filesystem
+checks and publishes embedded/external manifests. Its pinned aarch64 fixture
+integration test passes. [`plan-sd-write.sh`](../scripts/plan-sd-write.sh) is a
+read-only Linux physical-media preflight; it deliberately has no write action.
 
 Example after the moving rootfs has been downloaded, signature-verified and
 assigned an immutable SHA-256 in the build lock:
@@ -51,7 +57,10 @@ scripts/bootstrap-arch.sh \
   --rootfs downloads/ArchLinuxARM-rpi-aarch64-YYYYMMDD.tar.gz \
   --rootfs-sha256 '<64-hex-digit pinned digest>' \
   --signature downloads/ArchLinuxARM-rpi-aarch64-YYYYMMDD.tar.gz.sig \
-  --plan
+  --keyring build/archlinuxarm.gpg \
+  --signer-fingerprint 68B3537F39A313B3E574D06777193F152BDBE6A6 \
+  --root-tree build/arch-root \
+  --extract-root
 ```
 
 ## Concrete Phase 1 implementation plan
@@ -89,8 +98,11 @@ Research has now pinned the August 2026 rootfs and detached signature in
 SHA-256 is
 `f10903be472e2662e110f0f7bae2750a30914ce3dc0fcd38ec85d3405d8c8967`,
 the signature verifies under Arch Linux ARM's published build-system
-fingerprint, and the archive stream is valid. Repeat signature verification in
-the Linux builder; never resolve the moving `latest` URL during an image build.
+fingerprint, and the archive stream is valid. The exact archive has now been
+verified with `gpgv` and extracted in the pinned aarch64 Linux container while
+preserving numeric ownership. Evidence and all failed assumptions are in
+[`../research/rootfs-extraction-results.yaml`](../research/rootfs-extraction-results.yaml).
+Never resolve the moving `latest` URL during an image build.
 
 Archive inspection also confirms why the rootfs is only a userspace input. It
 contains CM5 DTBs, but installs generic `linux-aarch64` 7.1.6-1 and U-Boot,
@@ -160,7 +172,16 @@ Apply mode accepts only an offline Arch Linux ARM filesystem root. It requires
 aarch64 or binfmt `arch-chroot` environment. It removes only installed
 `linux-aarch64`, `linux-aarch64-headers` and `uboot-raspberrypi` conflicts,
 then installs the locked package set. If Pacman or DKMS fails, it exits before
-activating the uConsole boot include.
+activating the uConsole boot include. The exact nine-package build closure is
+locked in `config/uconsole-hardware/prerequisites.lock` and installed without
+mirror resolution by `install-uconsole-prerequisites.sh`.
+
+The real signed offline root has passed this transaction. The generic kernel
+and U-Boot packages were removed, DKMS installed all board modules for
+`6.18.45-1-rpi-16k`, both overlays were installed, and a broad first-boot
+initramfs was generated without builder-host hardware autodetection. See
+[`../research/phase1-hardware-install-results.yaml`](../research/phase1-hardware-install-results.yaml).
+This is build evidence, not a claim that the CM5 has booted it.
 
 ### P1.3 — Construct an image file, not the SD card
 
@@ -181,6 +202,11 @@ Assumption: Pi firmware can boot a conventional FAT boot plus ext4 root layout.
 Gate: the image mounts read-only and its package database, ownership, boot
 references and manifest are internally consistent.
 
+The regular-image fixture passes this gate, including exact MBR geometry,
+filesystem IDs, fsck, read-only remount, rendered boot references and both
+manifests. The full hardware root has not been promoted to a development image
+because default credentials are intentionally still present pending P1.4.
+
 ### P1.4 — Configure the minimal system
 
 Assumption: boot, networking and recovery can be proven without a graphical
@@ -196,16 +222,25 @@ No Hyprland, display manager, Omarchy package or AUR helper is introduced.
 Gate: configuration is visible in the mounted image and SSH credentials have a
 documented recovery path.
 
+Current decision gate: the source root has enabled OpenSSH plus
+`systemd-networkd`/`wpa_supplicant`, Broadcom firmware, `iw` and the wireless
+regulatory database, but both `root` and `alarm` source passwords remain
+unlocked. Do not build or boot a card until the admin account name, SSH public
+key, Wi-Fi bootstrap method and NetworkManager-versus-networkd policy are
+explicitly selected and the default passwords are locked.
+
 ### P1.5 — Write and boot the fresh SD
 
 Assumption: the produced image targets the identified development card only.
 
 1. Re-run the read-only device inventory and compare model/serial/size.
-2. Invoke the future explicit write flags. Capture the exact command and image
-   SHA-256 in the experiment log.
-3. Verify the written partition table and sampled image checksum before eject.
-4. Boot with serial logging if available. Preserve the full first-boot journal.
-5. Repeat three cold boots after the first successful configuration.
+2. Run `scripts/plan-sd-write.sh` and save its exact image hash plus target
+   model/serial/size report.
+3. Invoke the future separately reviewed writer with explicit destructive
+   flags. Capture the exact command and image SHA-256 in the experiment log.
+4. Verify the written partition table and sampled image checksum before eject.
+5. Boot with serial logging if available. Preserve the full first-boot journal.
+6. Repeat three cold boots after the first successful configuration.
 
 Gate: console, networking and key-based SSH pass three cold boots.
 

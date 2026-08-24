@@ -1,0 +1,36 @@
+schema: 1
+observed_at: "2026-08-24"
+runner: research/install-phase1-hardware.sh
+target: "verified Arch Linux ARM root in retained Linux volume"
+result: PASS
+packages:
+  prerequisite_closure: config/uconsole-hardware/prerequisites.lock
+  kernel: linux-rpi-16k-6.18.45-1
+  headers: linux-rpi-16k-headers-6.18.45-1
+  board: uconsole-cm5-dkms-0.1.r0.gbf7a0ab-1
+verified:
+  - exact local package versions, architectures and SHA-256 values
+  - generic linux-aarch64 and uboot-raspberrypi packages removed
+  - all uConsole DKMS modules installed for 6.18.45-1-rpi-16k
+  - broad first-boot initramfs generated successfully without host autodetection
+  - kernel8.img and initramfs-linux.img present
+  - both uConsole overlays present
+  - managed uConsole boot include present exactly once
+  - rootfs and hardware selection state preserved
+  - temporary chroot mounts removed on container exit
+failures_recorded:
+  - finding: "Plain chroot lacked /proc mount topology, so Pacman refused before commit"
+    change: "Use bounded /dev, /proc, /sys and /run mounts"
+  - finding: "Target root was a directory within the volume, not a mount point"
+    change: "Self-bind the root as arch-chroot does, make it private, and unmount it last"
+  - finding: "Host autodetect saw the Docker volume filesystem rather than the future SD root"
+    change: "Build the first-boot initramfs with exact -k/-g inputs and -S autodetect"
+warnings:
+  - "microcode hook reports aarch64 unsupported; no x86 microcode is expected"
+  - "KMS hook reports no drm_privacy_screen_register provider"
+  - "broad initramfs reports optional xhci_pci_renesas firmware absent"
+  - "sd-vconsole uses defaults until base-system configuration writes vconsole.conf"
+  - "kernel package warns /boot is not separately mounted during root-tree preparation; the regular image builder later creates and populates the FAT /boot partition"
+limitations:
+  - no physical CM5 boot or module load has occurred
+  - board package remains unsigned and local-evaluation-only pending licensing clarification

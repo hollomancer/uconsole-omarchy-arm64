@@ -31,6 +31,16 @@ joystick and consumer-control device. This makes generic USB HID/libinput the
 expected input path; failure is more likely a USB-host/DT problem than an
 Omarchy problem.
 
+## Offline evidence reached
+
+The signed Arch Linux ARM root now contains the selected `linux-rpi-16k`
+kernel and headers, installed uConsole DKMS modules for the exact kernel
+release, both board overlays, Pi firmware/CM5 DTB, and a successfully generated
+broad first-boot initramfs. These are package/build PASS results only. Every
+subsystem in the table remains runtime UNKNOWN until the actual CM5 produces
+the listed validation evidence; in particular, compiled `vc4`/`v3d` support is
+not proof of accelerated scanout.
+
 ## Graphics acceptance criteria
 
 All of the following are required before installing Hyprland:

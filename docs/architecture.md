@@ -84,6 +84,12 @@ the complete board delta reproducibly; 16K was selected because it is the
 CM5-native `bcm2712_defconfig` line and matches the strongest custom-kernel
 reference. It must still pass the real-hardware and update/rollback suite.
 
+As of 2026-08-24, the selected packages also install successfully into the
+verified signed Arch Linux ARM root in an isolated native-aarch64 environment.
+DKMS, the broad first-boot initramfs, both overlays and managed boot include
+pass offline verification. This closes a build/integration gate only; G1–G3
+remain open until the physical CM5 supplies boot, probe and V3D/V3DV evidence.
+
 The custom kernel is retained as a differential oracle and recovery fallback,
 not as the default package. Its proven boot settings, PMIC behavior and
 alternate audio path are captured as test hypotheses in

@@ -1,0 +1,29 @@
+schema: 1
+observed_at: "2026-08-24"
+runner: research/test-rootfs-extraction.sh
+builder:
+  image: menci/archlinuxarm:base-devel-20260819.32222611223
+  arm64_manifest_digest: sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
+input:
+  rootfs_sha256: f10903be472e2662e110f0f7bae2750a30914ce3dc0fcd38ec85d3405d8c8967
+  signature_sha256: 4465948c272ef9d87e475032be6a107d08b0110053f64ff8c505b7b92c69ab4d
+  keyring_package_sha256: 3cb36869edfe413672a6e932cc55d7f8386e1a9d3b38663cfb3bc6fe0d146e21
+  signer_fingerprint: 68B3537F39A313B3E574D06777193F152BDBE6A6
+result: PASS
+verified:
+  - detached signature with exact signer fingerprint
+  - root directory ownership 0:0
+  - alarm home ownership 1000:1000
+  - /bin symlink preserved
+  - Arch Linux ARM identity and pacman database
+  - generic source kernel, source fstab and default-account evidence
+  - immutable rootfs selection state
+failures_recorded:
+  - finding: "Pinned base container had no /work directory"
+    change: "Create the private work directory explicitly"
+  - finding: "archlinuxarm.gpg in the keyring package is ASCII armored"
+    change: "Dearmor it into the exact binary keyring passed to gpgv"
+  - finding: "awk rejected index as a function parameter name"
+    change: "Use a portable non-builtin local variable name in the archive path scan"
+local_retained_volume: uconsole-phase1-root-20260824
+limitation: "The named volume is local development state, not a published artifact"

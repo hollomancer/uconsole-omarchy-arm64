@@ -50,8 +50,11 @@ console-only bring-up. `lspci` remains part of the requested report but is not
 authoritative for Pi platform devices. DRM sysfs and the bound platform driver
 are the useful evidence.
 
-The later validation script will report PASS, WARN or FAIL for architecture,
-kernel, page size, DT model/overlays, boot manifest, DRM nodes, bound driver,
-software-renderer detection, display, audio, network, radio state, power
-supplies, input devices, Hyprland and missing Omarchy packages. Unknown or
-unavailable evidence must be WARN/FAIL, never silently omitted.
+[`../scripts/validate-system.sh`](../scripts/validate-system.sh) reports PASS,
+WARN or FAIL for architecture, kernel, page size, DT model/overlays, DRM nodes,
+GPU modules, OpenGL/Vulkan software-renderer detection, PCI inventory, display,
+backlight, audio, networking, radios, battery, input devices, Hyprland,
+orientation, Omarchy userland and missing core packages. Unknown or unavailable
+evidence is WARN/FAIL, never silently omitted. Use `--phase hardware`, then
+`--phase hyprland`, then `--phase omarchy` so later layers become mandatory
+only at their gate.

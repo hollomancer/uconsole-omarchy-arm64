@@ -1,0 +1,7 @@
+I: Bus=0003 Vendor=1209 Product=0001 Version=0111
+N: Name="ClockworkPi uConsole Keyboard"
+H: Handlers=sysrq kbd event0
+
+I: Bus=0003 Vendor=1209 Product=0001 Version=0111
+N: Name="ClockworkPi uConsole Trackball"
+H: Handlers=mouse0 event1

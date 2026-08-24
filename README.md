@@ -4,8 +4,8 @@ This repository defines a reproducible integration path for running the Omarchy
 desktop experience on a ClockworkPi uConsole with a Raspberry Pi Compute Module
 5. It is not an Omarchy ISO port.
 
-The current repository state is intentionally **research and architecture
-only**. No installer or disk-writing script has been implemented or run. The
+The current repository state contains research, architecture and a read-only
+validation tool. No installer or disk-writing script has been run, and the
 existing bootable SD card has not been touched.
 
 ## Status
@@ -20,9 +20,25 @@ Research snapshot: **2026-08-24**
   [`docs/architecture.md`](docs/architecture.md).
 - Candidate CM5/uConsole hardware support is mapped in
   [`docs/hardware-support.md`](docs/hardware-support.md).
+- The competing kernel/DKMS sources and provisional hardware choice are audited
+  in [`docs/hardware-source-audit.md`](docs/hardware-source-audit.md).
 - Omarchy's first ARM64 package audit is in
   [`docs/omarchy-arm64-package-matrix.md`](docs/omarchy-arm64-package-matrix.md).
+- Reusable lessons from the closest Quattro ARM fork are in
+  [`docs/omarchy-arm-adaptation-audit.md`](docs/omarchy-arm-adaptation-audit.md).
 - The safe Phase 1 plan is in [`docs/installation.md`](docs/installation.md).
+
+The validator is read-only and phase-aware:
+
+```sh
+scripts/validate-system.sh --phase hardware
+scripts/validate-system.sh --phase hyprland
+scripts/validate-system.sh --phase omarchy
+```
+
+It reports PASS, WARN or FAIL for all requested hardware, graphics, desktop and
+package checks. Deterministic fixtures exercise both success and software-GPU
+failure paths with `tests/test-validate-system.sh`.
 
 ## Proposed repository structure
 
@@ -35,15 +51,18 @@ layer has passed on real hardware.
 ├── config/
 │   └── arm64-overrides/
 │       ├── README.md
+│       ├── omarchy-core.packages         # current validation baseline
 │       ├── packages.toml                 # future: substitutions and omissions
 │       ├── pacman/                       # future: ARM repo/drop-in policy
 │       └── omarchy/                      # future: minimal userland overrides
 ├── docs/
 │   ├── architecture.md
+│   ├── hardware-source-audit.md
 │   ├── hardware-support.md
 │   ├── installation.md
 │   ├── known-issues.md
 │   ├── omarchy-arm64-package-matrix.md
+│   ├── omarchy-arm-adaptation-audit.md
 │   ├── prior-art.md
 │   └── upstream-inventory.md
 ├── research/
@@ -54,10 +73,10 @@ layer has passed on real hardware.
 │   ├── install-uconsole-hardware.sh      # future: kernel/DT/firmware only
 │   ├── install-hyprland.sh               # future: minimal compositor layer
 │   ├── install-omarchy-arm64.sh          # future: userland only
-│   └── validate-system.sh                # future: PASS/WARN/FAIL report
+│   └── validate-system.sh                # current: read-only PASS/WARN/FAIL report
 └── tests/
-    ├── shell/                            # future: shellcheck/Bats safety tests
-    └── fixtures/                         # future: package and sysfs fixtures
+    ├── test-validate-system.sh            # current deterministic test
+    └── fixtures/                          # current captured probe fixtures
 ```
 
 The planned separation is deliberate: Omarchy is not allowed to own the

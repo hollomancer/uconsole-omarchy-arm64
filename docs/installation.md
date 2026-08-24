@@ -166,3 +166,18 @@ Only after Phase 1 passes, install the smallest ALARM Hyprland set: Hyprland,
 Aquamarine, UWSM, xdg-desktop-portal-hyprland, a terminal and diagnostic tools.
 Run the requested `uname`, `glxinfo`, `vulkaninfo`, `lsmod`, `lspci`, `/dev/dri`
 and `hyprctl systeminfo` checks before any Omarchy userland enters the image.
+
+## Read-only validation command
+
+At each gate, save the complete output of the repository validator:
+
+```sh
+scripts/validate-system.sh --phase hardware
+scripts/validate-system.sh --phase hyprland
+scripts/validate-system.sh --phase omarchy
+```
+
+The hardware phase still reports later layers as WARN. The Hyprland and
+Omarchy phases turn their respective absence into FAIL. Any OpenGL software
+renderer, Vulkan software renderer, missing DRM render node or absent required
+hardware remains FAIL in every phase.

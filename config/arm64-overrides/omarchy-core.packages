@@ -1,0 +1,19 @@
+# Minimum repository package set used to validate the core Omarchy experience.
+# Omarchy's own userland is checked separately with `omarchy-version`.
+hyprland
+aquamarine
+quickshell
+uwsm
+xdg-desktop-portal-hyprland
+xdg-terminal-exec
+foot
+neovim
+ttf-jetbrains-mono-nerd
+pipewire
+pipewire-pulse
+wireplumber
+zram-generator
+mesa
+libdrm
+vulkan-broadcom
+

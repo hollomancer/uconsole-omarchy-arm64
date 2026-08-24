@@ -3,6 +3,8 @@
 Observed on **2026-08-24**. Commit pins are an investigation baseline, not a
 claim that every project is stable or compatible. The exact pins are also
 machine-readable in [`../research/upstream-lock.yaml`](../research/upstream-lock.yaml).
+Closely related community implementations and their limitations are assessed
+separately in [`prior-art.md`](prior-art.md).
 
 ## Primary projects
 

@@ -14,6 +14,8 @@ Research snapshot: **2026-08-24**
 
 - Upstream projects and architecture assumptions are pinned in
   [`research/upstream-lock.yaml`](research/upstream-lock.yaml).
+- Closely related community attempts are assessed in
+  [`docs/prior-art.md`](docs/prior-art.md).
 - The integration boundary and update ownership are defined in
   [`docs/architecture.md`](docs/architecture.md).
 - Candidate CM5/uConsole hardware support is mapped in
@@ -42,6 +44,7 @@ layer has passed on real hardware.
 │   ├── installation.md
 │   ├── known-issues.md
 │   ├── omarchy-arm64-package-matrix.md
+│   ├── prior-art.md
 │   └── upstream-inventory.md
 ├── research/
 │   ├── upstream-lock.yaml

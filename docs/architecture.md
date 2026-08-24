@@ -69,11 +69,15 @@ The smallest acceptable compatibility mechanism is therefore expected to be:
 This is a proposed design to validate, not a license to patch the installed
 system during the research phase.
 
-## Kernel baseline decision
+## Kernel baseline candidates
 
-For the first hardware boot, use the source and patch set from
-`OuinOuin74/linux-clockwork-arch` v7.0.9 because it is the most complete current
-Arch-specific CM5/uConsole package. Do not blindly install its release binary:
+The initial research selected the source and patch set from
+`OuinOuin74/linux-clockwork-arch` v7.0.9 as the first custom-kernel candidate.
+Subsequent prior-art research found `yota9/uconsole-cm5`, which packages the
+board delta as DKMS modules and DT overlays over a stock Pi kernel. The kernel
+design must now be selected by a Phase 1 feasibility comparison, not assumed.
+
+For the custom-kernel candidate, do not blindly install its release binary:
 
 - rebuild it in a clean aarch64 build environment;
 - replace weak MD5 source verification with pinned SHA-256 checks;
@@ -81,6 +85,19 @@ Arch-specific CM5/uConsole package. Do not blindly install its release binary:
 - remove or gate post-install edits to `config.txt`, `cmdline.txt` and `fstab`;
 - resolve its conflicting `dwc2` guidance before boot;
 - make known-good boot files recoverable independently of the package database.
+
+For the stock-kernel/DKMS candidate:
+
+- port the packaging, not its apt-specific installer, into a disposable Arch
+  Linux ARM build;
+- verify current `linux-rpi` headers expose every required symbol;
+- clarify source licensing before copying project glue;
+- require DKMS to build successfully before a kernel package transaction may
+  become boot-default;
+- retain a known-good kernel/modules/DT boot set for rollback.
+
+Both candidates must use the same hardware validation and kernel-update test.
+The simpler passing ownership model wins; neither may modify Omarchy.
 
 The observed v7.0.9 configuration uses a **16 KiB page size**. That is normal
 for current Pi kernels but can break proprietary binaries and some AppImages;

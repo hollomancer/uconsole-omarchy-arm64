@@ -66,23 +66,31 @@ userspace foundation when paired with a CM5/uConsole kernel.
 
 Gate: the build can be reproduced without silently advancing any input.
 
-### P1.2 — Build the hardware kernel package
+### P1.2 — Select and build the hardware package
 
-Assumption: the v7.0.9 `linux-clockwork-arch` CM5 patch set is sufficient for a
-first boot and is reviewable as an Arch package.
+Assumption under test: either the v7.0.9 `linux-clockwork-arch` CM5 patch set
+or a stock `linux-rpi` kernel plus the `yota9/uconsole-cm5` DKMS/overlay delta
+can provide a separately controlled Arch hardware layer.
 
-1. Build in a clean native-aarch64 or full-system-QEMU Arch Linux ARM builder.
-2. Convert all externally fetched inputs to SHA-256 verification.
-3. Split package installation from machine mutation: the package may own kernel
+1. Audit Ouin, Peter Cai and `wdkdot/uconsole-arch` packaging back to their
+   common Rex kernel sources; identify rather than duplicate equivalent work.
+2. Attempt a source-only Arch DKMS build of `yota9/uconsole-cm5` against the
+   exact pinned `linux-rpi` headers. Clarify licensing before importing code.
+3. Build the custom-kernel candidate in a clean native-aarch64 or
+   full-system-QEMU Arch Linux ARM builder.
+4. Convert all externally fetched inputs to SHA-256 verification.
+5. Split package installation from machine mutation: the package may own kernel
    files, modules, DTBs and overlays, but not edit `fstab`, `cmdline.txt` or
    `config.txt` without an explicit image-build step.
-4. Verify the kernel config, including V3D/VC4, AXP20x support, uConsole panel,
+6. Verify the kernel config, including V3D/VC4, AXP20x support, uConsole panel,
    input, audio, Broadcom radios and the observed 16 KiB page setting.
-5. Diff patches against Raspberry Pi and active ClockworkPi lineages; record
+7. Diff patches against Raspberry Pi and active ClockworkPi lineages; record
    each still-required board patch.
 
-Gate: a reproducible signed package and build log exist. The `dwc2` conflict and
-boot-file mutations are resolved before installation.
+Gate: at least one approach produces reproducible signed packages and a build
+log. The same real-hardware cold-boot and kernel-update/rollback suite selects
+the winner. The `dwc2` conflict and boot-file mutations are resolved before
+installation.
 
 ### P1.3 — Construct an image file, not the SD card
 

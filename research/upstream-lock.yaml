@@ -29,6 +29,41 @@ sources:
     commit: eef4936b13e581bc91054eaae20e18fa4d2b6120
     release: v7.0.9
     architecture_note: "Initial Arch CM5/uConsole kernel baseline; rebuild and audit required"
+  - name: omarchy-arm-community-port
+    url: https://github.com/alexisraitano-myffu/omarchy-arm.git
+    ref: arm64
+    commit: 579f15c699dab01e2b3b12e2c4d2503873359be9
+    architecture_note: "Closest Quattro ARM port; Pi 5 headless run, no uConsole display or ARM update validation"
+  - name: uconsole-omarchy-inspired
+    url: https://github.com/kaleaditya28897-linux/uconsole-omarchy.git
+    ref: main
+    commit: 25db8906ac4f43f1743846c936ecff4c6998752b
+    architecture_note: "Older Waybar/Mako/Fuzzel design; CM5 experimental; not Omarchy Quattro userland"
+  - name: uconsole-arch-images
+    url: https://github.com/wdkdot/uconsole-arch.git
+    ref: main
+    commit: 896a3acd39e0831fa4a1093ff4bb0db71d09c07d
+    architecture_note: "Current Arch CM5 image/package reference; repository trust policy is unsuitable as-is"
+  - name: arch-uconsole-prerelease
+    url: https://github.com/TheZacillac/arch-uconsole.git
+    ref: main
+    commit: c65deaada6e49104101daac8573f6809020e732d
+    architecture_note: "Signed repository design, but project is explicitly pre-release"
+  - name: uconsole-cm5-dkms
+    url: https://github.com/yota9/uconsole-cm5.git
+    ref: master
+    commit: bf7a0ab55654c96b74d013520e1196d39f66391a
+    architecture_note: "Stock Pi kernel plus DKMS/DT alternative; not yet tested on Arch Linux ARM"
+  - name: uconsole-hyprland-dotfiles
+    url: https://github.com/AleReb/uconsole-hyprland-dotfiles.git
+    ref: main
+    commit: a3c17f1761a548d089ed28b3204961e98410accc
+    architecture_note: "Debian CM5 Hyprland display/input reference; not Omarchy userland"
+  - name: nixos-uconsole
+    url: https://github.com/nixos-uconsole/nixos-uconsole.git
+    ref: master
+    commit: 18a837c2bf7e823bcfe86d6bf98b15270e3d84c3
+    architecture_note: "Experimental CM5 hardware and declarative DT reference; not Arch packaging"
 
 moving_inputs_to_pin_before_build:
   - url: https://ca.us.mirror.archlinuxarm.org/os/ArchLinuxARM-rpi-aarch64-latest.tar.gz

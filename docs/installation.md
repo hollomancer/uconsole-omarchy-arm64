@@ -420,6 +420,63 @@ defaults be audited against one immutable source without bypassing G3/G4. The
 actual core-userland activation will be a separate transaction after the real
 hardware gates pass and the command/package allowlists close.
 
+### Thin Omarchy userland candidate
+
+The command/plugin audit and thin-package build can run off-device before those
+live gates. They never install to the host or target:
+
+```sh
+research/audit-omarchy-activation.sh \
+  --source-archive /path/to/omarchy-quattro.tar.gz
+
+research/build-omarchy-arm64-userland.sh --check \
+  --source-archive /path/to/omarchy-quattro.tar.gz
+
+research/build-omarchy-arm64-userland.sh \
+  --source-archive /path/to/omarchy-quattro.tar.gz \
+  --output /new/empty/artifact-directory
+```
+
+The pinned build has architecture `any`, size 65,321,824 bytes and SHA-256
+`19cd7f72f025562110c3750224561534a9994ac9ec4bb9849b3b6da01c1039aa`.
+Two network-disabled aarch64 builds and their `.BUILDINFO` files are identical.
+The payload has three `/usr/bin` wrappers and 37 selected implementations
+beneath `/usr/share/omarchy-arm64/bin`; 34 are internal-only and every other
+upstream command is absent.
+
+Validate Pacman behavior only in the disposable container:
+
+```sh
+research/test-omarchy-arm64-userland-install.sh \
+  --package /path/to/omarchy-arm64-userland-4.0.0.alpha-2-any.pkg.tar.xz
+```
+
+After the live hardware and minimal Hyprland gates pass, install the exact
+artifact into the mounted development root as a separately reviewed Pacman
+transaction. Do not install from the inert source stage. Before any session is
+started, plan the user boundary:
+
+```sh
+scripts/prepare-omarchy-user.sh --plan \
+  --root /mnt/uconsole-root \
+  --user yourname \
+  --source-archive /path/to/omarchy-quattro.tar.gz
+```
+
+Plan mode verifies the installed inactive package, target account, exact shell
+configuration, and every historical migration digest. Apply is allowed only on
+an offline root. It refuses any pre-existing `~/.config/omarchy` or migration
+state unless the entire prior result is byte-for-byte identical. It seeds the
+ARM `shell.json` and 87 zero-byte migration markers, records that no migration
+ran, and leaves Hyprland/session startup unchanged.
+
+The first live launch remains manual after Phase 2 evidence is saved. Keep the
+upstream autostart and Hyprland defaults out of the transaction; start only the
+reviewed shell wrapper from the existing minimal session. Re-run
+`scripts/validate-system.sh --phase hyprland` before and after each enabled
+plugin group. Any software renderer or input/display regression stops the
+handoff.
+
 ### Read-only update candidate audit
 
 Never invoke upstream `omarchy update` on this target. Before considering a
@@ -439,11 +496,11 @@ migration disposition. A new package, changed command, modified historical
 migration or unclassified future migration is a hard failure.
 
 For a fresh installation, the 87 migrations already present at the pinned
-source are an initialization baseline: a future activation transaction will
-create their exact filename markers without executing them. The current source
-tree already contains their intended final state, while replaying them would
-repeat package, `/etc`, boot and user-file mutations. This marker initialization
-is not implemented in the inert staging script and cannot happen before G5.
+source are an initialization baseline. `prepare-omarchy-user.sh` creates their
+exact filename markers without executing them only after the thin package is
+present in an offline root. The current source tree already contains their
+intended final state, while replaying them would repeat package, `/etc`, boot
+and user-file mutations. The inert staging script still cannot initialize them.
 
 Even a passing source audit is not permission to update a target. The promoted
 ARM package transaction must first run on a disposable image and preserve the

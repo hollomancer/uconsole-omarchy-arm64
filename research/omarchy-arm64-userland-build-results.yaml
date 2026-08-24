@@ -1,0 +1,52 @@
+schema: 1
+verified_at: 2026-08-24
+source:
+  project: basecamp/omarchy
+  commit: d99d4fc6de0bc99d48c9935724fa19d7fb41ae54
+  archive_sha256: 3b60bb6d5694478963c167571457ee266cdba1e7791395a80f2f26074d72d6eb
+builder:
+  image: menci/archlinuxarm:base-devel-20260819.32222611223
+  image_digest: sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
+  platform: linux/arm64
+  network: disabled
+artifact:
+  package: omarchy-arm64-userland
+  version: 4.0.0.alpha-2
+  architecture: any
+  filename: omarchy-arm64-userland-4.0.0.alpha-2-any.pkg.tar.xz
+  size: 65321824
+  sha256: 19cd7f72f025562110c3750224561534a9994ac9ec4bb9849b3b6da01c1039aa
+reproducibility:
+  builds: 2
+  package_byte_identical: true
+  buildinfo_byte_identical: true
+payload:
+  public_wrappers: 3
+  packaged_command_implementations: 37
+  internal_only_commands: 34
+  upstream_command_implementations: 29
+  fail_closed_command_overrides: 8
+  transitive_shipped_references: 25
+  unselected_transitive_references: 0
+  sourced_shell_libraries: 0
+  plugin_manifests: 37
+  enabled_plugins: 16
+  explicitly_disabled_plugins: 21
+  owns_hyprland_configuration: false
+  owns_home_files: false
+  owns_services: false
+  owns_updates: false
+  owns_hardware: false
+  owns_boot: false
+validation:
+  package_ownership_root_root: pass
+  forbidden_command_scan: pass
+  reduced_config_exact_match: pass
+  reduced_menu_exact_match: pass
+  disposable_pacman_install: pass
+  disposable_pacman_remove: pass
+notes:
+  - The fakeroot emulation warning is inherited from the pinned ARM container; MTREE ownership is root:root.
+  - A pkgrel=1 candidate was rejected because its selected top-level helpers did not include their transitive helper graph; it was never promoted.
+  - Eight broad upstream actions are explicit fail-closed first-run implementations, not silent replacements.
+  - The package is a non-activated candidate and was not copied to a target SD card.

@@ -26,8 +26,9 @@ These items are unresolved until hardware or build evidence closes them.
 | Aquamarine/Hyprland on Pi 5 is not an upstream board guarantee | Generic DRM/GLES support does not prove atomic KMS, modifiers or stable scanout on this panel | On-device Phase 2 gate; use Aquamarine workaround variables only diagnostically |
 | Phase 2 cache is not a signed project repository | The exact 204-package transaction and detached signatures are content-locked and resolver-verified, but update/distribution metadata is not project-signed | Use the reviewed local cache for bring-up only; design a separately signed ARM repository after live Hyprland passes |
 | Current Hyprland config uses Lua APIs from 0.56 | Arch ARM has the matching release, but the config has only passed syntax and fixture tests, not an on-device config load | Keep the version lock; capture `start-hyprland` stderr and `hyprctl systeminfo` before adding Omarchy |
-| Omarchy source is staged but intentionally inactive | Default Quattro autostart reaches provisioning, power-profile, monitor-watch and broad hook/command surfaces beyond the completed package/update inventory audits | Stage selected trees outside `PATH`; reject activation, home seeding, services and migrations in the current installer |
-| First-party Quickshell plugins default to enabled | An empty plugin list still loads non-bar infrastructure, expanding the command and package surface unexpectedly | First ARM shell config must carry an explicit `disabledPlugins` denylist and expose only allowlisted commands |
+| Omarchy source is staged but intentionally inactive | The audit tree is broader than the runnable surface and must never become `OMARCHY_PATH` | Runtime is a separate thin package; the inert stage remains outside `PATH` and rejects activation |
+| First-party Quickshell plugins default to enabled | An empty plugin list still loads non-bar infrastructure, expanding the command and package surface unexpectedly | All 37 manifests are locked; 21 plugins are explicitly disabled and any inventory change fails the activation audit |
+| Thin Omarchy userland is off-target proven but not live-proven | Two package builds and disposable Pacman install/remove pass, but QML/IPC, panel geometry, portals and enabled hardware panels have not run on the CM5 | Do not launch it until hardware and minimal Hyprland pass; then test one enabled plugin group at a time |
 | `xdg-terminal-exec` emulated fakeroot warning | One of two builds printed an intermittent fakeroot payload warning, although the second was clean and both package bytes/ownership match | Keep the reproducible hash, but rebuild once on native ARM before signing or installing it |
 | GPU false positives | A desktop can start with llvmpipe/lavapipe | Treat any software renderer as FAIL and stop before Omarchy |
 | Battery/power patch maturity | AXP20x reporting and power key behavior are board-specific and still evolving in community kernels | Charge/discharge and shutdown tests; compare active kernel lineages |
@@ -36,7 +37,7 @@ These items are unresolved until hardware or build evidence closes them.
 | Five core local packages are built but not target-proven | `omacalc`, `omacut`, `ttf-ia-writer`, `ttfx` and `yaru-icon-theme` pass the pinned offline AArch64 build; GUI, portal, font/theme discovery and 16 KiB-page behavior still need the CM5 | Keep activation blocked; install only into a disposable image, then test and sign the exact artifacts |
 | Current Yaru lacks two names requested by Omarchy | `Yaru-gray` (Vantablack) and `Yaru-grey` (White) are absent from the pinned upstream release; silently aliasing them would conceal a visual difference | Choose and document an explicit fallback after live comparison, or package a reviewed theme that supplies the names |
 | Emulated `makepkg` prints an intermittent fakeroot payload warning | The warning appears when entering fakeroot under the AArch64 container, although every final package MTREE proves inherited `uid=0 gid=0` and repeat artifact hashes are checked | Retain the ownership gate and repeat once on native ARM before signing |
-| Historical Omarchy migrations | Replaying x86-oriented migrations on a fresh ARM port can mutate system state unexpectedly | All 87 are content-locked as `baseline-do-not-run`; initialize exact markers only inside the future audited activation transaction and review every later migration separately |
+| Historical Omarchy migrations | Replaying x86-oriented migrations on a fresh ARM port can mutate system state unexpectedly | All 87 are content-locked as `baseline-do-not-run`; the preparation transaction creates exact empty markers without executing scripts and rejects conflicting state |
 | Kernel/firmware updates versus Omarchy updates | A generic system update could replace the known-good boot set | Separate hardware package ownership and compare boot manifests around updates |
 | SoC discovery differs from PCs | `lspci` may not show platform GPU/display devices | Keep it in reports but use DRM sysfs, DT and bound-driver evidence |
 
@@ -54,5 +55,5 @@ These items are unresolved until hardware or build evidence closes them.
 - A required package remains `unknown` in the compatibility manifest.
 - The retained local Hyprland payload cache is discarded before a durable
   project archive or signed repository exists.
-- Staged Omarchy source is added to `PATH`, selected as `OMARCHY_PATH`, or
-  copied into a user home before its activation audit closes.
+- Inert staged Omarchy source is added to `PATH`, selected as `OMARCHY_PATH`, or
+  copied into a user home; only the reviewed thin package may become runtime.

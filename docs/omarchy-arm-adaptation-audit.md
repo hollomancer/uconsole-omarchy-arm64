@@ -133,7 +133,49 @@ Therefore the first runnable ARM userland must use three explicit controls:
    by enabled components and fails when a new upstream command reference is
    unclassified.
 
-This finding is why the current `install-omarchy-arm64.sh` stages source outside
-`PATH` and rejects activation. The next command-policy pass can proceed from the
-pinned tree, but the actual Quickshell session waits for the real G3/G4 hardware
-results.
+Those controls are now implemented and tested against the pinned archive:
+
+- the sorted 37-manifest inventory is locked at SHA-256
+  `47c2c3d67e4dea367147124badd47e603a9b6a35004b1b4a91b751f9bba9bc56`;
+- 16 plugins are enabled and 21 are named in `disabledPlugins`;
+- the sorted 432-command inventory is locked at SHA-256
+  `ade2db01589567a730cd1b7018712a6bf11c43f45e8e3889143305a908c0d777`;
+- only `omarchy-launch-shell`, `omarchy-shell` and `omarchy-menu` may enter
+  `/usr/bin`; 34 reviewed commands remain internal-only to `OMARCHY_PATH`;
+- the 37 packaged command implementations have a closed transitive graph: 25
+  shipped-command references are selected, no implementation sources an
+  unbundled library, and no selected implementation reaches a blocked command;
+- the reduced menu has no package, update, migration, boot, kernel or firmware
+  action; and
+- any new manifest, command or reference changes an inventory digest and fails
+  `research/audit-omarchy-activation.sh`.
+
+The resulting `omarchy-arm64-userland` package is architecture-independent and
+contains no Hyprland defaults, `/etc`, service, home, migration or boot payload.
+Two network-disabled aarch64 builds were byte-identical at SHA-256
+`19cd7f72f025562110c3750224561534a9994ac9ec4bb9849b3b6da01c1039aa`.
+Pacman install/removal passed in a disposable ARM64 root.
+
+Eight selected names intentionally use small ARM first-run implementations
+instead of their broad upstream scripts. Speaker tuning reports unavailable;
+DNS is query-only and remains owned by Phase 1; presentation-terminal and
+launcher-removal actions are rejected; and the four dynamic theme/wallpaper
+mutation entry points are rejected. The initial Tokyo Night colors/background
+are seeded directly from immutable package content, so the visual experience
+does not require the broad theme mutation graph. These are visible functional
+reductions, not silent substitutions.
+
+An earlier `pkgrel=1` candidate was rejected after the recursive audit found
+that top-level helpers alone were not a closed runtime graph. It was never
+promoted; `pkgrel=2` adds the required safe transitive implementations and the
+audit now fails on any unselected call or sourced shell library.
+
+`scripts/prepare-omarchy-user.sh` separately enforces the user boundary. It
+refuses existing Omarchy config/state, seeds only the reviewed `shell.json`, and
+creates the 87 historical migration names as empty completion markers without
+running them. An exact rerun is idempotent; any changed file is a hard failure.
+It does not modify Hyprland or start a session.
+
+The inert source stage remains outside `PATH`; it is never the runtime tree.
+The actual Quickshell launch still waits for live CM5 hardware and minimal
+Hyprland validation.

@@ -38,7 +38,7 @@ package name, repository, version, architecture or count.
 | `vulkan-broadcom` | V3DV Vulkan ICD | ALARM aarch64 1:26.2.1-1 | ALARM | Yes for requested validation |
 | `pipewire` / `wireplumber` | audio/session graph | ALARM aarch64 | ALARM | Yes |
 | `foot` | terminal | ALARM aarch64 1.27.0-1 | ALARM | Yes for core UX |
-| `omarchy` | commands and userland | PKGBUILD is `any`, but public aarch64 repo is absent and package hard-depends on Limine/Snapper boot machinery | rebuild thin ARM-safe package from pinned upstream | Yes, Phase 5 only |
+| `omarchy` | commands and userland | Upstream package remains unsuitable because its `any` payload hard-depends on Limine/Snapper; the thin `omarchy-arm64-userland` candidate builds reproducibly as `any` and passes disposable ARM64 Pacman install/remove | use the thin pinned package; never install upstream package wholesale | Yes, Phase 5 only; live test pending |
 | `omarchy-settings` | broad `/etc` defaults | PKGBUILD is `any`; contents overlap boot, logind, networking and initramfs ownership | split/audit; install only approved settings | Partly; not wholesale |
 
 ## Exact-name misses requiring classification

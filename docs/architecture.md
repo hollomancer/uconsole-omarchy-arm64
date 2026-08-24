@@ -51,25 +51,26 @@ dependencies on Limine, its mkinitcpio hook, Limine/Snapper synchronization and
 Snapper. It also conflicts with Omarchy routines that replace `/etc/pacman.conf`
 or run a whole-system `pacman -Syyuu` against Omarchy mirrors.
 
-The smallest acceptable compatibility mechanism is therefore expected to be:
+The compatibility mechanism is now implemented as:
 
 1. Keep the Arch Linux ARM mirrorlist and package databases authoritative.
-2. Package the selected Omarchy userland from its pinned source as an ARM-safe
-   derivative that removes bootloader dependencies, without forking its
-   userland tree.
+2. Package the selected Omarchy Quickshell userland from pinned source as
+   `omarchy-arm64-userland`, without copying upstream Hyprland, boot, service,
+   migration or package/update ownership.
 3. Package only missing Omarchy-owned dependencies in a small, signed local ARM
    repository.
 4. Carry substitutions and omissions in one declarative manifest under
    `config/arm64-overrides/`.
-5. Disable or adapt only the Omarchy update hooks that replace repository or
-   boot configuration. Continue using upstream migrations after each migration
-   has passed an ARM/system-ownership audit.
+5. Expose only three reviewed userland wrappers. Keep upstream update and
+   migration commands absent; initialize the 87 pinned historical migrations
+   as a no-run baseline and audit each future migration before promotion.
 6. Protect the kernel, firmware, DT overlay and boot configuration as a
    separately versioned hardware bundle. Record their hashes before and after
    every Omarchy update test.
 
-This is a proposed design to validate, not a license to patch the installed
-system during the research phase.
+The package and user-preparation transactions pass off-target tests, but this
+is not permission to patch or launch them on the development card before the
+live hardware and minimal Hyprland gates pass.
 
 ## Selected kernel baseline
 

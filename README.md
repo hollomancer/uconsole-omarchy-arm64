@@ -7,9 +7,10 @@ desktop experience on a ClockworkPi uConsole with a Raspberry Pi Compute Module
 The current repository state contains research, architecture, signed rootfs
 extraction, a regular-file image builder, a reproducible local hardware
 package, an offline-root hardware installer, an exact minimal base-system
-transaction, a version-locked minimal Hyprland installer, and an inert Omarchy
-source-staging transaction. Five missing core Omarchy packages also have
-content-locked, byte-reproducible off-target AArch64 builds. The real pinned
+transaction, a version-locked minimal Hyprland installer, an inert Omarchy
+source-staging transaction, and a fail-closed thin Omarchy userland package.
+Five missing core Omarchy packages also have content-locked,
+byte-reproducible off-target AArch64 builds. The real pinned
 Arch rootfs, hardware transaction,
 secret-safe base configuration, and regular-image assembly have been exercised
 in isolated aarch64 Linux volumes. The content-pinned Hyprland plan also passes
@@ -64,6 +65,10 @@ Research snapshot: **2026-08-24**
 - The other five core local-package inputs and two-build results are in
   [`research/omarchy-core-build-inputs.yaml`](research/omarchy-core-build-inputs.yaml)
   and [`research/omarchy-core-build-results.yaml`](research/omarchy-core-build-results.yaml).
+- The complete plugin/command activation policy is enforced by
+  [`research/audit-omarchy-activation.sh`](research/audit-omarchy-activation.sh).
+- The thin package's two-build and disposable Pacman evidence is in
+  [`research/omarchy-arm64-userland-build-results.yaml`](research/omarchy-arm64-userland-build-results.yaml).
 
 The validator is read-only and phase-aware:
 
@@ -179,6 +184,40 @@ enable services or initialize migrations. `--activate` is rejected. This lets
 the compatibility audit proceed without turning staged upstream code into an
 accidental installer.
 
+The separate thin userland candidate is also reproducibly buildable off-device:
+
+```sh
+research/audit-omarchy-activation.sh \
+  --source-archive /path/to/omarchy-quattro.tar.gz
+
+research/build-omarchy-arm64-userland.sh \
+  --source-archive /path/to/omarchy-quattro.tar.gz \
+  --output /new/artifact-directory
+```
+
+It locks 37 plugins, 432 commands and 141 shell/Hyprland references. The
+package exposes three wrappers and retains 34 additional internal-only helpers.
+Eight broad actions use documented fail-closed first-run implementations. It
+contains no Hyprland defaults, home files, services, migrations, updater,
+package manager or boot/hardware payload. Two network-disabled builds were
+byte-identical at SHA-256
+`19cd7f72f025562110c3750224561534a9994ac9ec4bb9849b3b6da01c1039aa`.
+
+After installing that exact package into a disposable offline root, user
+preparation can be planned separately:
+
+```sh
+scripts/prepare-omarchy-user.sh --plan \
+  --root /mnt/uconsole-root \
+  --user yourname \
+  --source-archive /path/to/omarchy-quattro.tar.gz
+```
+
+The transaction rejects conflicting user state, seeds only the reviewed shell
+configuration, creates 87 empty historical-migration markers without executing
+a migration, and leaves Hyprland/session startup unchanged. Target install and
+launch remain blocked until live CM5 hardware and minimal Hyprland pass.
+
 Prospective source updates are also audit-only:
 
 ```sh
@@ -231,8 +270,12 @@ that gate but has not been applied to a card.
 │   ├── arm64-overrides/
 │   │   ├── README.md
 │   │   ├── omarchy-base-package-policy.tsv # current complete classification
+│   │   ├── omarchy-command-policy.tsv    # current default-deny command surface
 │   │   ├── omarchy-core.packages         # current validation baseline
 │   │   ├── omarchy-migration-baseline.lock # current no-replay baseline
+│   │   ├── omarchy-plugin-policy.tsv     # current complete plugin classification
+│   │   ├── omarchy-menu.jsonc            # current reduced launcher
+│   │   ├── shell.json                    # current explicit plugin denylist
 │   │   ├── packages.toml                 # current: substitutions and omissions
 │   │   ├── omarchy-source.lock           # current: pinned Quattro archive
 │   │   ├── omarchy-staged-paths.lock     # current: inert staging allowlist
@@ -273,6 +316,7 @@ that gate but has not been applied to a card.
 │   ├── omarchy-core-build-results.yaml
 │   ├── omarchy-core-build-transaction.lock
 │   ├── omarchy-update-audit-results.yaml
+│   ├── omarchy-arm64-userland-build-results.yaml
 │   ├── phase1-hardware-install-results.yaml
 │   ├── phase1-inputs.yaml
 │   ├── package-audit/                    # current generated matrix and pins
@@ -283,6 +327,7 @@ that gate but has not been applied to a card.
 │   ├── upstream-lock.yaml
 │   └── xdg-terminal-exec-inputs.yaml
 ├── packaging/
+│   ├── omarchy-arm64-userland/            # current thin any-architecture package
 │   ├── omarchy-core/                      # current: five pinned local recipes
 │   ├── uconsole-cm5-dkms/                # current: local-evaluation PKGBUILD
 │   └── xdg-terminal-exec/                # current: reproducible ARM build
@@ -295,6 +340,7 @@ that gate but has not been applied to a card.
 │   ├── install-uconsole-hardware.sh      # current: offline kernel/DT layer
 │   ├── install-hyprland.sh               # current: minimal compositor layer
 │   ├── install-omarchy-arm64.sh          # current: inert userland source stage
+│   ├── prepare-omarchy-user.sh            # current: conflict-safe inactive home seed
 │   ├── plan-omarchy-update.sh             # current: read-only candidate audit
 │   ├── plan-sd-write.sh                  # current: read-only media preflight
 │   └── validate-system.sh                # current: read-only PASS/WARN/FAIL report

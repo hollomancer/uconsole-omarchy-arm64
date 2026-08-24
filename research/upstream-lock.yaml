@@ -59,6 +59,14 @@ sources:
     ref: master
     commit: bf7a0ab55654c96b74d013520e1196d39f66391a
     architecture_note: "Stock Pi kernel plus DKMS/DT alternative; both current Arch header builds pass, runtime not yet tested on Arch Linux ARM"
+    license_recheck:
+      observed_at: "2026-08-24"
+      latest_commit: bf7a0ab55654c96b74d013520e1196d39f66391a
+      latest_commit_date: "2026-07-18T18:54:51Z"
+      github_license_metadata: null
+      github_license_endpoint_status: 404
+      top_level_license_file: false
+      conclusion: "No current redistribution grant detected for overlays or project glue; retain local-evaluation-only policy"
   - name: uconsole-hyprland-dotfiles
     url: https://github.com/AleReb/uconsole-hyprland-dotfiles.git
     ref: main

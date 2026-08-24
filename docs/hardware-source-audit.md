@@ -88,6 +88,12 @@ repository's installer, overlays and project glue. Those files may be studied;
 do not redistribute adapted copies until the author or repository metadata
 clarifies the terms.
 
+A fresh GitHub API check on 2026-08-24 confirmed that `master` still ends at
+the pinned `bf7a0ab` commit. Repository license metadata is null, the license
+endpoint returns 404, and the top-level tree contains only `README.md`,
+`dkms/`, `install.sh`, `overlay/`, and `scripts/`. The absence of a detected
+license is not permission: the built package remains local-evaluation-only.
+
 ### Compile-spike status
 
 The intended clean build environment is pinned as:

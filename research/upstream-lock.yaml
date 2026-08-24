@@ -23,6 +23,11 @@ sources:
     ref: quattro
     commit: 268bac16d351a21d867e37565738f458b11cb06c
     architecture_note: "x86_64 ISO; ARM plan excludes Raspberry Pi/SBC boot"
+  - name: archlinuxarm-pkgbuilds
+    url: https://github.com/archlinuxarm/PKGBUILDs.git
+    ref: master
+    commit: a75cbace2e966c706fe02f98f538ff56f70b5d2b
+    architecture_note: "linux-rpi and linux-rpi-16k 6.18.45-1 both provide matching headers; distribution authority"
   - name: linux-clockwork-arch
     url: https://github.com/OuinOuin74/linux-clockwork-arch.git
     ref: main
@@ -48,7 +53,7 @@ sources:
     url: https://github.com/TheZacillac/arch-uconsole.git
     ref: main
     commit: c65deaada6e49104101daac8573f6809020e732d
-    architecture_note: "Signed repository design, but project is explicitly pre-release"
+    architecture_note: "Signed repository design and arch-label lesson; implementation is CM4-only and pre-release"
   - name: uconsole-cm5-dkms
     url: https://github.com/yota9/uconsole-cm5.git
     ref: master
@@ -85,3 +90,10 @@ repository_probes:
     observed_http_status: 200
   - url: https://stable.mirror.omarchy.org/core/aarch64/core.db
     observed_http_status: 404
+
+build_environments:
+  - name: archlinuxarm-aarch64-base-devel
+    image: menci/archlinuxarm:base-devel-20260819.32222611223
+    index_digest: sha256:ca84a8dbc78fff9f1fd12b64d9b2494dd284a64be02ed21364f158bcb25456e0
+    arm64_manifest_digest: sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
+    result: "Infrastructure failure before build: local container store exhausted space while registering compiler layer; DKMS status remains unknown"

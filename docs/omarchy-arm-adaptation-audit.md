@@ -1,0 +1,104 @@
+# Omarchy Quattro ARM adaptation audit
+
+The closest current implementation is
+[`alexisraitano-myffu/omarchy-arm`](https://github.com/alexisraitano-myffu/omarchy-arm),
+audited at ARM branch commit
+`579f15c699dab01e2b3b12e2c4d2503873359be9` against its fetched Omarchy
+Quattro base.
+
+## Scope and divergence
+
+The branch is 33 commits ahead and 21 commits behind the observed current
+upstream. Its three-dot diff changes 54 files, adding about 4,000 lines and
+removing 52. Most added lines are installer code, ARM manifests, documentation
+and seven shell test files. This is useful prior art, but too large and too
+diverged to adopt wholesale.
+
+Our compatibility layer should reuse concepts and small reviewed changes while
+tracking Omarchy userland at one explicit upstream commit.
+
+## Reusable design elements
+
+| Element | Keep | Reason/constraint |
+|---|---|---|
+| Declarative replace/exclude/AUR/unavailable manifests | Yes | Makes every package decision reviewable and testable |
+| ALARM pacman-server preservation | Yes | Omarchy's x86 mirrors cannot resolve aarch64 packages |
+| Pi platform detection from device tree | Yes | Avoids PCI-only assumptions and confines Pi tuning |
+| ARM-safe Limine no-op/guard | Yes, narrowly | Pi firmware boot must remain owned below Omarchy |
+| Explicit home seeding for an existing user | Yes | `/etc/skel` does not apply after account creation |
+| Migration-marker and command-mode tests | Yes | Prevents silent replay and missing-command failures |
+| Conservative Pi Hyprland profile | Test first | Animation/rounding reductions are policy, not hardware fixes |
+| Monolithic replacement installer | No | Too much rebase surface and mixes system/user/package concerns |
+| Automatic AUR compilation on target | No by default | Slow, high-write and capable of filling an SD card |
+| Hardware installer leaves | No | uConsole hardware remains entirely outside Omarchy |
+
+## Measured package lessons
+
+The community fork reconciles the 148 base entries as 123 repository-resolved
+packages after two name substitutions, 11 AUR builds, 13 unavailable packages
+and one source-bootstrapped AUR helper. Our earlier exact-name query found 121
+matches; the apparent discrepancy is exactly the two substitutions:
+
+```text
+nvim -> neovim
+ttf-jetbrains-mono-nerd-basic -> ttf-jetbrains-mono-nerd
+```
+
+Three AUR-only entries were found to be load-bearing rather than merely
+optional: `xdg-terminal-exec`, `mise-bin` and `ufw-docker`. We will not assume
+all three are core for this target:
+
+- `xdg-terminal-exec` is core because Omarchy's terminal dispatch depends on
+  it;
+- `mise-bin` is required only for the development-tool group;
+- `ufw-docker` is required only if the Docker integration group is selected.
+
+Two repository packages absent from the upstream base list are operationally
+important: `zram-generator` activates Omarchy's shipped zram policy and
+`pipewire-pulse` supplies the PulseAudio compatibility API used by Omarchy
+audio commands and applications.
+
+The fork lists seven first-party packages without an ARM build:
+`omacalc`, `omacut`, `omawrite`, `omarchy-nvim`, `ttfx`, `tobi-try` and
+`hyprland-preview-share-picker`. Missing first-party packages must be separated
+into core-visible, optional and safely degradable behavior before any source
+build is scheduled.
+
+## Failure cases to turn into acceptance tests
+
+The first real ARM installation exposed failures that clean VM/package tests
+missed. These become project requirements:
+
+| Failure observed in prior art | Required protection here |
+|---|---|
+| ALARM keyring unavailable/trust not initialized | verify keyring before the first package transaction |
+| AUR build filled a 15 GB disk | preflight free space; optional AUR phase off by default; build packages off-target where practical |
+| `omarchy` package absent meant a healthy bare compositor | assert expected commands, Quickshell process, menu and binding count, not merely Hyprland exit status |
+| existing user never received `/etc/skel` | seed from a versioned manifest with per-file conflict policy |
+| re-run overwrote user configuration | install only missing/unchanged defaults; atomic staging and explicit backups |
+| live config reload raced a deploy | stage then atomically switch; suppress/reload deliberately |
+| migration markers omitted `.sh` | compare exact migration filenames and fail closed |
+| one unavailable package blocked all later migrations | classify migration package actions and record a deliberate ARM disposition |
+| Limine refresh remained reachable | test every reset/update entrypoint against forbidden boot-path writes |
+| absent `ttfx` caused a respawn loop | disabled features must fail once, visibly and without retry loops |
+| `pipewire-pulse` and `zram-generator` were only implied | validate service/runtime behavior, not just config-file presence |
+| two commands relied on package install mode, not Git mode | verify installed executable modes from the package payload |
+| keyboard layout was never asked on an existing system | require an explicit layout before enabling the graphical login |
+
+## Update implications
+
+`omarchy update` is untested on ARM in the community port. Our update adapter
+must therefore start as a dry-run/audit wrapper, not an alias for the upstream
+command. Before enabling an update it must:
+
+1. fetch and pin the prospective Omarchy source revision;
+2. diff package lists, migrations and all paths capable of touching `/boot`,
+   pacman servers, mkinitcpio, Limine or Snapper;
+3. regenerate the package classification and reject unknown entries;
+4. run the ARM tests and build missing first-party packages in a clean builder;
+5. hash the hardware boot manifest before and after a disposable-image update;
+6. promote only the userland/config package set that passed.
+
+This keeps normal upstream migrations available without giving Omarchy control
+of the uConsole kernel or Pi firmware chain.
+

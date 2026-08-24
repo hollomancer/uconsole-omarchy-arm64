@@ -74,8 +74,15 @@ system during the research phase.
 The initial research selected the source and patch set from
 `OuinOuin74/linux-clockwork-arch` v7.0.9 as the first custom-kernel candidate.
 Subsequent prior-art research found `yota9/uconsole-cm5`, which packages the
-board delta as DKMS modules and DT overlays over a stock Pi kernel. The kernel
-design must now be selected by a Phase 1 feasibility comparison, not assumed.
+board delta as DKMS modules and DT overlays over a stock Pi kernel. The full
+source comparison is in [`hardware-source-audit.md`](hardware-source-audit.md).
+
+The provisional Phase 1 default is the locally rebuilt custom kernel because
+it has exact Arch Linux ARM/uConsole CM5 boot evidence. Stock `linux-rpi` plus
+DKMS remains the preferred long-term design, but it must first build against
+both current Arch header packages and pass the same real-hardware and update
+suite. This is a reversible experiment order, not a decision to maintain a
+permanent kernel fork.
 
 For the custom-kernel candidate, do not blindly install its release binary:
 

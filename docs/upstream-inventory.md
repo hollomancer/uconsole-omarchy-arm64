@@ -15,7 +15,7 @@ separately in [`prior-art.md`](prior-art.md).
 | [Omarchy ISO ARM64 plan](https://github.com/omacom-io/omarchy-iso/blob/quattro/plans/aarch64-support.md) | Official ARM64 design experiment | file on `quattro` | Current plan inspected 2026-08-24 | Targets generic UEFI+ACPI ARM64; explicitly excludes SBC boot flows such as Raspberry Pi firmware/U-Boot | Useful confirmation that CM5 belongs below Omarchy, not in its ISO |
 | [omacom-io/omarchy-pkgs](https://github.com/omacom-io/omarchy-pkgs) | Omarchy package build definitions and repositories | `master`; historical `add-aarch64-support` is fully behind `master` | `40ddd6be1` on 2026-08-24 | Build tooling accepts `aarch64` and uses Arch Linux ARM/QEMU, but README says only x86_64 is published | Reuse PKGBUILDs and build metadata; expect to build a small ARM repository |
 | [omacom-io/omarchy-mirror](https://github.com/omacom-io/omarchy-mirror) | Arch mirror used by Omarchy | `master` | `904b…` on 2026-07-20 | Mirrors Arch Linux x86 repositories | Do not point Arch Linux ARM at this mirror |
-| [Arch Linux ARM PKGBUILDs](https://github.com/archlinuxarm/PKGBUILDs) | ARM64 distribution package sources | `master` | `a75cb…` on 2026-08-24 | Native Arch Linux ARM packaging | Base distribution authority |
+| [Arch Linux ARM PKGBUILDs](https://github.com/archlinuxarm/PKGBUILDs) | ARM64 distribution package sources | `master` | `a75cbace2e966c706fe02f98f538ff56f70b5d2b` on 2026-08-24; `linux-rpi` and `linux-rpi-16k` at 6.18.45-1 | Native Arch Linux ARM packaging with matching header packages | Base distribution authority and DKMS test baseline |
 | [Arch Linux ARM downloads](https://archlinuxarm.org/about/downloads) | Generic ARM root filesystems | rolling downloads | Raspberry Pi aarch64 rootfs observed updated 2026-08-05 | No dedicated Raspberry Pi 5/CM5 platform entry; closest supported rootfs requires a separately supplied kernel | Use the signed RPi aarch64 rootfs, pin its digest, and provide the uConsole kernel |
 | [OuinOuin74/linux-clockwork-arch](https://github.com/OuinOuin74/linux-clockwork-arch) | Arch-packaged uConsole kernels and DT overlays | `main` | `eef4936b1`; release v7.0.9 on 2026-05-23 | Has distinct CM4 and CM5 aarch64 packages and CM5 uConsole overlay | Best current Arch-specific Phase 1 baseline, subject to source rebuild and audit |
 | [clockworkpi/uConsole](https://github.com/clockworkpi/uConsole) | Vendor hardware sources, firmware, schematics and images | `master` | `53a05e…` on 2026-08-01 | Published image is CM4; no official CM5 image | Hardware authority, not a ready CM5 distribution |
@@ -31,7 +31,7 @@ unreviewed.
 
 | Project | Current evidence | Packaging fit | Intended use |
 |---|---|---|---|
-| [OuinOuin74/linux-clockwork-arch](https://github.com/OuinOuin74/linux-clockwork-arch) | Released CM5 Arch package, overlay, panel, backlight, AXP20x battery changes, audio switch and Broadcom firmware config | Native Arch PKGBUILD | Initial reproducible baseline |
+| [OuinOuin74/linux-clockwork-arch](https://github.com/OuinOuin74/linux-clockwork-arch) | Released CM5 Arch package, overlay, panel, backlight, AXP20x battery changes, audio switch and Broadcom firmware config | Native Arch PKGBUILD, but with weak source verification and machine-mutating install hooks | Initial custom-kernel baseline after local rebuild/cleanup |
 | [ak-rex/rpi-linux](https://github.com/ak-rex/rpi-linux) | Active `rpi-6.12.y` and `rpi-7.1.y` uConsole branches | Kernel source, not a complete Arch delivery path | Compare patch provenance and newer fixes |
 | [ClusterM/ClockworkPi-linux](https://github.com/ClusterM/ClockworkPi-linux) | Active `clockworkpi-7.2.y-live`, recent CM5 and battery work | APT-oriented packaging | Review/forward-port improvements; do not install its packages on Arch |
 | [cuu/ClockworkPi-linux](https://github.com/cuu/ClockworkPi-linux) | ClockworkPi 6.12-era source lineage | Kernel source | Compare against current official CM4 work |
@@ -41,6 +41,9 @@ request](https://github.com/clockworkpi/uConsole/issues/29). Community reports,
 including [a first-hand Arch Linux ARM CM5
 report](https://forum.clockworkpi.com/t/arch-linux-arm-for-uconsole-w-rpi-cm5/16382),
 show feasibility but are not a reproducible supply chain.
+
+The detailed package/driver comparison and provisional selection are recorded
+in [`hardware-source-audit.md`](hardware-source-audit.md).
 
 ## ARM64 status of Omarchy
 

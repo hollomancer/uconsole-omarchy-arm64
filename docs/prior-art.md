@@ -155,15 +155,16 @@ and build scripts should be compared with our Phase 1 design.
 [Repository](https://github.com/TheZacillac/arch-uconsole) · `main` at
 `c65deaada6e49104101daac8573f6809020e732d` (2026-04-15)
 
-This project defines a signed `[uconsole]` pacman repository and explicit
-CM4/CM5 packages, which is a better trust model than the unsigned alternatives.
-It still labels itself pre-release and says the image builder is a future
-phase. Its last commit fixed a cross-build that had stamped an ARM kernel
-package as x86_64, a useful warning that `CARCH` and the built ELF architecture
-both need validation.
+This project defines a signed `[uconsole]` pacman repository, which is a better
+trust model than the unsigned alternatives. Source inspection shows the actual
+package implementation is CM4-only: its own upstream-reference notes say CM5
+was blocked on public patches at the time. It labels itself pre-release and
+says the image builder is a future phase. Its last commit fixed a cross-build
+that had stamped an ARM kernel package as x86_64, a useful warning that `CARCH`
+and the built ELF architecture both need validation.
 
-Decision: reuse signing/repository ideas, not artifacts until a release is
-independently verified.
+Decision: reuse signing/repository ideas, not hardware artifacts; it is not a
+CM5 candidate.
 
 ### 8. `OuinOuin74/linux-clockwork-arch`
 

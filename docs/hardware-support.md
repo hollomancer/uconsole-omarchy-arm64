@@ -7,8 +7,9 @@ not become supported merely because the module loads.
 The initial reference is the CM5 package in
 [linux-clockwork-arch](https://github.com/OuinOuin74/linux-clockwork-arch),
 compared with the [ClockworkPi hardware
-repository](https://github.com/clockworkpi/uConsole) and current Raspberry Pi
-kernel sources.
+repository](https://github.com/clockworkpi/uConsole), current Raspberry Pi
+kernel sources and the stock-kernel/DKMS design audited in
+[`hardware-source-audit.md`](hardware-source-audit.md).
 
 | Subsystem | Candidate kernel module/driver | DT/firmware requirement | Package/configuration | Validation |
 |---|---|---|---|---|
@@ -21,8 +22,8 @@ kernel sources.
 | Wi-Fi | `brcmfmac`, `brcmutil`, `cfg80211` | correct CM5 firmware/NVRAM and regulatory domain | `firmware-raspberrypi`, `networkmanager`, upstream modprobe policy after review | `rfkill`; `iw dev`; `nmcli device`; sustained ping/throughput and reboot test |
 | Bluetooth | `hci_uart`, `btbcm`, `bluetooth` (to confirm) | firmware and UART attachment appropriate to CM5 | `bluez`, `bluez-utils`, firmware package | `systemctl is-active bluetooth`; `rfkill`; `bluetoothctl show`; pair keyboard/audio device |
 | SSH | network stack | none beyond working network | `openssh`; explicit `sshd_config`; key-based access before experiments | `systemctl is-active sshd`; connect from a second machine after cold boot |
-| Audio | Raspberry Pi ALSA driver plus `simple_amplifier_switch` from the uConsole patch set (exact module graph to confirm) | CM5 audio remap overlay, amplifier/headphone GPIO routing | `alsa-utils`, `pipewire`, `wireplumber`; hardware-owned boot config | `aplay -l`; `arecord -l`; `wpctl status`; speaker/headphone insertion and volume tests |
-| Battery/AC | `axp20x_battery`, `axp20x_ac_power`, `axp20x_adc`, `axp20x_pek` (names to confirm) | uConsole AXP20x/AXP22x DT nodes and correct battery parameters | patched kernel; `upower` for desktop presentation | inspect `/sys/class/power_supply/*/{type,status,capacity,voltage_now}`; `upower -e`; charge/discharge test |
+| Audio | Raspberry Pi ALSA driver plus candidate `snd_soc_simple_amplifier` module | separate CM5 audio overlay, amplifier/headphone GPIO routing; do not combine with `audremap-pi5` | `alsa-utils`, `pipewire`, `pipewire-pulse`, `wireplumber`; hardware-owned boot config and audited soft-mixer policy | `aplay -l`; `arecord -l`; `wpctl status`; speaker/headphone insertion, automute and volume tests |
+| Battery/AC | candidate `axp20x_battery`, `axp20x_adc`, `axp20x_pek` plus AXP MFD/I2C/regulator modules | uConsole AXP228 DT nodes and measured battery design parameters | custom kernel or locally packaged DKMS; `upower` for desktop presentation | inspect `/sys/class/power_supply/*/{type,status,capacity,voltage_now}`; `upower -e`; charge/discharge test |
 | Power/suspend | SoC PM plus AXP power-key/input path | board-specific wake/power behavior | systemd-logind policy kept outside Omarchy settings until proven | controlled `systemctl suspend` only with recovery available; wake test; `journalctl -b -1` |
 
 The uConsole keyboard firmware exposes a USB composite HID keyboard, mouse,

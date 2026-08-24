@@ -12,8 +12,8 @@ claims against the pinned `omarchy-pkgs` tree at `40ddd6be`.
 - **27/148** do not have an exact repository name match.
 - All **148/148** have an explicit category, required group and disposition;
   there are no implicit or unknown dispositions.
-- The 27 misses resolve to 2 documented name replacements, 1 completed local
-  build, 14 pending source builds, 5 explicit deferrals and 5 omissions.
+- The 27 misses resolve to 2 documented name replacements, 6 completed local
+  builds, 9 pending source builds, 5 explicit deferrals and 5 omissions.
 - An exact match is inventory evidence, not proof that runtime behavior works.
 - A missing exact name is not necessarily incompatible; it may be an
   Omarchy-owned package, an alternate Arch name, or an optional x86 application.
@@ -59,21 +59,21 @@ build result.
 | `nvim` | editor command | no package by that exact name | use ALARM `neovim` after confirming it provides `nvim` | Optional/core shell tooling |
 | `obs-studio` | recording/streaming | missing in audited repos | source-build or omit; benchmark V3D encoding path | Optional |
 | `obsidian` | notes app | no exact package in the frozen ALARM databases | official ARM64 if compatible with 16 KiB pages, otherwise omit | Optional |
-| `omacalc` | Omarchy calculator utility | Omarchy PKGBUILD declares aarch64 | build/test | Likely core UX |
-| `omacut` | Omarchy capture utility | Omarchy PKGBUILD declares aarch64 | build/test with portal and clipboard | Likely core UX |
+| `omacalc` | Omarchy calculator utility | 0.2.2-2 builds/tests as ELF64 AArch64 in the pinned offline builder | live Qt/16 KiB test, then sign | Likely core UX |
+| `omacut` | Omarchy capture utility | 0.4.0-2 builds as ELF64 AArch64; all 27 tests pass, including ffmpeg export and portal/QML paths | live portal/clipboard/16 KiB test, then sign | Likely core UX |
 | `omarchy-nvim` | editor configuration | Omarchy PKGBUILD is `any` | build after `neovim` mapping | Optional |
 | `omawrite` | writing application | Omarchy PKGBUILD declares aarch64 | build/test | Optional |
 | `pinta` | image editor | missing in audited repos | source-build or omit | Optional |
 | `qemu-user-static-binfmt` | emulation/build support | missing exact target package | keep on build host, not target, unless runtime use is proven | No for desktop |
 | `tensaku` | Omarchy utility | Omarchy PKGBUILD is x86_64-only | inspect source; build if portable, otherwise omit | Optional |
 | `tobi-try` | Omarchy utility | Omarchy PKGBUILD is `any` | build/test | To classify |
-| `ttf-ia-writer` | typography | Omarchy PKGBUILD is `any` | build/package font | Visual core |
+| `ttf-ia-writer` | typography | 20181225-2 builds byte-identically with the expected 16 fonts | live font-discovery test, then sign | Visual core |
 | `ttf-jetbrains-mono-nerd-basic` | terminal/icon font | Omarchy PKGBUILD is `any` | build/package font | Visual core |
-| `ttfx` | font utility | Omarchy PKGBUILD declares aarch64 | build/test | Supporting |
+| `ttfx` | terminal text effects | 0.3.2-3 builds as ELF64 AArch64; unit, golden, CLI, signal and terminal-close tests pass | live 16 KiB/session test, then sign | Supporting |
 | `tzupdate` | automatic timezone | Omarchy PKGBUILD is x86_64-only | audit source build; otherwise manual/systemd alternative | Optional |
 | `ufw-docker` | firewall/container integration | Omarchy PKGBUILD is `any` | build only if Docker group is selected | Optional |
 | `xdg-terminal-exec` | default terminal dispatch | Omarchy PKGBUILD is `any`; 0.14.3-1 passes 23 tests with one unavailable-locale skip and builds byte-identically twice in the pinned ARM64 container | locally package, native-ARM recheck, then sign | Core integration |
-| `yaru-icon-theme` | icon theme | Omarchy PKGBUILD is `any` | build/package | Visual core |
+| `yaru-icon-theme` | icon theme | 26.04.5.1ubuntu-3 builds and all 21 Yaru tests pass; requested `Yaru-gray`/`Yaru-grey` variants do not exist upstream | select an explicit theme fallback, live-test and sign | Visual core |
 | `yay` | AUR helper/update path | Omarchy PKGBUILD declares aarch64 | build in clean environment; never use as root | Update tooling, conditional |
 
 ## Reproduction and remaining investigation
@@ -99,7 +99,7 @@ The remaining work is behavioral rather than name matching:
    68-package core group to a proven command-consumer closure.
 2. Resolve the selected core dependency closure against pinned ALARM databases.
    Do not equate the upstream Arch Linux x86 package set with ALARM.
-3. For every source build, inspect upstream release assets and PKGBUILD `arch`, then
+3. For every remaining source build, inspect upstream release assets and PKGBUILD `arch`, then
    follow the mandated preference order: ALARM, official ARM64 binary, AUR,
    source build, compatible replacement, disable optional feature.
 4. Inspect binaries with `file` and `readelf`; inspect Electron/AppImage payloads

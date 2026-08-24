@@ -471,6 +471,43 @@ locale is absent from the minimal builder. One build printed an intermittent
 fakeroot warning under emulation; the other did not, and both archives contain
 root-owned files. Rebuild on native ARM before signing and installation.
 
+### Five additional core package builds
+
+`omacalc`, `omacut`, `ttf-ia-writer`, `ttfx` and `yaru-icon-theme` now have
+separate pinned recipes under `packaging/omarchy-core/`. Resolve the signed
+build closure and run the network-isolated builder:
+
+```sh
+research/resolve-omarchy-core-build-closure.sh \
+  --core-db /path/to/frozen/core.db \
+  --extra-db /path/to/frozen/extra.db \
+  --output-dir /new/empty/dependency-cache
+
+research/build-omarchy-core-packages.sh \
+  --source-dir /path/to/pinned-source-files \
+  --dependency-dir /new/empty/dependency-cache \
+  --output /new/empty/artifact-directory
+```
+
+The dependency transaction contains 171 signed packages. Two unchanged clean
+builds produced five byte-identical archives; exact source, dependency and
+artifact hashes are in `research/omarchy-core-build-inputs.yaml` and
+`research/omarchy-core-build-results.yaml`. The checks cover native AArch64 ELF
+headers, root archive ownership, 16 selected fonts, 27 `omacut` tests, all
+`ttfx` suites, and 21 Yaru tests.
+
+Two adaptations remain visible. `ttfx` runtime code is unchanged, but its
+AArch64 golden test uses the upstream cross-platform `1e-15` libm tolerance
+after one 4-ULP result; exact x86_64 parity remains exact. Yaru must configure
+its GTK subproject to generate icon accent colors, then the recipe excludes
+all GTK theme payload. Upstream does not provide the `Yaru-gray` and
+`Yaru-grey` names requested by two Omarchy themes, so no alias is installed.
+
+These are off-target build results, not activation approval. Install the exact
+archives only into a disposable image after Phase 2 passes; then validate Qt,
+portal/clipboard integration, font and icon discovery, and 16 KiB-page runtime
+behavior before signing or adding them to a repository.
+
 ## Read-only validation command
 
 At each gate, save the complete output of the repository validator:

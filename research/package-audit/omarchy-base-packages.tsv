@@ -90,8 +90,8 @@ nss-mdns|system-package|conditional|archlinuxarm|nss-mdns|extra|0.15.1-2|aarch64
 nvim|shell-tooling|core|replacement|neovim|extra|0.12.5-1|aarch64|phase5-core|Package name changes to neovim while the installed command remains nvim
 obs-studio|optional-application|deferred|defer|obs-studio|upstream|unresolved|unknown|phase5-optional|Recording is disabled until a clean ARM source build and V3D encoding test pass
 obsidian|optional-application|deferred|defer|obsidian|upstream|unresolved|unknown|phase5-optional|No exact Arch Linux ARM package exists; any future Electron build must also pass the 16 KiB page runtime test
-omacalc|omarchy-specific|core|source-build|omacalc|omarchy-pkgs|pending-build|aarch64|phase5-core|Core calculator remains unavailable until its pinned ARM package builds and passes
-omacut|omarchy-specific|core|source-build|omacut|omarchy-pkgs|pending-build|aarch64|phase5-core|Core capture workflow remains unavailable until its pinned ARM package builds and portal integration passes
+omacalc|omarchy-specific|core|local-build|omacalc|omarchy-pkgs|0.2.2-2|aarch64|phase5-core|Pinned AArch64 build and upstream checks pass off target; live Qt and 16 KiB page behavior remain activation gates
+omacut|omarchy-specific|core|local-build|omacut|omarchy-pkgs|0.4.0-2|aarch64|phase5-core|Pinned AArch64 build and 27 upstream checks including ffmpeg export pass off target; live portal and 16 KiB page behavior remain gates
 omarchy-nvim|omarchy-specific|optional|source-build|omarchy-nvim|omarchy-pkgs|pending-build|any|phase5-optional|Optional editor configuration is installed only with the editor group
 omawrite|omarchy-specific|optional|source-build|omawrite|omarchy-pkgs|pending-build|aarch64|phase5-optional|Not installed until its pinned ARM package builds and passes runtime checks
 pacman-contrib|update-infrastructure|core|archlinuxarm|pacman-contrib|extra|1.13.1-1|aarch64|phase6-update|None
@@ -122,9 +122,9 @@ tldr|shell-tooling|core|archlinuxarm|tldr|extra|3.4.4-1|any|phase5-core|None
 tmux|shell-tooling|core|archlinuxarm|tmux|extra|3.7_c-1|aarch64|phase5-core|None
 tobi-try|omarchy-specific|optional|source-build|tobi-try|omarchy-pkgs|pending-build|any|phase5-optional|Not installed until its consumer and pinned architecture-independent package are tested
 tree-sitter-cli|development-tool|development|archlinuxarm|tree-sitter-cli|extra|0.26.9-1|aarch64|phase5-optional|None
-ttf-ia-writer|visual-configuration|core|source-build|ttf-ia-writer|omarchy-pkgs|pending-build|any|phase5-core|Core typography remains incomplete until the pinned font package is built
+ttf-ia-writer|visual-configuration|core|local-build|ttf-ia-writer|omarchy-pkgs|20181225-2|any|phase5-core|Pinned architecture-independent package contains the expected 16 fonts; live font discovery remains an activation gate
 ttf-jetbrains-mono-nerd-basic|visual-configuration|core|replacement|ttf-jetbrains-mono-nerd|extra|3.5.1-2|any|phase5-core|The full Nerd Font family replaces Omarchy's smaller four-font subset
-ttfx|omarchy-specific|core|source-build|ttfx|omarchy-pkgs|pending-build|aarch64|phase5-core|Font switching remains disabled until the pinned ARM utility builds and passes without respawn loops
+ttfx|omarchy-specific|core|local-build|ttfx|omarchy-pkgs|0.3.2-3|aarch64|phase5-core|Pinned AArch64 build passes unit golden CLI signal and terminal-close tests with a documented libm-only test tolerance; runtime code is unchanged
 tzupdate|system-package|omit|omit|tzupdate|omarchy-pkgs|not-installed|x86_64|not-applicable|Automatic timezone mutation is omitted because Phase 1 owns the explicit timezone
 udiskie|desktop-core|core|archlinuxarm|udiskie|extra|2.7.0-2|any|phase5-core|None
 ufw|system-package|conditional|archlinuxarm|ufw|extra|0.36.2-7|any|phase5-optional|None
@@ -142,7 +142,7 @@ xdg-desktop-portal-gtk|desktop-core|core|archlinuxarm|xdg-desktop-portal-gtk|ext
 xdg-desktop-portal-hyprland|desktop-core|core|archlinuxarm|xdg-desktop-portal-hyprland|extra|1.4.1-1|aarch64|phase2-hyprland|None
 xdg-terminal-exec|desktop-core|core|local-build|xdg-terminal-exec|local|0.14.3-1|any|phase5-core|Locally built from pinned upstream because no Arch Linux ARM sync package exists
 xournalpp|optional-application|optional|archlinuxarm|xournalpp|extra|1.3.7-1|aarch64|phase5-optional|None
-yaru-icon-theme|visual-configuration|core|source-build|yaru-icon-theme|omarchy-pkgs|pending-build|any|phase5-core|Core icon theme remains incomplete until the pinned architecture-independent package is built
+yaru-icon-theme|visual-configuration|core|local-build|yaru-icon-theme|omarchy-pkgs|26.04.5.1ubuntu-3|any|phase5-core|Pinned icon-only package and 21 upstream tests pass; Omarchy's requested Yaru-gray and Yaru-grey variants remain absent upstream
 yay|update-infrastructure|off-target|omit|yay|omarchy-pkgs|not-installed|aarch64|off-target-build|No on-target AUR helper or implicit AUR update path; missing packages are built cleanly off target
 yt-dlp|optional-application|optional|archlinuxarm|yt-dlp|extra|2025.12.08-2|any|phase5-optional|None
 zbar|shell-tooling|conditional|archlinuxarm|zbar|extra|0.23.93-7|aarch64|phase5-optional|None

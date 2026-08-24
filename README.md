@@ -8,7 +8,9 @@ The current repository state contains research, architecture, signed rootfs
 extraction, a regular-file image builder, a reproducible local hardware
 package, an offline-root hardware installer, an exact minimal base-system
 transaction, a version-locked minimal Hyprland installer, and an inert Omarchy
-source-staging transaction. The real pinned Arch rootfs, hardware transaction,
+source-staging transaction. Five missing core Omarchy packages also have
+content-locked, byte-reproducible off-target AArch64 builds. The real pinned
+Arch rootfs, hardware transaction,
 secret-safe base configuration, and regular-image assembly have been exercised
 in isolated aarch64 Linux volumes. The content-pinned Hyprland plan also passes
 against a native configured ARM64 clone; desktop apply remains fixture-only and
@@ -59,6 +61,9 @@ Research snapshot: **2026-08-24**
   [`research/hyprland-package-lock.yaml`](research/hyprland-package-lock.yaml).
 - The first missing core package build is recorded in
   [`research/xdg-terminal-exec-inputs.yaml`](research/xdg-terminal-exec-inputs.yaml).
+- The other five core local-package inputs and two-build results are in
+  [`research/omarchy-core-build-inputs.yaml`](research/omarchy-core-build-inputs.yaml)
+  and [`research/omarchy-core-build-results.yaml`](research/omarchy-core-build-results.yaml).
 
 The validator is read-only and phase-aware:
 
@@ -188,6 +193,31 @@ migration. It never runs candidate code. Upstream `omarchy update` remains
 blocked because it combines x86 keyrings/mirrors, rolling package selection,
 Snapper/Limine assumptions, AUR updates and migrations.
 
+The five remaining core package gaps can be built separately. First resolve
+the exact 171-package signed build closure from the frozen databases, then
+verify or build from the pinned source directory:
+
+```sh
+research/resolve-omarchy-core-build-closure.sh \
+  --output-dir /new/empty/dependency-cache
+
+research/build-omarchy-core-packages.sh --check \
+  --source-dir /path/to/pinned-sources \
+  --dependency-dir /new/empty/dependency-cache
+
+research/build-omarchy-core-packages.sh \
+  --source-dir /path/to/pinned-sources \
+  --dependency-dir /new/empty/dependency-cache \
+  --output /new/artifact-directory
+```
+
+The build container has no network and no device access. It validates source,
+dependency and detached-signature hashes; runs package tests; checks root
+ownership, native ELF architecture, fonts and Yaru contents; and writes only
+to a new artifact directory. The artifacts are not installed or signed. Live
+CM5/16 KiB tests and an explicit `Yaru-gray`/`Yaru-grey` policy still block
+activation.
+
 ## Proposed repository structure
 
 The files marked `future` must not be implemented until their prerequisite
@@ -226,27 +256,34 @@ that gate but has not been applied to a card.
 │   └── upstream-inventory.md
 ├── research/
 │   ├── audit-omarchy-base-packages.sh
+│   ├── build-omarchy-core-packages.sh
 │   ├── build-uconsole-dkms.sh
 │   ├── build-uconsole-package.sh
 │   ├── container/
 │   │   ├── build-board-package-inside.sh
-│   │   └── build-dkms-inside.sh
+│   │   ├── build-dkms-inside.sh
+│   │   └── build-omarchy-core-packages-inside.sh
 │   ├── base-system-results.yaml
 │   ├── dkms-build-results.yaml
 │   ├── full-image-results.yaml
 │   ├── custom-kernel-delta.yaml
 │   ├── hyprland-package-lock.yaml
 │   ├── image-builder-inputs.yaml
+│   ├── omarchy-core-build-inputs.yaml
+│   ├── omarchy-core-build-results.yaml
+│   ├── omarchy-core-build-transaction.lock
 │   ├── omarchy-update-audit-results.yaml
 │   ├── phase1-hardware-install-results.yaml
 │   ├── phase1-inputs.yaml
 │   ├── package-audit/                    # current generated matrix and pins
 │   ├── rootfs-extraction-results.yaml
 │   ├── resolve-hyprland-closure.sh
+│   ├── resolve-omarchy-core-build-closure.sh
 │   ├── test-full-image.sh
 │   ├── upstream-lock.yaml
 │   └── xdg-terminal-exec-inputs.yaml
 ├── packaging/
+│   ├── omarchy-core/                      # current: five pinned local recipes
 │   ├── uconsole-cm5-dkms/                # current: local-evaluation PKGBUILD
 │   └── xdg-terminal-exec/                # current: reproducible ARM build
 ├── scripts/
@@ -264,6 +301,7 @@ that gate but has not been applied to a card.
 └── tests/
     ├── test-bootstrap-arch.sh             # current rootfs/input safety test
     ├── test-build-image.sh                # current image/device safety test
+    ├── test-build-omarchy-core-packages.sh # current offline-build policy test
     ├── test-configure-base-system.sh      # current account/network policy test
     ├── test-install-base-system-packages.sh # current exact-closure test
     ├── test-install-hyprland.sh           # current package/config safety test

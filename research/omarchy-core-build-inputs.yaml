@@ -1,0 +1,73 @@
+schema: 1
+observed_at: "2026-08-24"
+purpose: "Offline native-aarch64 builds for the five remaining core Omarchy package gaps"
+
+package_recipe_source:
+  repository: https://github.com/omacom-io/omarchy-pkgs
+  commit: 40ddd6be195a704c1e4187fc7ecd3f2c8091e37b
+  archive_sha256: bca5eb81e4bac833a4a6513b1e16f75dedf9af4d05b4b275812e6912fb92c553
+
+builder:
+  image: menci/archlinuxarm:base-devel-20260819.32222611223
+  arm64_manifest_digest: sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
+  source_date_epoch: 1787529600
+
+sources:
+  - package: omacalc
+    version: 0.2.2-2
+    filename: omacalc-0.2.2.tar.gz
+    url: https://github.com/omacom-io/omacalc/archive/refs/tags/v0.2.2.tar.gz
+    size: 262911
+    sha256: a42b39cd5a62c83f6667060da19c9bcc5dd8469ce69e48f19394b71322b9cba4
+  - package: omacut
+    version: 0.4.0-2
+    filename: omacut-0.4.0.tar.gz
+    url: https://github.com/omacom-io/omacut/archive/refs/tags/v0.4.0.tar.gz
+    size: 30695
+    sha256: 0e1b0665e0304a1ecbdb06b8574e8abf385e1cffa431821032902340c2c5d7df
+  - package: ttf-ia-writer
+    version: 20181225-2
+    filename: ia-fonts-b337fe1a.tar.gz
+    url: https://github.com/iaolo/iA-Fonts/archive/b337fe1a4c93026268f70e4b2678371f3e89e2ce.tar.gz
+    size: 4890621
+    sha256: ac34b1494e58e28aadce1220a342757a29225dc84d2ee83748dca047927e5792
+  - package: ttfx
+    version: 0.3.2-3
+    filename: ttfx-0.3.2.tar.gz
+    url: https://github.com/omacom-io/ttfx/archive/refs/tags/v0.3.2.tar.gz
+    size: 5634314
+    sha256: d0c0df4867e7f03142fb7f77c66670d0e8da15534239c1a7abfd89f19dfc00f6
+  - package: ttfx-vendor
+    version: 0.3.2
+    filename: ttfx-0.3.2-vendor.tar.zst
+    generated_from: "Cargo.lock in ttfx 0.3.2; cargo vendor --locked; 28 crates"
+    size: 5300648
+    sha256: 3063230b60a7916574432f4343d8d16747ba61ba15921ee6a84a14cd0c45b887
+  - package: ttfx-aarch64-test-policy
+    version: 1
+    filename: packaging/omarchy-core/ttfx/aarch64-test-tolerance.patch
+    rationale: "The upstream parity platform is Arch x86_64; aarch64 uses the existing 1e-15 cross-platform tolerance after one 4-ULP OutExpo result. Runtime code is unchanged."
+    sha256: 51625ca5cf349fb0573ea95a31607a68199905280cd672a0c2c8c95480e78c55
+  - package: yaru-icon-theme
+    version: 26.04.5.1ubuntu-3
+    filename: yaru-26.04.5.1ubuntu.tar.gz
+    url: https://github.com/ubuntu/yaru/archive/26.04.5.1ubuntu.tar.gz
+    size: 79046054
+    sha256: 4e35b71d37aedb44302c811f63d325f4abd7699961f76f130323b361d4c6a7d7
+
+build_dependency_transaction:
+  architecture: aarch64
+  direct: [git, meson, qt6-base, qt6-declarative, qt6-multimedia, sassc]
+  providers:
+    cargo: rust
+    qt6-multimedia-backend: qt6-multimedia-ffmpeg
+    jack: jack2
+  packages: 171
+  bytes: 230491916
+  lock: omarchy-core-build-transaction.lock
+  lock_sha256: 6b87b553c129dbecc79c869b632528e458ca1edce9422bfea3c5442822261861
+
+result:
+  status: pass-off-target
+  evidence: omarchy-core-build-results.yaml
+  note: "All five packages built byte-identically twice. A package build is not a runtime pass; GUI, portal, theme and 16 KiB-page behavior remain live gates. Yaru's GTK subproject is a build-time input because its icons-only Meson path is broken; GTK payloads are excluded from the split package."

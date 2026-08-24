@@ -1,0 +1,53 @@
+# Adapted from omacom-io/omarchy-pkgs at commit
+# 40ddd6be195a704c1e4187fc7ecd3f2c8091e37b. Cargo sources are separately
+# vendored and content-pinned for a network-free package build.
+
+pkgname=ttfx
+pkgver=0.3.2
+pkgrel=3
+pkgdesc='Terminal text effects as a Rust binary'
+arch=('aarch64')
+url='https://github.com/omacom-io/ttfx'
+license=('MIT')
+depends=('gcc-libs' 'glibc')
+makedepends=('cargo')
+options=('!debug')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz"
+        "$pkgname-$pkgver-vendor.tar.zst::https://invalid.uconsole-omarchy-arm64.local/$pkgname-$pkgver-vendor.tar.zst"
+        'aarch64-test-tolerance.patch')
+sha256sums=('d0c0df4867e7f03142fb7f77c66670d0e8da15534239c1a7abfd89f19dfc00f6'
+            '3063230b60a7916574432f4343d8d16747ba61ba15921ee6a84a14cd0c45b887'
+            '51625ca5cf349fb0573ea95a31607a68199905280cd672a0c2c8c95480e78c55')
+
+prepare() {
+  [[ -f .cargo/config.toml && -d vendor ]]
+  cd "$pkgname-$pkgver"
+  patch -Np1 -i "$srcdir/aarch64-test-tolerance.patch"
+}
+
+build() {
+  cd "$pkgname-$pkgver"
+  export CARGO_TARGET_DIR=target
+  cargo build --frozen --release
+}
+
+check() {
+  cd "$pkgname-$pkgver"
+  export CARGO_TARGET_DIR=target COLUMNS=80 LINES=24
+  cargo test --frozen --release
+  ./tools/tests/cli_corpus.sh
+  python3 tools/tests/sigterm_behavior.py
+  python3 tools/tests/terminal_close_behavior.py
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  install -Dm755 target/release/ttfx "$pkgdir/usr/bin/ttfx"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 NOTICE "$pkgdir/usr/share/licenses/$pkgname/NOTICE"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+  target/release/ttfx --print-completion bash |
+    install -Dm644 /dev/stdin "$pkgdir/usr/share/bash-completion/completions/ttfx"
+  target/release/ttfx --print-completion zsh |
+    install -Dm644 /dev/stdin "$pkgdir/usr/share/zsh/site-functions/_ttfx"
+}

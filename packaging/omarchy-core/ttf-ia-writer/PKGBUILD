@@ -1,0 +1,42 @@
+# Derived from the AUR recipe mirrored by omacom-io/omarchy-pkgs at commit
+# 40ddd6be195a704c1e4187fc7ecd3f2c8091e37b. The upstream font commit and
+# complete archive are pinned so the build performs no per-file downloads.
+
+pkgname=ttf-ia-writer
+pkgver=20181225
+pkgrel=2
+pkgdesc='Subset of the fonts provided by iA Writer'
+arch=('any')
+url='https://github.com/iaolo/iA-Fonts'
+license=('custom:OFL')
+conflicts=('ttf-ia-writer-duospace')
+provides=('ttf-ia-writer-duospace')
+_commit='b337fe1a4c93026268f70e4b2678371f3e89e2ce'
+source=("ia-fonts-${_commit:0:8}.tar.gz::$url/archive/$_commit.tar.gz")
+sha256sums=('ac34b1494e58e28aadce1220a342757a29225dc84d2ee83748dca047927e5792')
+
+check() {
+  local root="iA-Fonts-$_commit"
+  local count
+  count=$(find "$root" -path '*/Static/*.ttf' -o -path '*/TTF (PC)/*.ttf' | wc -l)
+  [[ $count -ge 16 ]]
+}
+
+package() {
+  local root="iA-Fonts-$_commit"
+  local family source_dir font
+  for family in 'Mono' 'Quattro' 'Duo'; do
+    source_dir="$root/iA Writer $family/Static"
+    for font in "$source_dir"/*.ttf; do
+      install -Dm644 "$font" "$pkgdir/usr/share/fonts/$pkgname/${font##*/}"
+    done
+    install -Dm644 "$root/iA Writer $family/LICENSE.md" \
+      "$pkgdir/usr/share/licenses/$pkgname/$family-LICENSE.md"
+  done
+  source_dir="$root/iA Writer Duospace/TTF (PC)"
+  for font in "$source_dir"/*.ttf; do
+    install -Dm644 "$font" "$pkgdir/usr/share/fonts/$pkgname/${font##*/}"
+  done
+  install -Dm644 "$root/iA Writer Duospace/LICENSE.md" \
+    "$pkgdir/usr/share/licenses/$pkgname/Duospace-LICENSE.md"
+}

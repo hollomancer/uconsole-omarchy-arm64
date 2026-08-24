@@ -1,0 +1,51 @@
+# Thin, icon-only adaptation of the split Yaru recipe mirrored by
+# omacom-io/omarchy-pkgs at commit 40ddd6be195a704c1e4187fc7ecd3f2c8091e37b.
+# Omarchy consumes the icon package, not the GNOME/GTK/session packages.
+
+pkgname=yaru-icon-theme
+pkgver=26.04.5.1ubuntu
+pkgrel=3
+pkgdesc='Yaru icon themes used by Omarchy'
+arch=('any')
+url='https://github.com/ubuntu/yaru'
+license=('GPL-3.0-only' 'CC-BY-SA-4.0')
+depends=('hicolor-icon-theme' 'gtk-update-icon-cache' 'librsvg')
+makedepends=('meson' 'sassc' 'git')
+source=("yaru-$pkgver.tar.gz::$url/archive/$pkgver.tar.gz")
+sha256sums=('4e35b71d37aedb44302c811f63d325f4abd7699961f76f130323b361d4c6a7d7')
+
+build() {
+  # Yaru 26.04.5.1ubuntu generates icon accent colors from targets declared
+  # by its GTK subproject. Building icons with -Dgtk=false currently fails
+  # during Meson configuration (gtk_yaru_colors_defs is undefined). Enable
+  # GTK as a build-time input, then deliberately exclude its installed theme
+  # payload below so this remains an icon-only split package.
+  meson setup "yaru-$pkgver" build \
+    --prefix=/usr \
+    --buildtype=plain \
+    --wrap-mode=nodownload \
+    -Dicons=true \
+    -Dgnome-shell=false \
+    -Dgtk=true \
+    -Dgtksourceview=false \
+    -Dmetacity=false \
+    -Dsounds=false \
+    -Dsessions=false \
+    -Dubuntu-unity=false \
+    -Dxfwm4=false \
+    -Dcinnamon-shell=false
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  DESTDIR="$pkgdir" meson install --quiet -C build
+  rm -r "$pkgdir/usr/share/themes"
+  install -Dm644 "yaru-$pkgver/icons/LICENSE_GPL3" \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE_GPL3"
+  install -Dm644 "yaru-$pkgver/icons/LICENSE_CCBYSA" \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE_CCBYSA"
+}

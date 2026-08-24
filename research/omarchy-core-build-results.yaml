@@ -1,0 +1,86 @@
+schema: 1
+observed_at: "2026-08-24"
+status: PASS_OFF_TARGET
+scope: "Five core Omarchy packages absent from the frozen Arch Linux ARM repositories"
+
+environment:
+  architecture: aarch64
+  execution: "native aarch64 userspace under isolated container emulation"
+  image: menci/archlinuxarm:base-devel-20260819.32222611223
+  arm64_manifest_digest: sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
+  source_date_epoch: 1787529600
+  network_during_package_builds: false
+
+inputs:
+  manifest: omarchy-core-build-inputs.yaml
+  dependency_packages: 171
+  dependency_bytes: 230491916
+  dependency_lock_sha256: 6b87b553c129dbecc79c869b632528e458ca1edce9422bfea3c5442822261861
+  source_verification: PASS
+  detached_dependency_signature_verification: PASS
+
+reproducibility:
+  clean_builds: 2
+  byte_identical_package_archives: 5
+  network_disabled_comparison_build: PASS
+  result: PASS
+
+artifacts:
+  - package: omacalc
+    version: 0.2.2-2
+    architecture: aarch64
+    size: 106452
+    sha256: 632dc3ca33fb66120c59247cd0bd850f59307ff18cb92ade6dd14f7b7d3255eb
+  - package: omacut
+    version: 0.4.0-2
+    architecture: aarch64
+    size: 73704
+    sha256: 860f603bdbac1061e5fbc5e15fd21f00040dfa0ab90bdc968065ccefb3af66b2
+  - package: ttf-ia-writer
+    version: 20181225-2
+    architecture: any
+    size: 315820
+    sha256: 55b8743220384b0f8bbff9b590c11697927eb31b25985ff70f83a88a9679d543
+  - package: ttfx
+    version: 0.3.2-3
+    architecture: aarch64
+    size: 604608
+    sha256: b52cd942da07227a05b1abe6c39fdcd425f8eb8d037b6c79666ca02a9a169e0b
+  - package: yaru-icon-theme
+    version: 26.04.5.1ubuntu-3
+    architecture: any
+    size: 42466032
+    sha256: 8ae85af5525f0632e9e721c92e823b8f49377d050cbf080144e67e20c9520448
+
+checks:
+  package_check_functions: PASS
+  archive_root_ownership: PASS
+  elf64_aarch64_payloads: [omacalc, omacut, ttfx]
+  ia_writer_ttf_count: 16
+  omacut_upstream_tests: 27
+  ttfx_tests: "20 library tests, five golden/integration tests, 19 CLI cases, signal and terminal-close suites"
+  yaru_tests: 21
+  yaru_gtk_payload_excluded: true
+
+adaptations:
+  qt_app_packaging:
+    change: "Declare desktop-file-utils and gtk-update-icon-cache for both scriptlets, and select qt6-multimedia-ffmpeg explicitly for omacut."
+    functional_difference: "No application code change; installation and multimedia provider selection are deterministic."
+  ttfx:
+    runtime_code_changed: false
+    test_only_change: "Preserve exact libm parity on Linux x86_64; use upstream's existing 1e-15 cross-platform boundary on aarch64 after one 4-ULP (1.1e-16) OutExpo result."
+    patch_sha256: 51625ca5cf349fb0573ea95a31607a68199905280cd672a0c2c8c95480e78c55
+  yaru_icon_theme:
+    build_change: "Enable the GTK Meson subproject because the upstream icons-only option references gtk_yaru_colors_defs; exclude /usr/share/themes from the split package."
+    functional_difference: "Yaru-gray and Yaru-grey are absent upstream; no silent alias is installed."
+
+warnings:
+  - "makepkg under emulation intermittently prints 'libfakeroot internal error: payload not recognized'; final MTREE ownership is explicitly checked as root:root."
+  - "ttfx contains a build-path reference reported by makepkg; native payload and runtime behavior still require target review."
+  - "Yaru's requested gray/grey Omarchy variants remain unresolved."
+
+not_proven:
+  - "runtime behavior on the CM5 with 16 KiB pages"
+  - "live Qt, PipeWire, portal and clipboard integration"
+  - "font and icon discovery inside the Omarchy session"
+  - "package signing and installation from the future local repository"

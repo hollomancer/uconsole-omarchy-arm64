@@ -64,7 +64,7 @@ planner:
   mutates_target_root: false
 
 remaining_gate:
-  - build and sign the thin ARM userland package plus five core source packages
+  - sign the five now-built core packages after live CM5 tests and build the thin ARM userland package
   - implement the replacement ARM update orchestrator
   - apply a candidate only to a disposable image
   - compare the hardware and boot manifest byte for byte before promotion

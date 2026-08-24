@@ -35,16 +35,22 @@ result:
   resolutions:
     archlinuxarm: 121
     replacement: 2
-    local_build: 1
-    source_build: 14
+    local_build: 6
+    source_build: 9
     deferred: 5
     omitted: 5
-  core_source_builds_remaining:
+  core_off_target_builds:
     - omacalc
     - omacut
     - ttf-ia-writer
     - ttfx
     - yaru-icon-theme
+  core_runtime_gates_remaining:
+    - "live Qt, portal and desktop integration"
+    - "16 KiB page behavior for native binaries"
+    - "font and icon discovery"
+    - "Yaru-gray and Yaru-grey resolution"
+    - "signed local repository and disposable-image transaction"
   generated_matrix: omarchy-base-packages.tsv
-  generated_matrix_sha256: d5361d3ffbfe1b9e9cde9916b352431c9cb8612bf06c10d443ae286637c09778
+  generated_matrix_sha256: 851e871486acc0dfe585fe22e136d89de3bcd473db0db1d6134d4fc671363838
   audit_script: ../audit-omarchy-base-packages.sh

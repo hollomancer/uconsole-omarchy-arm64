@@ -50,7 +50,7 @@ RESOLUTION_COUNTS=$(awk -F '|' '$0 !~ /^#/ {count[$4]++} END {
     count["archlinuxarm"], count["replacement"], count["local-build"], \
     count["source-build"], count["defer"], count["omit"]
 }' "$MATRIX")
-EXPECTED_COUNTS='archlinuxarm=121 replacement=2 local-build=1 source-build=14 defer=5 omit=5'
+EXPECTED_COUNTS='archlinuxarm=121 replacement=2 local-build=6 source-build=9 defer=5 omit=5'
 [[ "$RESOLUTION_COUNTS" == "$EXPECTED_COUNTS" ]] || { printf 'Unexpected resolution counts: %s\n' "$RESOLUTION_COUNTS" >&2; exit 1; }
 
 UNKNOWN_RESOLUTIONS=$(awk -F '|' '$0 !~ /^#/ && $4 !~ /^(archlinuxarm|replacement|local-build|source-build|defer|omit)$/ {count++} END {print count+0}' "$MATRIX")

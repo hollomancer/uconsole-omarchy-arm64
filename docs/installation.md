@@ -16,9 +16,11 @@ lsblk -o NAME,PATH,MODEL,SERIAL,TRAN,SIZE,TYPE,FSTYPE,LABEL,MOUNTPOINTS
 This is deliberately read-only. It establishes the device path, transport,
 model, serial, size, existing filesystems and mount state before any script is
 allowed to accept a destructive target. On a macOS preparation host, obtain the
-same evidence with `diskutil list external physical`, but the reproducible image
-builder is planned for Linux because Arch ownership, loop-device and chroot
-semantics must match the target tooling.
+same evidence with `diskutil list external physical`. The reproducible image
+builder remains Linux-based because Arch ownership, loop-device and chroot
+semantics must match the target tooling. The macOS media planner is separately
+read-only and requires exact device identity fields; it does not write or
+unmount media.
 
 ## Safety contract
 
@@ -50,6 +52,10 @@ and configured full-root integration tests pass. It refuses a root without the
 completed base-system state, locked source accounts and unique-host-key
 boundary. [`plan-sd-write.sh`](../scripts/plan-sd-write.sh) is a read-only Linux
 physical-media preflight; it deliberately has no write action.
+[`plan-sd-write-macos.sh`](../scripts/plan-sd-write-macos.sh) provides the same
+read-only boundary on the current development host. It rejects internal,
+virtual, non-removable, mounted, APFS and identity-mismatched targets and also
+implements no write action.
 
 Example after the moving rootfs has been downloaded, signature-verified and
 assigned an immutable SHA-256 in the build lock:
@@ -319,13 +325,45 @@ it, the operator must still select the admin name, SSH public key, regulatory
 domain, recovery-hash file, timezone, and whether to provide a private
 bootstrap Wi-Fi keyfile.
 
+Once real configuration and the automatic post-apply inspection pass, create a
+new empty namespaced directory on `SSDmini` and run the Phase 1-only plan:
+
+```sh
+research/build-phase1-image.sh --check \
+  --source-volume uconsole-phase1-operator-pending-20260824 \
+  --output-directory /Volumes/SSDmini/uconsole-phase1-image-YYYYMMDD \
+  --disk-id a1b2c3d4 \
+  --boot-id A1B2C3D4 \
+  --root-uuid 11111111-2222-4333-8444-555555555555 \
+  --source-date-epoch 1787544000
+```
+
+Generate new identity values for the actual image lineage; the values above
+are examples only. Review the successful plan, repeat the exact arguments with
+`--build-image`, and add:
+
+```sh
+--confirm-source-volume uconsole-phase1-operator-pending-20260824
+```
+
+The runner permits only the exact 8 GiB regular image and manifest in that
+directory. It mounts the source read-only, disables networking, rejects
+Hyprland/Omarchy state, reuses the production builder, and inspects MBR,
+filesystems, manifests, lower-layer state and effective base policy before
+success. `--inspect-image` repeats the same inspection with the output mounted
+read-only. It has no physical-device action. The current unconfigured source
+has passed the expected fail-safe test: it stopped at the missing real
+configuration state and left the external output empty.
+
 ### P1.5 — Write and boot the fresh SD
 
 Assumption: the produced image targets the identified development card only.
 
 1. Re-run the read-only device inventory and compare model/serial/size.
-2. Run `scripts/plan-sd-write.sh` and save its exact image hash plus target
-   model/serial/size report.
+2. On Linux, run `scripts/plan-sd-write.sh`. On macOS, run
+   `scripts/plan-sd-write-macos.sh` with the image, manifest, exact `/dev/diskN`,
+   media name, I/O registry name, device-tree path, bus and byte size. Save its
+   image hash, partition-map hash and composite identity hash.
 3. Invoke the future separately reviewed writer with explicit destructive
    flags. Capture the exact command and image SHA-256 in the experiment log.
 4. Verify the written partition table and sampled image checksum before eject.
@@ -333,6 +371,13 @@ Assumption: the produced image targets the identified development card only.
 6. Repeat three cold boots after the first successful configuration.
 
 Gate: console, networking and key-based SSH pass three cold boots.
+
+The current macOS inventory contains no eligible development card. `/dev/disk4`
+is the 1 TB `SSDmini` NVMe enclosure and reports `RemovableMedia=false`; the USB
+SD reader is visible but has no media. A functional preflight supplied all of
+`SSDmini`'s correct identity fields and still rejected it as non-removable
+before any descendant or write operation. Do not proceed until a fresh card is
+inserted and appears as a distinct removable external physical whole disk.
 
 ### P1.6 — Validate hardware in dependency order
 

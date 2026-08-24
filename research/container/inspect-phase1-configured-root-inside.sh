@@ -8,7 +8,10 @@ set -u
 set -o pipefail
 
 ROOT=${UCONSOLE_INSPECTION_ROOT:-/source/root}
-[[ "$ROOT" == /source/root || "$ROOT" == /restore/root ]] || { printf '[FAIL] unsafe inspection root\n' >&2; exit 1; }
+if [[ "$ROOT" != /source/root && "$ROOT" != /restore/root && ! "$ROOT" =~ ^/work/phase1-image-inspect\.[A-Za-z0-9]+$ ]]; then
+  printf '[FAIL] unsafe inspection root\n' >&2
+  exit 1
+fi
 STATE_DIR="$ROOT/var/lib/uconsole-omarchy-arm64"
 BASE_STATE="$STATE_DIR/base-system-selection"
 TRANSIENT_KEY=/run/uconsole-phase1-inspection-host-key

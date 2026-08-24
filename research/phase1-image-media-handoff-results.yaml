@@ -1,0 +1,98 @@
+schema: 1
+observed_at: 2026-08-24
+purpose: "Fail-closed handoff from the configured Phase 1 root to a regular image and separately identified development SD"
+phase1_image_runner:
+  host_script: research/build-phase1-image.sh
+  container_script: research/container/build-phase1-image-inside.sh
+  production_builder: scripts/build-image.sh
+  actions:
+    - check
+    - build-image
+    - inspect-image
+  exact_image_bytes: 8589934592
+  source_volume_pattern: uconsole-phase1-operator-pending-YYYYMMDD
+  source_mounted_read_only: true
+  output_pattern: /Volumes/NAME/uconsole-phase1-image-*
+  output_is_regular_file_only: true
+  physical_device_argument: forbidden
+  network: disabled
+  desktop_state: forbidden
+  build_confirmation: "Exact source volume must be repeated with --confirm-source-volume"
+  pinned_tools:
+    dosfstools_sha256: c41120c6c89469f259d5248ea2ed0a7bea19f8a38d493682f7ff82037a862c21
+    mtools_sha256: 27b3fec3314df29d943d80f97e060d852dd60ba840f8188f25c5993e85c34f3b
+  contract_test: tests/test-phase1-image-runner.sh
+  contract_test_result: PASS
+  fail_safe_test:
+    source_volume: uconsole-phase1-operator-pending-20260824
+    source_configuration_applied: false
+    action: check
+    result: FAIL_SAFE
+    exit_code: 1
+    expected_failure: "real operator configuration state is missing"
+    output_directory: /Volumes/SSDmini/uconsole-phase1-image-gate-check-20260824
+    output_entries_after_failure: 0
+    output_directory_removed: true
+    source_changed: false
+  completed_image_inspection_requires:
+    - exact external manifest and image SHA-256
+    - exact MBR geometry and disk ID
+    - exact FAT ID and ext4 UUID/label
+    - exact lower-layer selection states
+    - rendered fstab and kernel command line
+    - no Hyprland or Omarchy state
+    - effective configured policy through the configured-root inspector
+    - read-only partition mounts
+macos_media_preflight:
+  script: scripts/plan-sd-write-macos.sh
+  contract_test: tests/test-plan-sd-write-macos.sh
+  contract_test_result: PASS
+  operations: read_only
+  writer_implemented: false
+  requires:
+    - exact /dev/diskN whole-disk node
+    - expected media and I/O registry names
+    - expected device-tree path and bus
+    - exact byte size
+    - removable, external and physical classification
+    - writable media and 512-byte sectors
+    - no mounted descendants
+  rejects:
+    - internal media
+    - virtual or synthesized media
+    - non-removable media
+    - mounted descendants
+    - Apple APFS targets
+    - identity changes
+    - image manifest or digest mismatch
+  functional_rejection:
+    target: /dev/disk4
+    result: PASS
+    reason: "SSDmini is non-removable and therefore ineligible even when its supplied identity fields match"
+    mount_state_changed: false
+    bytes_written: 0
+current_host_inventory:
+  external_physical_disks:
+    - device: /dev/disk4
+      media_name: RTL9210 NVME
+      io_registry_name: Realtek RTL9210 NVME Media
+      device_tree_path: IODeviceTree:/arm-io@10F00000/usb-drd1@A280000/usb-drd1-port-ss@01200000
+      bus: USB
+      size_bytes: 1000204886016
+      removable_media: false
+      eligible_sd_target: false
+  usb_sd_reader:
+    serial: "000000002961"
+    disk_media_present: false
+  development_sd_inserted: false
+  eligible_target_count: 0
+storage_after:
+  host_available_kib: 4829436
+  external_ssd_available_kib: 925424408
+  additional_local_cleanup_required: false
+  phase1_image_output_location: SSDmini
+effects:
+  physical_media_touched: false
+  image_created: false
+  retained_source_configured: false
+next_gate: "Collect operator inputs, run configuration plan/apply plus inspection, build and inspect the regular Phase 1 image, then insert and identify a fresh removable development SD"

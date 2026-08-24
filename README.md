@@ -49,6 +49,11 @@ Research snapshot: **2026-08-24**
   [`research/phase1-operator-configuration-results.yaml`](research/phase1-operator-configuration-results.yaml).
   Their synthetic plan and configured-archive integration pass; no real
   operator input has been applied.
+- The fail-closed real Phase 1 image runner and macOS removable-media preflight
+  are recorded in
+  [`research/phase1-image-media-handoff-results.yaml`](research/phase1-image-media-handoff-results.yaml).
+  The unconfigured retained root is rejected without output, `SSDmini` is
+  rejected as non-removable, and no development SD is currently inserted.
 - The configured full-root regular-image build and read-only inspection are in
   [`research/full-image-results.yaml`](research/full-image-results.yaml).
 - Reproducible 4 KiB/16 KiB DKMS build results are in
@@ -177,6 +182,22 @@ new read-only container. Create the private recovery hash with
 `scripts/create-console-password-hash.sh`; this works even when host LibreSSL
 lacks SHA-512 crypt support.
 
+After the real configuration and automatic inspector pass, build only a new
+regular 8 GiB image in a new namespaced directory on `SSDmini`:
+
+```sh
+research/build-phase1-image.sh --check \
+  --source-volume uconsole-phase1-operator-pending-20260824 \
+  --output-directory /Volumes/SSDmini/uconsole-phase1-image-YYYYMMDD \
+  --disk-id HEX8 --boot-id HEX8 --root-uuid UUID \
+  --source-date-epoch EPOCH
+```
+
+The explicit `--build-image` action also requires the same source volume via
+`--confirm-source-volume`. The source mount is read-only, networking and
+desktop state are forbidden, and the resulting partitions plus effective base
+configuration are inspected read-only. This runner accepts no device path.
+
 The configuration enables NetworkManager, systemd-resolved, OpenSSH and
 Bluetooth; installs key-only SSH policy; and locks the source `root` and
 non-admin `alarm` accounts. It never accepts plaintext password arguments or
@@ -196,6 +217,13 @@ written to media, and is not a boot candidate.
 against its manifest and a stable `/dev/disk/by-id/…` whole-disk identity, then
 rejects mounted, undersized, read-only and system-root devices. There is no SD
 write implementation yet.
+
+`scripts/plan-sd-write-macos.sh` supplies the host-native read-only boundary. It
+requires an exact removable/external/physical whole-disk identity, rejects
+mounted descendants and APFS synthesis, validates the image manifest, and
+prints partition-map plus composite identity hashes. Current inventory shows
+only the non-removable 1 TB `SSDmini` physical disk; no development SD is
+inserted, and no media command has modified mount or disk state.
 
 After the real CM5 passes the hardware and accelerated-graphics gates, plan the
 minimal Hyprland transaction against its mounted development root:
@@ -371,6 +399,7 @@ that gate but has not been applied to a card.
 │   ├── build-uconsole-dkms.sh
 │   ├── build-uconsole-package.sh
 │   ├── compare-omarchy-prepared-images.sh
+│   ├── build-phase1-image.sh
 │   ├── configure-phase1-operator-root.sh
 │   ├── inspect-phase1-operator-root.sh
 │   ├── inspect-phase1-configured-root.sh
@@ -404,6 +433,7 @@ that gate but has not been applied to a card.
 │   ├── phase1-hardware-install-results.yaml
 │   ├── phase1-inputs.yaml
 │   ├── phase1-operator-configuration-results.yaml
+│   ├── phase1-image-media-handoff-results.yaml
 │   ├── phase1-operator-root-results.yaml
 │   ├── project-volume-archive-results.yaml
 │   ├── package-audit/                    # current generated matrix and pins
@@ -432,6 +462,7 @@ that gate but has not been applied to a card.
 │   ├── prepare-omarchy-user.sh            # current: conflict-safe inactive home seed
 │   ├── plan-omarchy-update.sh             # current: read-only candidate audit
 │   ├── plan-sd-write.sh                  # current: read-only media preflight
+│   ├── plan-sd-write-macos.sh            # current: read-only macOS media preflight
 │   └── validate-system.sh                # current: read-only PASS/WARN/FAIL report
 └── tests/
     ├── test-archive-project-volume.sh     # current archive/restore safety test
@@ -449,6 +480,8 @@ that gate but has not been applied to a card.
     ├── test-omarchy-package-policy.sh     # current complete-policy safety test
     ├── test-omarchy-prepared-image-runner.sh # current image-runner safety test
     ├── test-plan-omarchy-update.sh        # current update-boundary safety test
+    ├── test-plan-sd-write-macos.sh        # current read-only macOS media safety test
+    ├── test-phase1-image-runner.sh        # current real Phase 1 image safety test
     ├── test-prepare-omarchy-user.sh       # current inactive-home safety test
     ├── test-validate-system.sh            # current deterministic test
     └── fixtures/                          # current captured probe fixtures

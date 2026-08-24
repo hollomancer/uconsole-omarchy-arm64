@@ -31,3 +31,12 @@ Disk IDs, FAT volume IDs and ext4 UUIDs are explicit inputs, not random values.
 They must change when creating a distinct image lineage to avoid collisions.
 The ext4 label is `uconsole-root`; account names never determine filesystem
 identity.
+
+For the retained real Phase 1 root, `research/build-phase1-image.sh` is the
+bounded host handoff. It permits only a namespaced direct child of an external
+volume, mounts the source read-only, disables networking, forbids desktop state
+and requires an exact source-volume confirmation in build mode. It then checks
+the completed image using read-only loop devices and the configured-root
+policy inspector. The separate `scripts/plan-sd-write-macos.sh` accepts that
+image only for read-only physical-media identity validation; neither script
+implements an SD write.

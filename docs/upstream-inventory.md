@@ -80,4 +80,3 @@ The following URLs were probed directly on 2026-08-24:
 
 These are point-in-time observations and must be rechecked by the future audit
 tool. They are not a reason to rewrite pacman configuration dynamically.
-

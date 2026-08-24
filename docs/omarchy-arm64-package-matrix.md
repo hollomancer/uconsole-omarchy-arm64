@@ -94,4 +94,3 @@ Each final row will contain: package, version constraint, consumers, category,
 required group, repository evidence, declared architectures, binary
 architectures, build result, runtime result, 16 KiB-page result, replacement,
 functional delta, license, source pin and last verification date.
-

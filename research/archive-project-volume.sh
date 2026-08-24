@@ -70,7 +70,7 @@ if [[ "$ACTION" == archive ]]; then
   [[ -z "$CONTAINER_REFERENCES" ]] || die "source volume is referenced by a container: $VOLUME"
   [[ ! -e "$ARCHIVE_DIRECTORY/$ARCHIVE_NAME" && ! -L "$ARCHIVE_DIRECTORY/$ARCHIVE_NAME" ]] || die 'archive output already exists'
   [[ ! -e "$ARCHIVE_DIRECTORY/$MANIFEST_NAME" && ! -L "$ARCHIVE_DIRECTORY/$MANIFEST_NAME" ]] || die 'archive manifest already exists'
-  docker run --rm --platform linux/arm64 --network none \
+  docker run --rm --read-only --log-driver none --platform linux/arm64 --network none \
     --env UCONSOLE_ARCHIVE_ACTION=archive \
     --env UCONSOLE_VOLUME_NAME="$VOLUME" \
     --mount "type=bind,src=$REPO_ROOT,dst=/repo,readonly" \
@@ -85,7 +85,7 @@ fi
 [[ -f "$ARCHIVE_DIRECTORY/$MANIFEST_NAME" && ! -L "$ARCHIVE_DIRECTORY/$MANIFEST_NAME" ]] || die 'verified archive manifest is missing or unsafe'
 if docker volume inspect "$RESTORE_VOLUME" >/dev/null 2>&1; then die "disposable restore volume already exists: $RESTORE_VOLUME"; fi
 docker volume create "$RESTORE_VOLUME" >/dev/null || die 'unable to create disposable restore volume'
-if ! docker run --rm --platform linux/arm64 --network none \
+if ! docker run --rm --read-only --log-driver none --platform linux/arm64 --network none \
   --env UCONSOLE_ARCHIVE_ACTION=restore \
   --env UCONSOLE_VOLUME_NAME="$VOLUME" \
   --mount "type=bind,src=$REPO_ROOT,dst=/repo,readonly" \

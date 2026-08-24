@@ -23,6 +23,7 @@ done
 
 grep -Fq 'dst=/source,readonly' "$RUNNER"
 grep -Fq 'dst=/archive,readonly' "$RUNNER"
+grep -Fq -- '--read-only --log-driver none' "$RUNNER"
 grep -Fq 'tar_flags=(--acls --xattrs' "$INSIDE"
 grep -Fq 'tar --compare' "$INSIDE"
 grep -Fq 'contains_synthetic_credentials' "$INSIDE"

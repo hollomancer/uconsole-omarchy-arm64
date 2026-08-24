@@ -1,0 +1,68 @@
+schema: 1
+verified_at: 2026-08-24
+authorization:
+  semantic_reproducibility_accepted: true
+  archive_and_remove_project_roots: true
+  original_scope:
+    - uconsole-base-system-integration-20260824
+    - uconsole-hyprland-integration-20260824
+archive_environment:
+  directory: /Volumes/SSDmini/uconsole-omarchy-arm64-volume-archives-20260824
+  directory_mode: "0700"
+  builder_image: menci/archlinuxarm:base-devel-20260819.32222611223@sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
+  network: disabled
+  container_root_read_only: true
+  container_log_driver: none
+  format: gnu-tar
+  numeric_owner: true
+  acls: true
+  xattrs: true
+  sparse_files: true
+base_system:
+  volume: uconsole-base-system-integration-20260824
+  container_references_before_removal: 0
+  archive: uconsole-base-system-integration-20260824.tar
+  archive_bytes: 2496798720
+  archive_sha256: 3e94cd4a8656edee4dd5395231877ff8944c956b57feabe470ec97461a4bd70f
+  archive_mode: "0600"
+  source_kib: 2480728
+  source_entries: 69385
+  archive_integrity: PASS
+  source_compare: PASS
+  original_volume_removed: true
+  restore_compare: PASS
+  disposable_restore_volume_removed: true
+hyprland_omarchy:
+  volume: uconsole-hyprland-integration-20260824
+  container_references_before_removal: 0
+  archive: uconsole-hyprland-integration-20260824.tar
+  archive_bytes: 4115220480
+  archive_sha256: 6e89390630b6c8f32d6db1163aea84dc61b853a88e03835d59aa008bc33a6b37
+  archive_mode: "0600"
+  source_kib: 4088704
+  source_entries: 109974
+  archive_integrity: PASS
+  source_compare: PASS
+  original_volume_removed: true
+  restore_compare: PASS
+  disposable_restore_volume_removed: true
+failure_record:
+  first_hyprland_attempt: docker-daemon-unexpected-eof
+  orbstack_state_after_failure: stopped
+  source_volume_removed_during_failure: false
+  promoted_archive_created_during_failure: false
+  failed_partial_removed: true
+  mitigation: read-only-container-root-and-no-log-driver
+  retry_result: PASS
+final_state:
+  removed_originals_absent: true
+  disposable_restore_volumes_absent: true
+  docker_local_volume_total_before: 11.42GB
+  docker_local_volume_total_after: 5.116GB
+  host_free_kib_after: 6594032
+  external_volume_free_kib_after: 925427332
+  archives_recoverable: true
+  archives_private: true
+  archives_contain_synthetic_credentials: true
+  archives_published: false
+  physical_media_touched: false

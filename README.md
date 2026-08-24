@@ -84,6 +84,9 @@ Research snapshot: **2026-08-24**
 - The two-build whole-image reproducibility result is in
   [`research/omarchy-prepared-image-reproducibility-results.yaml`](research/omarchy-prepared-image-reproducibility-results.yaml):
   semantic contents match exactly, but filesystem bytes do not.
+- The verified private archives and removal of the two superseded Docker roots
+  are recorded in
+  [`research/project-volume-archive-results.yaml`](research/project-volume-archive-results.yaml).
 - The storage-gated build and read-only inspection entry point is
   [`research/test-omarchy-prepared-image.sh`](research/test-omarchy-prepared-image.sh).
   It accepts either a project-only Docker volume or a pre-created, namespaced
@@ -374,6 +377,7 @@ that gate but has not been applied to a card.
 │   ├── omarchy-prepared-image-reproducibility-results.yaml
 │   ├── phase1-hardware-install-results.yaml
 │   ├── phase1-inputs.yaml
+│   ├── project-volume-archive-results.yaml
 │   ├── package-audit/                    # current generated matrix and pins
 │   ├── rootfs-extraction-results.yaml
 │   ├── resolve-hyprland-closure.sh

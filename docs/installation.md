@@ -590,6 +590,26 @@ FAT boot-sector and ext4 superblock variance. The current result shows that
 byte reproducibility needs a different offline filesystem-population strategy;
 it is not required for the recommended hardware bring-up path.
 
+### Archive disposable off-target roots
+
+Before reclaiming Docker space, create a private external archive and compare
+it against the source while the source is mounted read-only:
+
+```sh
+research/archive-project-volume.sh \
+  --volume uconsole-hyprland-integration-20260824 \
+  --archive-directory /Volumes/SSDmini/uconsole-omarchy-arm64-volume-archives-20260824 \
+  --archive
+```
+
+The tool never removes an original. After separately confirming the archive
+SHA-256 and removing only the explicitly authorized original volume, prove
+recovery with `--restore-verify`. That action extracts into a new disposable
+Docker volume, compares content and metadata against the archive, and removes
+only the passing temporary restore volume. Both project roots passed this
+workflow; exact hashes and the interrupted first Hyprland attempt are recorded
+in `research/project-volume-archive-results.yaml`.
+
 The first live launch remains manual after Phase 2 evidence is saved. Keep the
 upstream autostart and Hyprland defaults out of the transaction; start only the
 reviewed shell wrapper from the existing minimal session. Re-run

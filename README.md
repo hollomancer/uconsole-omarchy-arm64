@@ -44,6 +44,11 @@ Research snapshot: **2026-08-24**
   [`research/phase1-operator-root-results.yaml`](research/phase1-operator-root-results.yaml).
   It is intentionally blocked on operator identity/access inputs and must not
   be imaged or booted in its current state.
+- The secret-safe real-configuration runner, portable recovery-hash helper and
+  read-only post-apply inspector are recorded in
+  [`research/phase1-operator-configuration-results.yaml`](research/phase1-operator-configuration-results.yaml).
+  Their synthetic plan and configured-archive integration pass; no real
+  operator input has been applied.
 - The configured full-root regular-image build and read-only inspection are in
   [`research/full-image-results.yaml`](research/full-image-results.yaml).
 - Reproducible 4 KiB/16 KiB DKMS build results are in
@@ -162,6 +167,15 @@ scripts/configure-base-system.sh --plan \
   --console-password-hash-file /secure/path/console-password.hash \
   --reg-domain US
 ```
+
+For the retained off-target root, prefer
+`research/configure-phase1-operator-root.sh`. Its default plan mounts the root
+and all inputs read-only with networking disabled. Apply requires the exact
+volume name again through `--confirm-volume`, performs an idempotent reapply,
+then invokes the production image-plan gate and effective-policy inspector in a
+new read-only container. Create the private recovery hash with
+`scripts/create-console-password-hash.sh`; this works even when host LibreSSL
+lacks SHA-512 crypt support.
 
 The configuration enables NetworkManager, systemd-resolved, OpenSSH and
 Bluetooth; installs key-only SSH policy; and locks the source `root` and
@@ -357,8 +371,11 @@ that gate but has not been applied to a card.
 │   ├── build-uconsole-dkms.sh
 │   ├── build-uconsole-package.sh
 │   ├── compare-omarchy-prepared-images.sh
+│   ├── configure-phase1-operator-root.sh
 │   ├── inspect-phase1-operator-root.sh
+│   ├── inspect-phase1-configured-root.sh
 │   ├── install-phase1-base-packages.sh
+│   ├── test-phase1-configured-inspector.sh
 │   ├── container/
 │   │   ├── archive-project-volume-inside.sh
 │   │   ├── build-board-package-inside.sh
@@ -386,6 +403,7 @@ that gate but has not been applied to a card.
 │   ├── omarchy-prepared-image-reproducibility-results.yaml
 │   ├── phase1-hardware-install-results.yaml
 │   ├── phase1-inputs.yaml
+│   ├── phase1-operator-configuration-results.yaml
 │   ├── phase1-operator-root-results.yaml
 │   ├── project-volume-archive-results.yaml
 │   ├── package-audit/                    # current generated matrix and pins

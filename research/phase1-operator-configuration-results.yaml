@@ -1,0 +1,105 @@
+schema: 1
+observed_at: 2026-08-24
+purpose: "Secret-safe plan/apply and post-apply inspection boundary for the retained Phase 1 root"
+target:
+  volume: uconsole-phase1-operator-pending-20260824
+  real_operator_configuration_applied: false
+  physical_media_touched: false
+password_hash_helper:
+  script: scripts/create-console-password-hash.sh
+  implementation: "Pinned network-disabled ARM64 builder, OpenSSL SHA-512 crypt over stdin"
+  interactive_terminal_prompts: 2
+  plaintext_process_argument: false
+  plaintext_file: false
+  output_mode: "0600"
+  functional_test: PASS
+configuration_runner:
+  script: research/configure-phase1-operator-root.sh
+  default_action: plan
+  plan_root_access: read_only
+  apply_confirmation: "Exact volume name must be repeated with --confirm-volume"
+  container_network: disabled
+  container_root: read_only
+  input_mounts: read_only
+  plaintext_arguments_rejected: true
+  image_and_device_arguments_rejected: true
+  plan_integration:
+    inputs: disposable-synthetic
+    result: PASS
+    target_changed: false
+    post_plan_root_size_kib: 2477744
+    post_plan_filesystem_entries: 69366
+    post_plan_hardware_state_sha256: 88ed52d7ec67c9602e54f1d0bc2b4b48bf56b4fb453128231b909bcb667afc6b
+    post_plan_base_packages_state_sha256: bbdc7bd2439d951bed3e035144dec34b2ac2af49ec69764202730f820482f12f
+post_apply_inspector:
+  host_script: research/inspect-phase1-configured-root.sh
+  inside_script: research/container/inspect-phase1-configured-root-inside.sh
+  production_gate_reused: scripts/build-image.sh --plan
+  integration_runner: research/test-phase1-configured-inspector.sh
+  source_archive: uconsole-base-system-integration-20260824.tar
+  source_archive_sha256: 3e94cd4a8656edee4dd5395231877ff8944c956b57feabe470ec97461a4bd70f
+  integration_filesystem: "Disposable sparse ext4 image on SSDmini"
+  archive_restore_compare: PASS
+  inspection_filesystem_read_only: true
+  result: PASS
+  verified:
+    - exact hardware, base-package and base-configuration states
+    - locked source accounts and encrypted synthetic admin recovery state
+    - prepared boot artifacts and image capacity headroom
+    - authorized-key fingerprint matches public selection state
+    - effective key-only SSH policy with root login disabled
+    - NetworkManager plus systemd-resolved effective DNS policy
+    - NetworkManager, sshd, systemd-resolved and Bluetooth enabled
+    - systemd-networkd activation disabled
+    - en_US.utf8 locale generated
+    - configured Wi-Fi policy represented without printing its secret
+    - no persistent SSH host key
+    - no image output created
+  inspected_base_state_sha256: dde6fd599700013c0dadec47344520f8082dbe8225f7640ae35a09e8f2ca7d5d
+  disposable_workspace_removed: true
+failures_recorded:
+  - attempt: config-plan-1
+    result: FAIL_SAFE
+    finding: "macOS LibreSSL passwd does not support the documented -6 option, so the empty hash file was rejected before plan"
+    smallest_change: "Add an interactive helper using the pinned ARM64 OpenSSL implementation over stdin"
+    target_changed: false
+  - attempt: configured-inspector-1
+    result: FAIL_SAFE
+    finding: "A direct macOS bind directory cannot represent archived Linux ownership, symlinks and ACLs"
+    smallest_change: "Restore into an ext4 filesystem image stored on external media"
+  - attempt: configured-inspector-2
+    result: FAIL_SAFE
+    finding: "A loop device already associated writable could not be attached a second time as read-only"
+    smallest_change: "Use one explicit loop association and transition the mounted filesystem in place"
+  - attempt: configured-inspector-3
+    result: FAIL_SAFE
+    finding: "The reused loop slot retained its prior block read-only state"
+    smallest_change: "Normalize and verify writable block state before restore, then set read-only for inspection"
+  - attempt: configured-inspector-4
+    result: FAIL_SAFE
+    finding: "findmnt --target selected the underlying Docker tmpfs in the stacked mount layout"
+    smallest_change: "Query the exact mountpoint"
+  - attempt: configured-inspector-5
+    result: FAIL_SAFE
+    finding: "Exact mountpoint lookup returned both stacked entries"
+    smallest_change: "Select and verify the topmost loop-backed mount entry"
+  - attempt: configured-inspector-6
+    result: FAIL_SAFE
+    finding: "The archived root intentionally lacked /dev/null for chroot command validation"
+    smallest_change: "Supply bounded transient /dev, /proc and /sys mounts during read-only inspection"
+  - attempt: configured-inspector-7
+    result: PASS
+    finding: "Archive restore, production image-plan gate and effective policy inspection all passed"
+storage_after:
+  host_available_kib: 4860404
+  external_ssd_available_kib: 922879152
+  additional_local_cleanup_required: false
+  large_future_outputs: SSDmini
+remaining_operator_inputs:
+  - admin_user
+  - ssh_public_key_file
+  - console_recovery_hash_file
+  - wifi_regulatory_country_code
+  - timezone
+  - optional_private_networkmanager_keyfile
+next_gate: "Run the real read-only plan, review it, explicitly apply, and accept the automatic post-apply inspector"

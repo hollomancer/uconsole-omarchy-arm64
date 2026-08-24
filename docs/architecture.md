@@ -126,6 +126,14 @@ stops before configuration with both source accounts still unsafe, no SSH host
 identity and no upper-layer state. This does not close G1 because the operator's
 real inputs have not been applied and no CM5 has booted it.
 
+The operator transition is now a separate network-disabled boundary. Plan
+mounts the retained root and private files read-only; apply requires the target
+volume name twice, proves idempotence, then reopens the result read-only. The
+post-apply inspector reuses the production image-plan gate and validates
+effective SSH, NetworkManager, services, locale and absence of a cloned host
+key. Its configured-archive integration passes on a Linux-semantics ext4 image;
+no real operator configuration has yet been applied.
+
 The custom kernel is retained as a differential oracle and recovery fallback,
 not as the default package. Its proven boot settings, PMIC behavior and
 alternate audio path are captured as test hypotheses in

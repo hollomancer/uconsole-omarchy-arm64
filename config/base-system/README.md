@@ -36,3 +36,16 @@ script refuses a conflicting existing managed file, a different saved
 selection, unexpected NetworkManager profiles, or pre-existing SSH host keys.
 SSH host keys are intentionally left absent so the target generates a unique
 identity on first boot.
+
+On preparation hosts whose OpenSSL lacks SHA-512 crypt support (including the
+current macOS LibreSSL), create the recovery input with
+`scripts/create-console-password-hash.sh --output /private/path/password.hash`.
+It uses the pinned, network-disabled ARM64 builder and never passes plaintext
+as a process argument.
+
+The retained Docker root is configured through
+`research/configure-phase1-operator-root.sh`, not by exposing its mountpoint to
+the host. Plan mode is the default and mounts the volume read-only. Apply
+requires `--confirm-volume` with the exact name, runs the same configuration a
+second time to prove idempotence, and automatically calls the read-only
+configured-root inspector.

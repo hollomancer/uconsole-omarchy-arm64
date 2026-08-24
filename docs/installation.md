@@ -254,17 +254,50 @@ associate before the first local login. The file must be a private
 NetworkManager WPA-PSK connection; no secret should be placed in the repository
 or command line. If Wi-Fi is omitted, enroll it from the local console.
 
-Generate the console recovery hash into a private file on the preparation host
-without putting plaintext in process arguments:
+Generate the console recovery hash into a new private file with the pinned
+offline ARM64 crypt implementation. This avoids the incompatible `passwd`
+options in macOS LibreSSL while keeping plaintext out of process arguments:
 
 ```sh
-umask 077
-read -r -s -p 'Local console recovery password: ' UCONSOLE_RECOVERY_PASSWORD
-printf '\n'
-printf '%s\n' "$UCONSOLE_RECOVERY_PASSWORD" | openssl passwd -6 -stdin > /secure/path/console-password.hash
-unset UCONSOLE_RECOVERY_PASSWORD
-chmod 0600 /secure/path/console-password.hash
+scripts/create-console-password-hash.sh \
+  --output /secure/path/console-password.hash
 ```
+
+The helper prompts twice through `/dev/tty`, runs `openssl passwd -6 -stdin`
+inside the pinned network-disabled ARM64 builder and atomically creates a
+mode-0600 file outside the repository. It refuses plaintext/non-interactive
+password arguments and existing output paths.
+
+For the retained off-target Phase 1 volume, run the secret-safe wrapper rather
+than locating Docker's private volume mountpoint:
+
+```sh
+research/configure-phase1-operator-root.sh --plan \
+  --volume uconsole-phase1-operator-pending-20260824 \
+  --admin-user yourname \
+  --ssh-public-key /secure/path/id_ed25519.pub \
+  --console-password-hash-file /secure/path/console-password.hash \
+  --reg-domain US \
+  --hostname uconsole \
+  --timezone America/New_York
+```
+
+Add `--wifi-keyfile /secure/path/bootstrap.nmconnection` only if selected. The
+plan container has no network and mounts the retained root plus every input
+read-only. After reviewing the complete plan, replace `--plan` with `--apply`
+and add:
+
+```sh
+--confirm-volume uconsole-phase1-operator-pending-20260824
+```
+
+Apply performs the exact configuration twice to prove idempotence, then opens
+the root in a new read-only container. That inspector runs the production
+`build-image.sh --plan` gate and validates effective SSH, NetworkManager,
+service, locale and host-identity state. The runner and inspector pass against
+the verified private configured-root archive using a disposable ext4 image on
+`SSDmini`; full evidence and recorded failures are in
+[`../research/phase1-operator-configuration-results.yaml`](../research/phase1-operator-configuration-results.yaml).
 
 After reviewing plan output, rerun the same configuration arguments with
 `--apply`. Apply creates or validates the admin, installs its public key, locks

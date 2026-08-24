@@ -11,6 +11,7 @@ COMMAND=$1
 shift
 LOG=${FAKE_CHROOT_LOG:?}
 LOCK=${FAKE_HYPRLAND_LOCK:?}
+TRANSACTION_LOCK=${FAKE_HYPRLAND_TRANSACTION_LOCK:?}
 DATABASE="$ROOT/var/lib/fake-hyprland-packages"
 
 printf '%s' "$COMMAND" >> "$LOG"
@@ -57,6 +58,20 @@ case "$OPERATION" in
       [[ -n "$VERSION" ]] || { printf 'Unknown fake package: %s\n' "$argument" >&2; exit 90; }
       awk -v unwanted="$argument" '$1 != unwanted' "$DATABASE" > "$DATABASE.next"
       printf '%s %s\n' "$argument" "$VERSION" >> "$DATABASE.next"
+      mv "$DATABASE.next" "$DATABASE"
+    done
+    ;;
+  -U)
+    touch "$DATABASE"
+    for argument in "$@"; do
+      case "$argument" in --*) continue ;; esac
+      FILENAME=${argument##*/}
+      PACKAGE_ROW=$(awk -F '|' -v wanted="$FILENAME" '$0 !~ /^#/ && $8 == wanted { count++; row=$0 } END { if (count == 1) print row; else exit 1 }' "$TRANSACTION_LOCK") || { printf 'Unknown fake transaction package: %s\n' "$FILENAME" >&2; exit 90; }
+      NAME=${PACKAGE_ROW%%|*}
+      REMAINDER=${PACKAGE_ROW#*|}
+      VERSION=${REMAINDER%%|*}
+      awk -v unwanted="$NAME" '$1 != unwanted' "$DATABASE" > "$DATABASE.next"
+      printf '%s %s\n' "$NAME" "$VERSION" >> "$DATABASE.next"
       mv "$DATABASE.next" "$DATABASE"
     done
     ;;

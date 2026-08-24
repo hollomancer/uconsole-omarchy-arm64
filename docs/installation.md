@@ -420,6 +420,35 @@ defaults be audited against one immutable source without bypassing G3/G4. The
 actual core-userland activation will be a separate transaction after the real
 hardware gates pass and the command/package allowlists close.
 
+### Read-only update candidate audit
+
+Never invoke upstream `omarchy update` on this target. Before considering a
+new source revision, download its archive separately, calculate its SHA-256 and
+run:
+
+```sh
+scripts/plan-omarchy-update.sh \
+  --candidate-archive /path/to/omarchy-COMMIT.tar.gz \
+  --candidate-commit FULL_40_CHARACTER_COMMIT \
+  --candidate-sha256 FULL_64_CHARACTER_SHA256
+```
+
+The planner executes no candidate code. It requires exact agreement with the
+complete base-package policy, all update-boundary command hashes and every
+migration disposition. A new package, changed command, modified historical
+migration or unclassified future migration is a hard failure.
+
+For a fresh installation, the 87 migrations already present at the pinned
+source are an initialization baseline: a future activation transaction will
+create their exact filename markers without executing them. The current source
+tree already contains their intended final state, while replaying them would
+repeat package, `/etc`, boot and user-file mutations. This marker initialization
+is not implemented in the inert staging script and cannot happen before G5.
+
+Even a passing source audit is not permission to update a target. The promoted
+ARM package transaction must first run on a disposable image and preserve the
+hardware/boot manifest byte for byte.
+
 ### First ARM-built Omarchy dependency
 
 `xdg-terminal-exec` is core terminal-dispatch infrastructure and has no current
@@ -453,6 +482,8 @@ scripts/validate-system.sh --phase omarchy
 ```
 
 The hardware phase still reports later layers as WARN. The Hyprland and
-Omarchy phases turn their respective absence into FAIL. Any OpenGL software
-renderer, Vulkan software renderer, missing DRM render node or absent required
-hardware remains FAIL in every phase.
+Omarchy phases turn their respective absence into FAIL. They also require
+successful V3D/V3DV probes, the native rotated monitor, both Wayland input
+classes and an active Hyprland portal. Any OpenGL software renderer, Vulkan
+software renderer, missing DRM render node, exact hardware-state mismatch or
+absent required board module remains FAIL.

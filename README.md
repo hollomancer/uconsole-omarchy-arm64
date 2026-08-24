@@ -48,6 +48,10 @@ Research snapshot: **2026-08-24**
   [`docs/custom-kernel-lessons.md`](docs/custom-kernel-lessons.md).
 - Omarchy's first ARM64 package audit is in
   [`docs/omarchy-arm64-package-matrix.md`](docs/omarchy-arm64-package-matrix.md).
+- The generated 148-entry package matrix and immutable audit inputs are under
+  [`research/package-audit/`](research/package-audit/).
+- The updater/migration call graph and ARM ownership decisions are recorded in
+  [`research/omarchy-update-audit-results.yaml`](research/omarchy-update-audit-results.yaml).
 - Reusable lessons from the closest Quattro ARM fork are in
   [`docs/omarchy-arm-adaptation-audit.md`](docs/omarchy-arm-adaptation-audit.md).
 - The safe Phase 1 plan is in [`docs/installation.md`](docs/installation.md).
@@ -65,8 +69,10 @@ scripts/validate-system.sh --phase omarchy
 ```
 
 It reports PASS, WARN or FAIL for all requested hardware, graphics, desktop and
-package checks. Deterministic fixtures exercise both success and software-GPU
-failure paths with `tests/test-validate-system.sh`.
+package checks. Enforced desktop phases fail on unavailable GPU probes, wrong
+panel orientation, missing Wayland input classes or an inactive portal.
+Deterministic fixtures exercise success, software-GPU and missing-session-
+evidence paths with `tests/test-validate-system.sh`.
 
 `scripts/bootstrap-arch.sh` verifies the rootfs digest and an explicit detached
 signature/keyring/fingerprint tuple, then can extract into a **new** offline
@@ -168,6 +174,20 @@ enable services or initialize migrations. `--activate` is rejected. This lets
 the compatibility audit proceed without turning staged upstream code into an
 accidental installer.
 
+Prospective source updates are also audit-only:
+
+```sh
+scripts/plan-omarchy-update.sh \
+  --candidate-archive /path/to/omarchy-COMMIT.tar.gz \
+  --candidate-commit FULL_COMMIT \
+  --candidate-sha256 FULL_SHA256
+```
+
+The planner fails on any unclassified package, changed update command or new
+migration. It never runs candidate code. Upstream `omarchy update` remains
+blocked because it combines x86 keyrings/mirrors, rolling package selection,
+Snapper/Limine assumptions, AUR updates and migrations.
+
 ## Proposed repository structure
 
 The files marked `future` must not be implemented until their prerequisite
@@ -180,10 +200,13 @@ that gate but has not been applied to a card.
 ├── config/
 │   ├── arm64-overrides/
 │   │   ├── README.md
+│   │   ├── omarchy-base-package-policy.tsv # current complete classification
 │   │   ├── omarchy-core.packages         # current validation baseline
+│   │   ├── omarchy-migration-baseline.lock # current no-replay baseline
 │   │   ├── packages.toml                 # current: substitutions and omissions
 │   │   ├── omarchy-source.lock           # current: pinned Quattro archive
 │   │   ├── omarchy-staged-paths.lock     # current: inert staging allowlist
+│   │   ├── omarchy-update-commands.lock  # current update ownership boundary
 │   │   ├── pacman/                       # future: ARM repo/drop-in policy
 │   │   └── omarchy/                      # future: minimal userland overrides
 │   ├── base-system/                      # current: exact Phase 1 runtime/policy inputs
@@ -202,6 +225,7 @@ that gate but has not been applied to a card.
 │   ├── prior-art.md
 │   └── upstream-inventory.md
 ├── research/
+│   ├── audit-omarchy-base-packages.sh
 │   ├── build-uconsole-dkms.sh
 │   ├── build-uconsole-package.sh
 │   ├── container/
@@ -213,14 +237,15 @@ that gate but has not been applied to a card.
 │   ├── custom-kernel-delta.yaml
 │   ├── hyprland-package-lock.yaml
 │   ├── image-builder-inputs.yaml
+│   ├── omarchy-update-audit-results.yaml
 │   ├── phase1-hardware-install-results.yaml
 │   ├── phase1-inputs.yaml
+│   ├── package-audit/                    # current generated matrix and pins
 │   ├── rootfs-extraction-results.yaml
 │   ├── resolve-hyprland-closure.sh
 │   ├── test-full-image.sh
 │   ├── upstream-lock.yaml
-│   ├── xdg-terminal-exec-inputs.yaml
-│   └── package-audit/                    # future: generated CSV and provenance
+│   └── xdg-terminal-exec-inputs.yaml
 ├── packaging/
 │   ├── uconsole-cm5-dkms/                # current: local-evaluation PKGBUILD
 │   └── xdg-terminal-exec/                # current: reproducible ARM build
@@ -233,6 +258,7 @@ that gate but has not been applied to a card.
 │   ├── install-uconsole-hardware.sh      # current: offline kernel/DT layer
 │   ├── install-hyprland.sh               # current: minimal compositor layer
 │   ├── install-omarchy-arm64.sh          # current: inert userland source stage
+│   ├── plan-omarchy-update.sh             # current: read-only candidate audit
 │   ├── plan-sd-write.sh                  # current: read-only media preflight
 │   └── validate-system.sh                # current: read-only PASS/WARN/FAIL report
 └── tests/
@@ -244,6 +270,8 @@ that gate but has not been applied to a card.
     ├── test-install-omarchy-arm64.sh      # current inert-staging safety test
     ├── test-install-uconsole-prerequisites.sh # current offline-closure safety test
     ├── test-install-uconsole-hardware.sh  # current transaction safety test
+    ├── test-omarchy-package-policy.sh     # current complete-policy safety test
+    ├── test-plan-omarchy-update.sh        # current update-boundary safety test
     ├── test-validate-system.sh            # current deterministic test
     └── fixtures/                          # current captured probe fixtures
 ```

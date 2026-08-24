@@ -1,0 +1,4 @@
+# name|version|sha256|kernel-release-or-source-commit
+linux-rpi-16k|6.18.45-1|e273a69402d82ae9b4df34b31d5dfbceae9b73268f56e4dadf26a82a5ac9838e|6.18.45-1-rpi-16k
+linux-rpi-16k-headers|6.18.45-1|58c5d993ff832170b2f3ca7346367272684c1fa2ff8a1bfda8d299b46a2e5d76|6.18.45-1-rpi-16k
+uconsole-cm5-dkms|0.1.r0.gbf7a0ab-1|a9058969381e40b6fc4edec9082aa628b2ba7c89504eeecdb0a7cd12a8a6718d|bf7a0ab55654c96b74d013520e1196d39f66391a

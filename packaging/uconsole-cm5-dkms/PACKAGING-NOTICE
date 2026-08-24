@@ -1,0 +1,10 @@
+This package recipe is for local integration evaluation.
+
+The pinned upstream archive contains Linux driver files with GPL notices or
+SPDX identifiers. At the time of this audit, the repository did not provide a
+top-level license covering its overlays, installer, and project glue. Do not
+redistribute a built package until those terms are clarified.
+
+Source: https://github.com/yota9/uconsole-cm5
+Commit: bf7a0ab55654c96b74d013520e1196d39f66391a
+

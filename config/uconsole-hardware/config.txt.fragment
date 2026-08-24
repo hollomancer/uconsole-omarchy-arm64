@@ -1,0 +1,10 @@
+# Managed by uconsole-omarchy-arm64; hardware layer only.
+[all]
+dtparam=ant2
+
+[cm5]
+dtoverlay=uconsole-cm5-base
+dtoverlay=uconsole-audio-cm5
+
+[all]
+

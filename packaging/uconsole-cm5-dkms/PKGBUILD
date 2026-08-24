@@ -1,0 +1,51 @@
+# Local evaluation package for the selected uConsole CM5 board delta.
+# Do not publish binary/source packages until the upstream overlay/project-glue
+# license is clarified. Individual imported kernel drivers declare GPL terms.
+
+pkgname=uconsole-cm5-dkms
+pkgver=0.1.r0.gbf7a0ab
+pkgrel=1
+pkgdesc='ClockworkPi uConsole CM5 DKMS modules, overlays, and audio policy'
+arch=('aarch64')
+url='https://github.com/yota9/uconsole-cm5'
+license=('custom:multiple-linux-kernel-licenses' 'custom:unresolved-overlay-glue')
+depends=('dkms' 'gcc' 'make' 'linux-headers')
+optdepends=('wireplumber: PipeWire software volume policy')
+makedepends=('dtc')
+conflicts=('uconsole-cm5')
+
+_commit=bf7a0ab55654c96b74d013520e1196d39f66391a
+_source_dir="uconsole-cm5-${_commit}"
+source=("${pkgname}-${_commit}.tar.gz::https://github.com/yota9/uconsole-cm5/archive/${_commit}.tar.gz"
+        'PACKAGING-NOTICE')
+sha256sums=('bd03be0b091354bf6a047ca41d0c8198f124d4a12e396647fd0b0f257a7ee4e9'
+            'd3820273f6f7f5d57442cefbce9ed549c382142d4c306324980daf552fdf97d0')
+
+build() {
+  mkdir -p build
+  dtc -@ -I dts -O dtb \
+    -o build/uconsole-cm5-base.dtbo \
+    "${_source_dir}/overlay/uconsole-cm5-base-overlay.dts"
+  dtc -@ -I dts -O dtb \
+    -o build/uconsole-audio-cm5.dtbo \
+    "${_source_dir}/overlay/uconsole-audio-cm5-overlay.dts"
+}
+
+package() {
+  local dkms_root="${pkgdir}/usr/src/uconsole-cm5-0.1"
+
+  install -d "$dkms_root"
+  install -m 0644 "${_source_dir}"/dkms/Makefile "$dkms_root/Makefile"
+  install -m 0644 "${_source_dir}"/dkms/dkms.conf "$dkms_root/dkms.conf"
+  install -m 0644 "${_source_dir}"/dkms/*.c "$dkms_root/"
+
+  install -Dm0644 build/uconsole-cm5-base.dtbo \
+    "${pkgdir}/boot/overlays/uconsole-cm5-base.dtbo"
+  install -Dm0644 build/uconsole-audio-cm5.dtbo \
+    "${pkgdir}/boot/overlays/uconsole-audio-cm5.dtbo"
+  install -Dm0644 \
+    "${_source_dir}/scripts/audio/51-rp1-soft-mixer.conf" \
+    "${pkgdir}/usr/share/wireplumber/wireplumber.conf.d/51-rp1-soft-mixer.conf"
+  install -Dm0644 PACKAGING-NOTICE \
+    "${pkgdir}/usr/share/doc/${pkgname}/PACKAGING-NOTICE"
+}

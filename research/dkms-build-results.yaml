@@ -22,6 +22,22 @@ warnings:
   - "axp20x.c and axp20x-regulator.c each have one integer printf-format mismatch"
   - "DTC reports four unit_address_vs_reg warnings in overlay nodes"
   - "Repository project glue/overlay redistribution license remains unclear"
+package:
+  name: uconsole-cm5-dkms
+  version: 0.1.r0.gbf7a0ab-1
+  artifact: uconsole-cm5-dkms-0.1.r0.gbf7a0ab-1-aarch64.pkg.tar.xz
+  sha256: a9058969381e40b6fc4edec9082aa628b2ba7c89504eeecdb0a7cd12a8a6718d
+  build_script: research/build-uconsole-package.sh
+  builds_compared: 2
+  byte_reproducible: true
+  signature: "not yet signed; local evaluation only"
+  payload:
+    dkms_sources: 9
+    overlays: 2
+    wireplumber_policies: 1
+  overlay_hashes:
+    uconsole-cm5-base.dtbo: 4bfb57559a57a7c57954c5dda4797441805aa52c6bba7ed0a87a576b63ef4cb9
+    uconsole-audio-cm5.dtbo: 86f02d250024669c6e11e6d764b831fa1051646907f942c82b0478210a37ac3a
 variants:
   - kernel_release: 6.18.45-1-rpi
     page_size: "4 KiB expected; runtime confirmation required"
@@ -55,4 +71,3 @@ variants:
       snd-soc-simple-amplifier.ko: f33c5b1fca05db6d850e4895d1ac0a3863edfd9e85704a0ee54f1f33fd181f39
       uconsole-audio-cm5.dtbo: 86f02d250024669c6e11e6d764b831fa1051646907f942c82b0478210a37ac3a
       uconsole-cm5-base.dtbo: 4bfb57559a57a7c57954c5dda4797441805aa52c6bba7ed0a87a576b63ef4cb9
-

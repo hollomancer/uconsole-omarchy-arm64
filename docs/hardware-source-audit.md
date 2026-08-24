@@ -121,6 +121,21 @@ These should be fixed or reconciled upstream before release packaging. Build
 PASS removes header compatibility as a blocker; module loading, probe order,
 real panel/audio/battery behavior and kernel-update rollback remain UNKNOWN.
 
+### Local evaluation package
+
+The selected delta is now wrapped by
+[`../packaging/uconsole-cm5-dkms/PKGBUILD`](../packaging/uconsole-cm5-dkms/PKGBUILD).
+It packages the nine DKMS sources, two compiled overlays and one system-wide
+WirePlumber policy without copying a kernel or editing boot configuration from
+a package hook. The source archive, headers and builder are all content-pinned.
+
+Two isolated builds were byte-identical. Package SHA-256:
+`a9058969381e40b6fc4edec9082aa628b2ba7c89504eeecdb0a7cd12a8a6718d`.
+The two packaged overlay hashes match the earlier source-only compile spike.
+This proves packaging reproducibility, not DKMS installation on hardware. The
+artifact is intentionally unsigned and local-only until repository licensing
+is clarified and a project signing-key policy is selected.
+
 ## Custom-kernel lineages
 
 ### `OuinOuin74/linux-clockwork-arch`

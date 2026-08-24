@@ -95,6 +95,16 @@ hardware_sources:
       url: https://github.com/yota9/uconsole-cm5/archive/bf7a0ab55654c96b74d013520e1196d39f66391a.tar.gz
       size_bytes: 49894
       sha256: bd03be0b091354bf6a047ca41d0c8198f124d4a12e396647fd0b0f257a7ee4e9
+    local_evaluation_package:
+      name: uconsole-cm5-dkms
+      version: 0.1.r0.gbf7a0ab-1
+      artifact: uconsole-cm5-dkms-0.1.r0.gbf7a0ab-1-aarch64.pkg.tar.xz
+      sha256: a9058969381e40b6fc4edec9082aa628b2ba7c89504eeecdb0a7cd12a8a6718d
+      builds_compared: 2
+      byte_reproducible: true
+      signed: false
+      distribution: "local evaluation only until upstream overlay/project-glue licensing is clarified"
+      build_script: research/build-uconsole-package.sh
     status: "selected with linux-rpi-16k; builds pass, licensing and hardware validation pending"
     build_results: research/dkms-build-results.yaml
     custom_kernel_delta: research/custom-kernel-delta.yaml

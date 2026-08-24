@@ -4,8 +4,10 @@ This repository defines a reproducible integration path for running the Omarchy
 desktop experience on a ClockworkPi uConsole with a Raspberry Pi Compute Module
 5. It is not an Omarchy ISO port.
 
-The current repository state contains research, architecture and a read-only
-validation tool. No installer or disk-writing script has been run, and the
+The current repository state contains research, architecture, read-only
+validation, a reproducible local hardware package and an offline-root hardware
+installer. Installer apply mode has been exercised only against deterministic
+fixtures. No script has been run against a real SD card or live system, and the
 existing bootable SD card has not been touched.
 
 ## Status
@@ -51,6 +53,26 @@ a pinned local rootfs, optionally verifies its detached signature, prints the
 image-build stages and can create a new sparse regular image. It cannot
 partition, mount or write a physical device.
 
+The selected Phase 1 hardware baseline is `linux-rpi-16k` plus the pinned
+`uconsole-cm5-dkms` package. Build and installation are separate:
+
+```sh
+research/build-uconsole-package.sh --check \
+  --headers linux-rpi-16k-headers-6.18.45-1-aarch64.pkg.tar.xz \
+  --source uconsole-cm5-bf7a0ab.tar.gz
+
+scripts/install-uconsole-hardware.sh --plan \
+  --root /mnt/uconsole-root \
+  --kernel linux-rpi-16k \
+  --kernel-package linux-rpi-16k-6.18.45-1-aarch64.pkg.tar.xz \
+  --headers-package linux-rpi-16k-headers-6.18.45-1-aarch64.pkg.tar.xz \
+  --board-package uconsole-cm5-dkms-0.1.r0.gbf7a0ab-1-aarch64.pkg.tar.xz
+```
+
+The installer defaults to read-only plan mode, rejects `/` and `/dev`, and
+activates the uConsole boot include only after the exact DKMS release and both
+overlays are present.
+
 ## Proposed repository structure
 
 The files marked `future` must not be implemented until their prerequisite
@@ -60,12 +82,13 @@ layer has passed on real hardware.
 .
 ├── README.md
 ├── config/
-│   └── arm64-overrides/
-│       ├── README.md
-│       ├── omarchy-core.packages         # current validation baseline
-│       ├── packages.toml                 # future: substitutions and omissions
-│       ├── pacman/                       # future: ARM repo/drop-in policy
-│       └── omarchy/                      # future: minimal userland overrides
+│   ├── arm64-overrides/
+│   │   ├── README.md
+│   │   ├── omarchy-core.packages         # current validation baseline
+│   │   ├── packages.toml                 # future: substitutions and omissions
+│   │   ├── pacman/                       # future: ARM repo/drop-in policy
+│   │   └── omarchy/                      # future: minimal userland overrides
+│   └── uconsole-hardware/                # current: boot fragment + package lock
 ├── docs/
 │   ├── architecture.md
 │   ├── custom-kernel-lessons.md
@@ -79,21 +102,26 @@ layer has passed on real hardware.
 │   └── upstream-inventory.md
 ├── research/
 │   ├── build-uconsole-dkms.sh
+│   ├── build-uconsole-package.sh
 │   ├── container/
+│   │   ├── build-board-package-inside.sh
 │   │   └── build-dkms-inside.sh
 │   ├── dkms-build-results.yaml
 │   ├── custom-kernel-delta.yaml
 │   ├── phase1-inputs.yaml
 │   ├── upstream-lock.yaml
 │   └── package-audit/                    # future: generated CSV and provenance
+├── packaging/
+│   └── uconsole-cm5-dkms/                # current: local-evaluation PKGBUILD
 ├── scripts/
 │   ├── bootstrap-arch.sh                 # current: verified image-only scaffold
-│   ├── install-uconsole-hardware.sh      # future: kernel/DT/firmware only
+│   ├── install-uconsole-hardware.sh      # current: offline kernel/DT layer
 │   ├── install-hyprland.sh               # future: minimal compositor layer
 │   ├── install-omarchy-arm64.sh          # future: userland only
 │   └── validate-system.sh                # current: read-only PASS/WARN/FAIL report
 └── tests/
     ├── test-bootstrap-arch.sh             # current image safety test
+    ├── test-install-uconsole-hardware.sh  # current transaction safety test
     ├── test-validate-system.sh            # current deterministic test
     └── fixtures/                          # current captured probe fixtures
 ```

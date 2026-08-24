@@ -126,6 +126,42 @@ log. The real-hardware cold-boot and kernel-update/rollback suite passes. The
 `dwc2` contradiction is treated as an input-device test, and no package hook
 mutates machine identity or partition configuration.
 
+#### Current package and installer interface
+
+The local-evaluation board package is built from the pinned source archive in
+the pinned aarch64 container:
+
+```sh
+research/build-uconsole-package.sh \
+  --headers /path/to/linux-rpi-16k-headers-6.18.45-1-aarch64.pkg.tar.xz \
+  --source /path/to/uconsole-cm5-bf7a0ab.tar.gz \
+  --output /new/output/directory
+```
+
+Two clean builds produced the same
+`uconsole-cm5-dkms-0.1.r0.gbf7a0ab-1-aarch64.pkg.tar.xz` SHA-256:
+`a9058969381e40b6fc4edec9082aa628b2ba7c89504eeecdb0a7cd12a8a6718d`.
+The package is not yet signed and must not be redistributed while upstream
+overlay/project-glue licensing is unresolved.
+
+Always run the hardware installer in plan mode first:
+
+```sh
+scripts/install-uconsole-hardware.sh --plan \
+  --root /mnt/uconsole-root \
+  --kernel linux-rpi-16k \
+  --kernel-package /path/to/linux-rpi-16k-6.18.45-1-aarch64.pkg.tar.xz \
+  --headers-package /path/to/linux-rpi-16k-headers-6.18.45-1-aarch64.pkg.tar.xz \
+  --board-package /path/to/uconsole-cm5-dkms-0.1.r0.gbf7a0ab-1-aarch64.pkg.tar.xz
+```
+
+Apply mode accepts only an offline Arch Linux ARM filesystem root. It requires
+`dkms`, `gcc` and `make` to be installed in that root and a functioning native
+aarch64 or binfmt `arch-chroot` environment. It removes only installed
+`linux-aarch64`, `linux-aarch64-headers` and `uboot-raspberrypi` conflicts,
+then installs the locked package set. If Pacman or DKMS fails, it exits before
+activating the uConsole boot include.
+
 ### P1.3 — Construct an image file, not the SD card
 
 Assumption: Pi firmware can boot a conventional FAT boot plus ext4 root layout.

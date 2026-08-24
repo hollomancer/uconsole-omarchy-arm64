@@ -1,0 +1,58 @@
+schema: 1
+observed_at: "2026-08-24"
+purpose: "Pinned Linux tooling for regular-image integration tests"
+builder:
+  image: menci/archlinuxarm:base-devel-20260819.32222611223
+  arm64_manifest_digest: sha256:26022929f3689861d451aebce558f3a7715a661ff669ca67589d36ae677299d0
+  preinstalled:
+    - name: util-linux
+      version: 2.42.2-1
+      sha256: 3c0222443a1802b2f489a568c74a6d0dbf6af35e331d8525ec9403aabaf8da44
+    - name: e2fsprogs
+      version: 1.47.4-1
+      sha256: 153046071f8abf1caf546a0352c7d268fb07a5b0ba0abd996de382adc8692842
+  mounted_inputs:
+    - name: dosfstools
+      version: 4.2-5
+      filename: dosfstools-4.2-5-aarch64.pkg.tar.xz
+      sha256: c41120c6c89469f259d5248ea2ed0a7bea19f8a38d493682f7ff82037a862c21
+    - name: mtools
+      version: "1:4.0.49-1"
+      filename: "mtools-1:4.0.49-1-aarch64.pkg.tar.xz"
+      sha256: 27b3fec3314df29d943d80f97e060d852dd60ba840f8188f25c5993e85c34f3b
+repository_databases:
+  core_sha256: e1dc3339e7b9baf3a715509837aff8e73495cfba2d04833ee41525892b3c1b96
+  extra_sha256: 2a587fefde8735bbe6c0c5cb7304a2b666268ec947a33743e30d2c8517684964
+integration:
+  runner: research/test-image-builder.sh
+  fixture_image_size_mib: 2048
+  final_result: PASS
+  final_image_sha256: 7ceac78a399b3f871315ef8aa54b6f349859d5e21b1a56baed0abc5fb6ed2723
+  final_boot_manifest_sha256: 2660b3735953a56c4c82497ec85ef5e91097a7353bce48ee1989705e801a030a
+  verified:
+    - regular-file-only output boundary
+    - exact MBR disk ID and partition geometry
+    - exact FAT volume ID and ext4 UUID
+    - fsck.fat and e2fsck clean
+    - read-only remount of both filesystems
+    - rendered PARTUUID fstab and kernel command line
+    - preserved hardware-selection state and root payload
+    - embedded boot-file manifest and external image manifest
+    - prepared source root unchanged
+  failures_recorded:
+    - attempt: 1
+      result: FAIL
+      finding: "OrbStack accepted the MBR but losetup --partscan did not expose partition devices"
+      smallest_change: "Use independent byte-offset/sizelimit loop devices for the boot and root ranges"
+    - attempt: 2
+      result: FAIL
+      finding: "bsdtar -p tried to restore unsupported BSD file flags on ext4"
+      smallest_change: "Preserve ACLs, xattrs and numeric owners but explicitly disable BSD flags"
+    - attempt: 3
+      result: FAIL
+      finding: "dosfstools 4.2 option order let --invariant replace the requested FAT ID with 1234ABCD"
+      smallest_change: "Place --invariant before the explicit -i volume ID"
+    - attempt: 4
+      result: PASS
+      finding: "Image construction, filesystem checks and read-only inspection all passed"
+result: "PASS for deterministic fixture; full signed Arch root and physical CM5 boot remain pending"

@@ -1,0 +1,422 @@
+#!/usr/bin/env bash
+
+# Build a bootable Raspberry Pi disk image from a prepared offline Arch Linux
+# ARM root. The output is always a new regular .img file. Physical devices,
+# existing outputs and the live root are rejected.
+
+set -u
+set -o pipefail
+umask 022
+
+SCRIPT_DIR=""
+if ! SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd); then
+  printf 'Unable to resolve script directory\n' >&2
+  exit 2
+fi
+REPO_ROOT=""
+if ! REPO_ROOT=$(cd -- "$SCRIPT_DIR/.." && pwd); then
+  printf 'Unable to resolve repository root\n' >&2
+  exit 2
+fi
+# shellcheck source=scripts/lib/install-common.sh
+source "$SCRIPT_DIR/lib/install-common.sh"
+
+ACTION='plan'
+ACTION_SET=0
+ROOT_TREE=''
+OUTPUT=''
+SIZE_MIB=8192
+BOOT_MIB=512
+DISK_ID=''
+BOOT_ID=''
+ROOT_UUID=''
+SOURCE_DATE_EPOCH=''
+FSTAB_TEMPLATE="$REPO_ROOT/config/image/fstab.template"
+CMDLINE_TEMPLATE="$REPO_ROOT/config/image/cmdline.txt.template"
+
+EXPECTED_KERNEL='linux-rpi-16k'
+EXPECTED_KERNEL_VERSION='6.18.45-1'
+EXPECTED_KERNEL_RELEASE='6.18.45-1-rpi-16k'
+EXPECTED_BOARD_COMMIT='bf7a0ab55654c96b74d013520e1196d39f66391a'
+
+usage() {
+  printf '%s\n' \
+    'Usage: build-image.sh --root-tree DIR --output FILE --disk-id HEX8 \' \
+    '  --boot-id HEX8 --root-uuid UUID --source-date-epoch EPOCH [options]' \
+    '' \
+    'Actions:' \
+    '  --plan                   Validate and print image geometry (default)' \
+    '  --build                  Build a new regular image (Linux root only)' \
+    '' \
+    'Options:' \
+    '  --size-mib N             Image size in MiB (default: 8192; minimum: 2048)' \
+    '  --boot-mib N             FAT boot size in MiB (default: 512; minimum: 256)' \
+    '  --fstab-template FILE    Alternate complete template (tests)' \
+    '  --cmdline-template FILE  Alternate complete template (tests)' \
+    '  --help                   Show this help' \
+    '' \
+    'The builder never accepts a block device. It preserves the prepared root' \
+    'tree and retains a failed .partial image for diagnosis.'
+}
+
+set_action() {
+  local requested=$1
+  if [[ $ACTION_SET -eq 1 && "$ACTION" != "$requested" ]]; then
+    install_common_die 'choose exactly one action'
+  fi
+  ACTION=$requested
+  ACTION_SET=1
+}
+
+while (($# > 0)); do
+  case "$1" in
+    --plan) set_action plan; shift ;;
+    --build) set_action build; shift ;;
+    --root-tree) (($# >= 2)) || install_common_die '--root-tree requires a directory'; ROOT_TREE=$2; shift 2 ;;
+    --output) (($# >= 2)) || install_common_die '--output requires a file'; OUTPUT=$2; shift 2 ;;
+    --size-mib) (($# >= 2)) || install_common_die '--size-mib requires an integer'; SIZE_MIB=$2; shift 2 ;;
+    --boot-mib) (($# >= 2)) || install_common_die '--boot-mib requires an integer'; BOOT_MIB=$2; shift 2 ;;
+    --disk-id) (($# >= 2)) || install_common_die '--disk-id requires eight hexadecimal characters'; DISK_ID=$2; shift 2 ;;
+    --boot-id) (($# >= 2)) || install_common_die '--boot-id requires eight hexadecimal characters'; BOOT_ID=$2; shift 2 ;;
+    --root-uuid) (($# >= 2)) || install_common_die '--root-uuid requires a UUID'; ROOT_UUID=$2; shift 2 ;;
+    --source-date-epoch) (($# >= 2)) || install_common_die '--source-date-epoch requires an integer'; SOURCE_DATE_EPOCH=$2; shift 2 ;;
+    --fstab-template) (($# >= 2)) || install_common_die '--fstab-template requires a file'; FSTAB_TEMPLATE=$2; shift 2 ;;
+    --cmdline-template) (($# >= 2)) || install_common_die '--cmdline-template requires a file'; CMDLINE_TEMPLATE=$2; shift 2 ;;
+    --device|--write-device|--i-understand-this-erases-the-device)
+      install_common_die "$1 is forbidden; this builder accepts a new regular image only"
+      ;;
+    --help|-h) usage; exit 0 ;;
+    *) install_common_die "unknown option: $1" ;;
+  esac
+done
+
+[[ -n "$OUTPUT" ]] || install_common_die '--output is required'
+case "$OUTPUT" in
+  /|/dev|/dev/*) install_common_die "unsafe output path: $OUTPUT" ;;
+  *.img) ;;
+  *) install_common_die 'output path must end in .img' ;;
+esac
+OUTPUT_NAME=${OUTPUT##*/}
+[[ "$OUTPUT_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*\.img$ ]] || install_common_die 'output filename must be JSON-safe and contain only letters, digits, dot, underscore or hyphen'
+[[ ! -e "$OUTPUT" && ! -L "$OUTPUT" ]] || install_common_die "refusing existing output path: $OUTPUT"
+MANIFEST_OUTPUT="${OUTPUT}.manifest.json"
+[[ ! -e "$MANIFEST_OUTPUT" && ! -L "$MANIFEST_OUTPUT" ]] || install_common_die "refusing existing manifest path: $MANIFEST_OUTPUT"
+OUTPUT_PARENT=${OUTPUT%/*}
+if [[ "$OUTPUT_PARENT" == "$OUTPUT" ]]; then OUTPUT_PARENT='.'; fi
+[[ -d "$OUTPUT_PARENT" && -w "$OUTPUT_PARENT" ]] || install_common_die "output parent is not writable: $OUTPUT_PARENT"
+OUTPUT_PARENT=$(cd -- "$OUTPUT_PARENT" && pwd -P) || install_common_die 'unable to resolve output parent'
+case "$OUTPUT_PARENT" in /dev|/dev/*|/proc|/proc/*|/sys|/sys/*) install_common_die "unsafe resolved output parent: $OUTPUT_PARENT" ;; esac
+OUTPUT="$OUTPUT_PARENT/$OUTPUT_NAME"
+MANIFEST_OUTPUT="${OUTPUT}.manifest.json"
+
+case "$SIZE_MIB:$BOOT_MIB:$SOURCE_DATE_EPOCH" in *[!0-9:]*) install_common_die 'sizes and source-date-epoch must be decimal integers' ;; esac
+((SIZE_MIB >= 2048)) || install_common_die '--size-mib must be at least 2048'
+((BOOT_MIB >= 256)) || install_common_die '--boot-mib must be at least 256'
+((SIZE_MIB > BOOT_MIB + 512)) || install_common_die 'image must leave at least 512 MiB beyond the boot partition'
+((SOURCE_DATE_EPOCH > 0)) || install_common_die '--source-date-epoch must be positive'
+
+DISK_ID=$(printf '%s' "$DISK_ID" | tr '[:upper:]' '[:lower:]')
+BOOT_ID=$(printf '%s' "$BOOT_ID" | tr '[:lower:]' '[:upper:]')
+[[ "$DISK_ID" =~ ^[0-9a-f]{8}$ && "$DISK_ID" != '00000000' ]] || install_common_die '--disk-id must be eight nonzero hexadecimal characters'
+[[ "$BOOT_ID" =~ ^[0-9A-F]{8}$ && "$BOOT_ID" != '00000000' ]] || install_common_die '--boot-id must be eight nonzero hexadecimal characters'
+[[ "$ROOT_UUID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$ ]] || install_common_die '--root-uuid is not an RFC 4122 UUID'
+ROOT_UUID=$(printf '%s' "$ROOT_UUID" | tr '[:upper:]' '[:lower:]')
+
+install_common_require_file 'fstab template' "$FSTAB_TEMPLATE"
+install_common_require_file 'cmdline template' "$CMDLINE_TEMPLATE"
+[[ $(grep -Fo '@ROOT_PARTUUID@' "$FSTAB_TEMPLATE" | wc -l | tr -d ' ') -eq 1 ]] || install_common_die 'fstab template must contain one @ROOT_PARTUUID@ token'
+[[ $(grep -Fo '@BOOT_PARTUUID@' "$FSTAB_TEMPLATE" | wc -l | tr -d ' ') -eq 1 ]] || install_common_die 'fstab template must contain one @BOOT_PARTUUID@ token'
+[[ $(grep -Fo '@ROOT_PARTUUID@' "$CMDLINE_TEMPLATE" | wc -l | tr -d ' ') -eq 1 ]] || install_common_die 'cmdline template must contain one @ROOT_PARTUUID@ token'
+[[ $(wc -l < "$CMDLINE_TEMPLATE" | tr -d ' ') -eq 1 ]] || install_common_die 'cmdline template must contain exactly one line'
+
+ROOT_TREE=$(install_common_require_offline_arch_root "$ROOT_TREE")
+case "$OUTPUT_PARENT/" in "$ROOT_TREE"/*) install_common_die 'output parent must not be the prepared root or one of its descendants' ;; esac
+HARDWARE_STATE="$ROOT_TREE/var/lib/uconsole-omarchy-arm64/hardware-selection"
+install_common_require_file 'hardware selection state' "$HARDWARE_STATE"
+state_field() {
+  local key=$1
+  awk -F '=' -v wanted="$key" '$1 == wanted { count++; value=substr($0, index($0, "=") + 1) } END { if (count == 1 && value != "") print value; else exit 1 }' "$HARDWARE_STATE"
+}
+[[ "$(state_field kernel_package)" == "$EXPECTED_KERNEL" ]] || install_common_die 'hardware state does not select linux-rpi-16k'
+[[ "$(state_field kernel_version)" == "$EXPECTED_KERNEL_VERSION" ]] || install_common_die 'hardware state has an unexpected kernel version'
+[[ "$(state_field kernel_release)" == "$EXPECTED_KERNEL_RELEASE" ]] || install_common_die 'hardware state has an unexpected kernel release'
+[[ "$(state_field board_source_commit)" == "$EXPECTED_BOARD_COMMIT" ]] || install_common_die 'hardware state has an unaudited board source commit'
+
+for required in \
+  "$ROOT_TREE/boot/config.txt" \
+  "$ROOT_TREE/boot/kernel8.img" \
+  "$ROOT_TREE/boot/initramfs-linux.img" \
+  "$ROOT_TREE/boot/start4.elf" \
+  "$ROOT_TREE/boot/fixup4.dat" \
+  "$ROOT_TREE/boot/bcm2712-rpi-cm5-cm5io.dtb" \
+  "$ROOT_TREE/boot/overlays/vc4-kms-v3d.dtbo" \
+  "$ROOT_TREE/boot/uconsole-cm5.txt" \
+  "$ROOT_TREE/boot/overlays/uconsole-cm5-base.dtbo" \
+  "$ROOT_TREE/boot/overlays/uconsole-audio-cm5.dtbo"; do
+  [[ -s "$required" && ! -L "$required" ]] || install_common_die "required boot artifact is missing, empty or a symlink: $required"
+done
+[[ -f "$ROOT_TREE/etc/fstab" && ! -L "$ROOT_TREE/etc/fstab" ]] || install_common_die 'prepared root has no safe /etc/fstab'
+[[ -f "$ROOT_TREE/boot/cmdline.txt" && ! -L "$ROOT_TREE/boot/cmdline.txt" ]] || install_common_die 'prepared root has no safe /boot/cmdline.txt'
+if find "$ROOT_TREE/boot" -type l -print -quit | grep -q .; then
+  install_common_die 'FAT boot source contains a symbolic link, which cannot be represented faithfully'
+fi
+[[ $(grep -Fxc '# BEGIN uconsole-omarchy-arm64 hardware include' "$ROOT_TREE/boot/config.txt") -eq 1 ]] || install_common_die 'boot config lacks exactly one managed hardware include marker'
+grep -Fqx 'include uconsole-cm5.txt' "$ROOT_TREE/boot/config.txt" || install_common_die 'boot config does not include uconsole-cm5.txt'
+
+SECTOR_SIZE=512
+SECTORS_PER_MIB=2048
+FIRST_SECTOR=8192
+TOTAL_SECTORS=$((SIZE_MIB * SECTORS_PER_MIB))
+BOOT_SECTORS=$((BOOT_MIB * SECTORS_PER_MIB))
+ROOT_START=$((FIRST_SECTOR + BOOT_SECTORS))
+END_RESERVE=2048
+ROOT_SECTORS=$((TOTAL_SECTORS - ROOT_START - END_RESERVE))
+((ROOT_SECTORS > 0)) || install_common_die 'computed root partition is empty'
+BOOT_PARTUUID="${DISK_ID}-01"
+ROOT_PARTUUID="${DISK_ID}-02"
+
+ROOT_BYTES=$(du -sk "$ROOT_TREE" | awk '{print $1 * 1024}') || install_common_die 'unable to measure prepared root tree'
+ROOT_CAPACITY=$((ROOT_SECTORS * SECTOR_SIZE))
+REQUIRED_CAPACITY=$((ROOT_BYTES + 512 * 1024 * 1024))
+((ROOT_CAPACITY >= REQUIRED_CAPACITY)) || install_common_die "root partition lacks 512 MiB headroom: content=$ROOT_BYTES capacity=$ROOT_CAPACITY"
+BOOT_BYTES=$(du -sk "$ROOT_TREE/boot" | awk '{print $1 * 1024}') || install_common_die 'unable to measure boot tree'
+BOOT_CAPACITY=$((BOOT_SECTORS * SECTOR_SIZE))
+REQUIRED_BOOT_CAPACITY=$((BOOT_BYTES + 32 * 1024 * 1024))
+((BOOT_CAPACITY >= REQUIRED_BOOT_CAPACITY)) || install_common_die "boot partition lacks 32 MiB headroom: content=$BOOT_BYTES capacity=$BOOT_CAPACITY"
+
+printf '%s\n' \
+  '[PASS] prepared root         Arch Linux ARM identity and exact hardware state present' \
+  '[PASS] boot artifacts        kernel, CM5 DTB, uConsole overlays and managed include present' \
+  "[PASS] output safety        new regular image path under $OUTPUT_PARENT" \
+  "[PASS] root headroom        content=$ROOT_BYTES capacity=$ROOT_CAPACITY" \
+  "[PASS] boot headroom        content=$BOOT_BYTES capacity=$BOOT_CAPACITY" \
+  '' \
+  "Action: $ACTION" \
+  "Output: $OUTPUT" \
+  "Image size: $SIZE_MIB MiB ($TOTAL_SECTORS sectors)" \
+  "Disk ID: $DISK_ID" \
+  "Boot: start=$FIRST_SECTOR sectors=$BOOT_SECTORS PARTUUID=$BOOT_PARTUUID FAT-ID=$BOOT_ID" \
+  "Root: start=$ROOT_START sectors=$ROOT_SECTORS PARTUUID=$ROOT_PARTUUID UUID=$ROOT_UUID" \
+  ''
+
+if [[ "$ACTION" == 'plan' ]]; then
+  printf '%s\n' \
+    'Plan complete. The prepared root, output path, loop devices and physical devices were unchanged.' \
+    'Build mode is Linux/root-only and still refuses every /dev output.'
+  exit 0
+fi
+
+[[ "$(uname -s)" == 'Linux' ]] || install_common_die '--build requires Linux'
+[[ $EUID -eq 0 ]] || install_common_die '--build requires root for loop and mount operations'
+for command_name in sfdisk losetup mkfs.fat fsck.fat mkfs.ext4 e2fsck mount umount mountpoint bsdtar sha256sum findmnt; do
+  command -v "$command_name" >/dev/null 2>&1 || install_common_die "required build command is missing: $command_name"
+done
+
+NESTED_MOUNTS=''
+NESTED_MOUNTS=$(findmnt -rn -R -o TARGET "$ROOT_TREE" 2>/dev/null)
+while IFS= read -r mount_target; do
+  [[ -n "$mount_target" ]] || continue
+  [[ "$mount_target" == "$ROOT_TREE" ]] || install_common_die "prepared root contains a nested mount: $mount_target"
+done <<< "$NESTED_MOUNTS"
+
+PARTIAL="${OUTPUT}.partial.$$"
+[[ ! -e "$PARTIAL" && ! -L "$PARTIAL" ]] || install_common_die "partial output already exists: $PARTIAL"
+MOUNT_ROOT=$(mktemp -d "$OUTPUT_PARENT/.uconsole-image-mount.XXXXXX") || install_common_fail 'unable to create image mount directory'
+BOOT_LOOP_DEVICE=''
+ROOT_LOOP_DEVICE=''
+BOOT_MOUNTED=0
+ROOT_MOUNTED=0
+
+cleanup_resources() {
+  local cleanup_status=0
+  if [[ $BOOT_MOUNTED -eq 1 ]]; then
+    if mountpoint -q "$MOUNT_ROOT/boot"; then
+      if ! umount "$MOUNT_ROOT/boot"; then
+        printf 'ERROR: unable to unmount temporary boot filesystem: %s\n' "$MOUNT_ROOT/boot" >&2
+        cleanup_status=1
+      fi
+    fi
+    BOOT_MOUNTED=0
+  fi
+  if [[ $ROOT_MOUNTED -eq 1 ]]; then
+    if mountpoint -q "$MOUNT_ROOT"; then
+      if ! umount "$MOUNT_ROOT"; then
+        printf 'ERROR: unable to unmount temporary root filesystem: %s\n' "$MOUNT_ROOT" >&2
+        cleanup_status=1
+      fi
+    fi
+    ROOT_MOUNTED=0
+  fi
+  if [[ -n "$ROOT_LOOP_DEVICE" ]]; then
+    if ! losetup -d "$ROOT_LOOP_DEVICE"; then
+      printf 'ERROR: unable to detach temporary root loop device: %s\n' "$ROOT_LOOP_DEVICE" >&2
+      cleanup_status=1
+    fi
+    ROOT_LOOP_DEVICE=''
+  fi
+  if [[ -n "$BOOT_LOOP_DEVICE" ]]; then
+    if ! losetup -d "$BOOT_LOOP_DEVICE"; then
+      printf 'ERROR: unable to detach temporary boot loop device: %s\n' "$BOOT_LOOP_DEVICE" >&2
+      cleanup_status=1
+    fi
+    BOOT_LOOP_DEVICE=''
+  fi
+  if [[ -d "$MOUNT_ROOT" && $BOOT_MOUNTED -eq 0 && $ROOT_MOUNTED -eq 0 ]]; then
+    if ! rmdir "$MOUNT_ROOT"; then
+      printf 'ERROR: unable to remove temporary mount directory: %s\n' "$MOUNT_ROOT" >&2
+      cleanup_status=1
+    fi
+  fi
+  return "$cleanup_status"
+}
+cleanup_on_exit() {
+  local status=$?
+  trap - EXIT INT TERM
+  if ! cleanup_resources && [[ $status -eq 0 ]]; then status=1; fi
+  exit "$status"
+}
+trap cleanup_on_exit EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+truncate -s "${SIZE_MIB}M" "$PARTIAL" || install_common_fail 'unable to create sparse partial image'
+SFDISK_INPUT="label: dos
+label-id: 0x${DISK_ID}
+unit: sectors
+
+start=${FIRST_SECTOR}, size=${BOOT_SECTORS}, type=c, bootable
+start=${ROOT_START}, size=${ROOT_SECTORS}, type=83"
+if ! printf '%s\n' "$SFDISK_INPUT" | sfdisk "$PARTIAL"; then
+  install_common_fail 'partition table creation failed'
+fi
+
+BOOT_OFFSET=$((FIRST_SECTOR * SECTOR_SIZE))
+BOOT_SIZE_BYTES=$((BOOT_SECTORS * SECTOR_SIZE))
+ROOT_OFFSET=$((ROOT_START * SECTOR_SIZE))
+ROOT_SIZE_BYTES=$((ROOT_SECTORS * SECTOR_SIZE))
+BOOT_LOOP_DEVICE=$(losetup --find --show --offset "$BOOT_OFFSET" --sizelimit "$BOOT_SIZE_BYTES" "$PARTIAL") || install_common_fail 'unable to allocate boot-range loop device'
+ROOT_LOOP_DEVICE=$(losetup --find --show --offset "$ROOT_OFFSET" --sizelimit "$ROOT_SIZE_BYTES" "$PARTIAL") || install_common_fail 'unable to allocate root-range loop device'
+BOOT_DEVICE=$BOOT_LOOP_DEVICE
+ROOT_DEVICE=$ROOT_LOOP_DEVICE
+
+mkfs.fat -F 32 --invariant -i "$BOOT_ID" -n UCONSOLE "$BOOT_DEVICE" || install_common_fail 'FAT filesystem creation failed'
+E2FSPROGS_FAKE_TIME="$SOURCE_DATE_EPOCH" mkfs.ext4 -F -L alarm-root -U "$ROOT_UUID" \
+  -E lazy_itable_init=0,lazy_journal_init=0 "$ROOT_DEVICE" || install_common_fail 'ext4 filesystem creation failed'
+
+mount -o noatime "$ROOT_DEVICE" "$MOUNT_ROOT" || install_common_fail 'unable to mount temporary root filesystem'
+ROOT_MOUNTED=1
+mkdir -p "$MOUNT_ROOT/boot" || install_common_fail 'unable to create boot mount point'
+mount -o noatime "$BOOT_DEVICE" "$MOUNT_ROOT/boot" || install_common_fail 'unable to mount temporary boot filesystem'
+BOOT_MOUNTED=1
+
+bsdtar -cpf - --acls --xattrs --no-fflags --numeric-owner --exclude './boot/*' --exclude './etc/fstab' -C "$ROOT_TREE" . | \
+  bsdtar -xpf - --acls --xattrs --no-fflags --numeric-owner -C "$MOUNT_ROOT"
+COPY_STATUS=("${PIPESTATUS[@]}")
+[[ ${COPY_STATUS[0]} -eq 0 && ${COPY_STATUS[1]} -eq 0 ]] || install_common_fail "root tree copy failed: create=${COPY_STATUS[0]} extract=${COPY_STATUS[1]}"
+cp -r "$ROOT_TREE/boot/." "$MOUNT_ROOT/boot/" || install_common_fail 'boot tree copy failed'
+
+render_template() {
+  local template=$1
+  local destination=$2
+  sed -e "s/@BOOT_PARTUUID@/$BOOT_PARTUUID/g" -e "s/@ROOT_PARTUUID@/$ROOT_PARTUUID/g" "$template" > "$destination" || return 1
+  if grep -Eq '@[A-Z0-9_]+@' "$destination"; then return 1; fi
+}
+render_template "$FSTAB_TEMPLATE" "$MOUNT_ROOT/etc/fstab" || install_common_fail 'unable to render fstab'
+render_template "$CMDLINE_TEMPLATE" "$MOUNT_ROOT/boot/cmdline.txt" || install_common_fail 'unable to render cmdline.txt'
+chmod 0644 "$MOUNT_ROOT/etc/fstab" "$MOUNT_ROOT/boot/cmdline.txt" || install_common_fail 'unable to set generated file modes'
+
+IMAGE_STATE_DIR="$MOUNT_ROOT/var/lib/uconsole-omarchy-arm64"
+mkdir -p "$IMAGE_STATE_DIR" || install_common_fail 'unable to create image state directory'
+FSTAB_SHA=$(sha256sum "$FSTAB_TEMPLATE" | awk '{print $1}')
+CMDLINE_SHA=$(sha256sum "$CMDLINE_TEMPLATE" | awk '{print $1}')
+{
+  printf 'disk_id=%s\n' "$DISK_ID"
+  printf 'boot_partuuid=%s\n' "$BOOT_PARTUUID"
+  printf 'root_partuuid=%s\n' "$ROOT_PARTUUID"
+  printf 'boot_id=%s\n' "$BOOT_ID"
+  printf 'root_uuid=%s\n' "$ROOT_UUID"
+  printf 'source_date_epoch=%s\n' "$SOURCE_DATE_EPOCH"
+  printf 'fstab_template_sha256=%s\n' "$FSTAB_SHA"
+  printf 'cmdline_template_sha256=%s\n' "$CMDLINE_SHA"
+} > "$IMAGE_STATE_DIR/image-selection" || install_common_fail 'unable to write image selection state'
+chmod 0644 "$IMAGE_STATE_DIR/image-selection" || install_common_fail 'unable to set image state mode'
+
+BOOT_MANIFEST="$MOUNT_ROOT/boot/uconsole-build-manifest.json"
+BOOT_ROWS="$MOUNT_ROOT/var/tmp/uconsole-boot-files.$$"
+mkdir -p "$MOUNT_ROOT/var/tmp" || install_common_fail 'unable to create temporary manifest directory'
+find "$MOUNT_ROOT/boot" -type f ! -name 'uconsole-build-manifest.json' -print | LC_ALL=C sort > "$BOOT_ROWS" || install_common_fail 'unable to list boot files'
+BOOT_FILE_COUNT=$(wc -l < "$BOOT_ROWS" | tr -d ' ')
+{
+  printf '{\n'
+  printf '  "schema": 1,\n'
+  printf '  "source_date_epoch": %s,\n' "$SOURCE_DATE_EPOCH"
+  printf '  "disk_id": "%s",\n' "$DISK_ID"
+  printf '  "boot_partuuid": "%s",\n' "$BOOT_PARTUUID"
+  printf '  "root_partuuid": "%s",\n' "$ROOT_PARTUUID"
+  printf '  "boot_id": "%s",\n' "$BOOT_ID"
+  printf '  "root_uuid": "%s",\n' "$ROOT_UUID"
+  printf '  "boot_files": [\n'
+  row_number=0
+  while IFS= read -r boot_file; do
+    relative=${boot_file#"$MOUNT_ROOT/boot/"}
+    case "$relative" in *'"'*|*'\\'*|*$'\n'*|*$'\r'*) install_common_fail "boot filename is not JSON-safe: $relative" ;; esac
+    digest=$(sha256sum "$boot_file" | awk '{print $1}')
+    size=$(stat -c '%s' "$boot_file")
+    row_number=$((row_number + 1))
+    if [[ $row_number -lt $BOOT_FILE_COUNT ]]; then comma=','; else comma=''; fi
+    printf '    {"path": "%s", "size": %s, "sha256": "%s"}%s\n' "$relative" "$size" "$digest" "$comma"
+  done < "$BOOT_ROWS"
+  printf '  ]\n'
+  printf '}\n'
+} > "$BOOT_MANIFEST" || install_common_fail 'unable to write boot manifest'
+rm -f -- "$BOOT_ROWS" || install_common_fail 'unable to remove temporary boot file list'
+
+CONFIG_SHA=$(sha256sum "$MOUNT_ROOT/boot/config.txt" | awk '{print $1}')
+RENDERED_CMDLINE_SHA=$(sha256sum "$MOUNT_ROOT/boot/cmdline.txt" | awk '{print $1}')
+RENDERED_FSTAB_SHA=$(sha256sum "$MOUNT_ROOT/etc/fstab" | awk '{print $1}')
+BOOT_MANIFEST_SHA=$(sha256sum "$BOOT_MANIFEST" | awk '{print $1}')
+sync
+
+if ! umount "$MOUNT_ROOT/boot"; then install_common_fail 'unable to unmount completed boot filesystem'; fi
+BOOT_MOUNTED=0
+if ! umount "$MOUNT_ROOT"; then install_common_fail 'unable to unmount completed root filesystem'; fi
+ROOT_MOUNTED=0
+fsck.fat -n "$BOOT_DEVICE" || install_common_fail 'FAT verification failed'
+E2FSPROGS_FAKE_TIME="$SOURCE_DATE_EPOCH" e2fsck -fn "$ROOT_DEVICE" || install_common_fail 'ext4 verification failed'
+if ! losetup -d "$ROOT_LOOP_DEVICE"; then install_common_fail 'unable to detach completed root loop device'; fi
+ROOT_LOOP_DEVICE=''
+if ! losetup -d "$BOOT_LOOP_DEVICE"; then install_common_fail 'unable to detach completed boot loop device'; fi
+BOOT_LOOP_DEVICE=''
+trap - EXIT INT TERM
+rmdir "$MOUNT_ROOT" || install_common_fail 'unable to remove temporary mount directory'
+
+IMAGE_SHA=$(sha256sum "$PARTIAL" | awk '{print $1}')
+IMAGE_BYTES=$(stat -c '%s' "$PARTIAL")
+MANIFEST_TMP="${MANIFEST_OUTPUT}.partial.$$"
+{
+  printf '{\n'
+  printf '  "schema": 1,\n'
+  printf '  "image": "%s",\n' "$OUTPUT_NAME"
+  printf '  "image_size": %s,\n' "$IMAGE_BYTES"
+  printf '  "image_sha256": "%s",\n' "$IMAGE_SHA"
+  printf '  "source_date_epoch": %s,\n' "$SOURCE_DATE_EPOCH"
+  printf '  "disk_id": "%s",\n' "$DISK_ID"
+  printf '  "boot": {"start_sector": %s, "sectors": %s, "partuuid": "%s", "volume_id": "%s"},\n' "$FIRST_SECTOR" "$BOOT_SECTORS" "$BOOT_PARTUUID" "$BOOT_ID"
+  printf '  "root": {"start_sector": %s, "sectors": %s, "partuuid": "%s", "uuid": "%s"},\n' "$ROOT_START" "$ROOT_SECTORS" "$ROOT_PARTUUID" "$ROOT_UUID"
+  printf '  "boot_file_count": %s,\n' "$BOOT_FILE_COUNT"
+  printf '  "boot_manifest_sha256": "%s",\n' "$BOOT_MANIFEST_SHA"
+  printf '  "config_txt_sha256": "%s",\n' "$CONFIG_SHA"
+  printf '  "cmdline_txt_sha256": "%s",\n' "$RENDERED_CMDLINE_SHA"
+  printf '  "fstab_sha256": "%s"\n' "$RENDERED_FSTAB_SHA"
+  printf '}\n'
+} > "$MANIFEST_TMP" || install_common_fail 'unable to write external image manifest'
+chmod 0644 "$MANIFEST_TMP" || install_common_fail 'unable to set external manifest mode'
+mv "$PARTIAL" "$OUTPUT" || install_common_fail 'unable to promote completed image'
+mv "$MANIFEST_TMP" "$MANIFEST_OUTPUT" || install_common_fail 'unable to publish external image manifest'
+
+printf '%s\n' \
+  "[PASS] image                 $OUTPUT sha256=$IMAGE_SHA" \
+  "[PASS] filesystems           FAT-ID=$BOOT_ID ext4-UUID=$ROOT_UUID" \
+  "[PASS] boot manifest         files=$BOOT_FILE_COUNT sha256=$BOOT_MANIFEST_SHA" \
+  "[PASS] external manifest     $MANIFEST_OUTPUT" \
+  '[PASS] device boundary       no physical-device output was accepted'

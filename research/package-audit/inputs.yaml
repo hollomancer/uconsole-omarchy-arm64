@@ -1,0 +1,50 @@
+schema: 1
+observed_at: "2026-08-24"
+architecture: aarch64
+purpose: "Reproducible evidence for the complete Omarchy Quattro base-package classification"
+
+omarchy_source:
+  commit: d99d4fc6de0bc99d48c9935724fa19d7fb41ae54
+  archive_url: https://github.com/basecamp/omarchy/archive/d99d4fc6de0bc99d48c9935724fa19d7fb41ae54.tar.gz
+  archive_size: 70979927
+  archive_sha256: 3b60bb6d5694478963c167571457ee266cdba1e7791395a80f2f26074d72d6eb
+  package_list: install/omarchy-base.packages
+  unique_packages: 148
+
+omarchy_package_sources:
+  commit: 40ddd6be195a704c1e4187fc7ecd3f2c8091e37b
+  archive_url: https://github.com/omacom-io/omarchy-pkgs/archive/40ddd6be195a704c1e4187fc7ecd3f2c8091e37b.tar.gz
+  archive_size: 442887
+  archive_sha256: bca5eb81e4bac833a4a6513b1e16f75dedf9af4d05b4b275812e6912fb92c553
+
+arch_linux_arm_databases:
+  - repository: core
+    sha256: e1dc3339e7b9baf3a715509837aff8e73495cfba2d04833ee41525892b3c1b96
+  - repository: extra
+    sha256: 2a587fefde8735bbe6c0c5cb7304a2b666268ec947a33743e30d2c8517684964
+  - repository: alarm
+    sha256: 783c630bc48aafde125542c3a981379d2cdbc515303e68b3a523bd1a484406f2
+  - repository: aur
+    sha256: bdd038c7c32dc6de8977c65659249f3ca4b498c303ded46750eb6ab6f1dad187
+
+result:
+  status: PASS
+  exact_name_matches: 121
+  classified: 148
+  unknown_dispositions: 0
+  resolutions:
+    archlinuxarm: 121
+    replacement: 2
+    local_build: 1
+    source_build: 14
+    deferred: 5
+    omitted: 5
+  core_source_builds_remaining:
+    - omacalc
+    - omacut
+    - ttf-ia-writer
+    - ttfx
+    - yaru-icon-theme
+  generated_matrix: omarchy-base-packages.tsv
+  generated_matrix_sha256: d5361d3ffbfe1b9e9cde9916b352431c9cb8612bf06c10d443ae286637c09778
+  audit_script: ../audit-omarchy-base-packages.sh

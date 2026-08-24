@@ -1,0 +1,149 @@
+# package|category|required_group|resolution|resolved_name|source|version|architecture|runtime_gate|functional_difference
+aether|omarchy-specific|optional|source-build|aether|omarchy-pkgs|pending-build|aarch64|phase5-optional|Not installed until its pinned ARM package builds and passes runtime checks
+alsa-utils|system-package|phase1-owned|archlinuxarm|alsa-utils|extra|1.2.16-1|aarch64|phase1-hardware|None
+asdcontrol|system-package|omit|omit|asdcontrol|omarchy-pkgs|not-installed|x86_64|not-applicable|Apple Studio Display controls are not relevant to the internal uConsole panel
+avahi|system-package|conditional|archlinuxarm|avahi|extra|1:0.9rc5-1|aarch64|phase5-optional|None
+bash-completion|shell-tooling|core|archlinuxarm|bash-completion|extra|2.18.0-1|any|phase5-core|None
+bat|shell-tooling|core|archlinuxarm|bat|extra|0.26.1-2|aarch64|phase5-core|None
+bluez|system-package|phase1-owned|archlinuxarm|bluez|extra|5.87-2|aarch64|phase1-hardware|None
+bluez-tools|system-package|phase1-owned|archlinuxarm|bluez-tools|extra|0.2.0-6|aarch64|phase1-hardware|None
+bluez-utils|system-package|phase1-owned|archlinuxarm|bluez-utils|extra|5.87-2|aarch64|phase1-hardware|None
+bolt|system-package|omit|archlinuxarm|bolt|extra|0.9.11-3|aarch64|not-applicable|Available but omitted because the uConsole has no Thunderbolt controller
+brightnessctl|desktop-core|core|archlinuxarm|brightnessctl|extra|0.5.1-3|aarch64|phase2-hyprland|None
+btop|shell-tooling|core|archlinuxarm|btop|extra|1.4.7-1|aarch64|phase5-core|None
+chromium|optional-application|optional|archlinuxarm|chromium|extra|151.0.7922.137-1|aarch64|phase5-optional|None
+clang|development-tool|development|archlinuxarm|clang|extra|22.1.8-1|aarch64|phase5-optional|None
+cliamp|omarchy-specific|optional|source-build|cliamp|omarchy-pkgs|pending-build|aarch64|phase5-optional|Not installed until its pinned ARM package builds and passes audio integration checks
+cups|system-package|conditional|archlinuxarm|cups|extra|2:2.4.19-1|aarch64|phase5-optional|None
+cups-browsed|system-package|conditional|archlinuxarm|cups-browsed|extra|2.1.1-1|aarch64|phase5-optional|None
+cups-filters|system-package|conditional|archlinuxarm|cups-filters|extra|2.0.1-2|aarch64|phase5-optional|None
+cups-pdf|system-package|conditional|archlinuxarm|cups-pdf|extra|3.0.3-1|aarch64|phase5-optional|None
+ddcutil|system-package|omit|archlinuxarm|ddcutil|extra|2.2.7-1|aarch64|not-applicable|Available but omitted from internal-panel bring-up because DDC does not control the DSI panel
+docker|development-tool|development|archlinuxarm|docker|extra|1:29.7.2-1|aarch64|phase5-optional|None
+docker-buildx|development-tool|development|archlinuxarm|docker-buildx|extra|0.36.1-1|aarch64|phase5-optional|None
+docker-compose|development-tool|development|archlinuxarm|docker-compose|extra|5.5.0-1|aarch64|phase5-optional|None
+dosfstools|system-package|phase1-owned|archlinuxarm|dosfstools|core|4.2-5|aarch64|phase1-hardware|None
+dotnet-runtime|optional-application|deferred|defer|dotnet-runtime|upstream|unresolved|unknown|phase5-optional|Consumer and required .NET major version must be identified before selecting an ARM runtime
+dua-cli|shell-tooling|core|archlinuxarm|dua-cli|extra|2.42.1-1|aarch64|phase5-core|None
+evince|optional-application|optional|archlinuxarm|evince|extra|1:48.4-1|aarch64|phase5-optional|None
+exfatprogs|system-package|conditional|archlinuxarm|exfatprogs|extra|1.4.3-1|aarch64|phase5-optional|None
+expac|update-infrastructure|core|archlinuxarm|expac|extra|10-13|aarch64|phase6-update|None
+eza|shell-tooling|core|archlinuxarm|eza|extra|0.23.5-2|aarch64|phase5-core|None
+fakeroot|update-infrastructure|off-target|archlinuxarm|fakeroot|core|1:1.37.2-3|aarch64|off-target-build|Available but package builds occur off target
+fastfetch|shell-tooling|core|archlinuxarm|fastfetch|extra|2.67.1-1|aarch64|phase5-core|None
+fcitx5|system-package|conditional|archlinuxarm|fcitx5|extra|5.1.21-1|aarch64|phase5-optional|None
+fcitx5-gtk|system-package|conditional|archlinuxarm|fcitx5-gtk|extra|5.1.7-1|aarch64|phase5-optional|None
+fcitx5-qt|system-package|conditional|archlinuxarm|fcitx5-qt|extra|5.1.14-2|aarch64|phase5-optional|None
+fd|shell-tooling|core|archlinuxarm|fd|extra|10.4.2-2|aarch64|phase5-core|None
+ffmpegthumbnailer|desktop-core|conditional|archlinuxarm|ffmpegthumbnailer|extra|2.3.0-2|aarch64|phase5-optional|None
+fontconfig|visual-configuration|core|archlinuxarm|fontconfig|extra|2:2.18.3-2|aarch64|phase5-core|None
+foot|desktop-core|core|archlinuxarm|foot|extra|1.27.0-1|aarch64|phase2-hyprland|None
+fzf|shell-tooling|core|archlinuxarm|fzf|extra|0.74.3-1|aarch64|phase5-core|None
+git|development-tool|core|archlinuxarm|git|extra|2.55.0-1|aarch64|phase5-core|None
+gnome-disk-utility|optional-application|optional|archlinuxarm|gnome-disk-utility|extra|46.1-3|aarch64|phase5-optional|None
+gnome-keyring|system-package|core|archlinuxarm|gnome-keyring|extra|1:50.0-1|aarch64|phase5-core|None
+gnome-themes-extra|visual-configuration|core|archlinuxarm|gnome-themes-extra|extra|1:3.28-1|any|phase5-core|None
+gpu-screen-recorder|optional-application|optional|archlinuxarm|gpu-screen-recorder|extra|6.0.1-1|aarch64|phase5-optional|None
+grim|desktop-core|core|archlinuxarm|grim|extra|1.5.0-2|aarch64|phase5-core|None
+gum|shell-tooling|core|archlinuxarm|gum|extra|2.0.0-1|aarch64|phase5-core|None
+gvfs-mtp|system-package|conditional|archlinuxarm|gvfs-mtp|extra|1.60.2-1|aarch64|phase5-optional|None
+gvfs-nfs|system-package|conditional|archlinuxarm|gvfs-nfs|extra|1.60.2-1|aarch64|phase5-optional|None
+gvfs-smb|system-package|conditional|archlinuxarm|gvfs-smb|extra|1.60.2-1|aarch64|phase5-optional|None
+herdr|omarchy-specific|optional|source-build|herdr|omarchy-pkgs|pending-build|aarch64|phase5-optional|Not installed until its pinned ARM package builds and its consumer is enabled
+hyprland|desktop-core|core|archlinuxarm|hyprland|extra|0.56.1-3|aarch64|phase2-hyprland|None
+hyprland-guiutils|desktop-core|core|archlinuxarm|hyprland-guiutils|extra|0.2.2-2|aarch64|phase5-core|None
+hyprland-preview-share-picker|desktop-core|deferred|defer|hyprland-preview-share-picker|omarchy-pkgs|unported|x86_64|phase5-optional|Screen-share picker is disabled until the pinned package is ported or a portal-compatible replacement is selected
+hyprpicker|desktop-core|core|archlinuxarm|hyprpicker|extra|0.4.7-3|aarch64|phase5-core|None
+hyprsunset|desktop-core|core|archlinuxarm|hyprsunset|extra|0.4.0-3|aarch64|phase5-core|None
+imagemagick|shell-tooling|core|archlinuxarm|imagemagick|extra|7.1.2.30-1|aarch64|phase5-core|None
+imv|optional-application|optional|archlinuxarm|imv|extra|5.0.1-2|aarch64|phase5-optional|None
+inetutils|system-package|core|archlinuxarm|inetutils|core|2.8-1|aarch64|phase5-core|None
+inotify-tools|shell-tooling|core|archlinuxarm|inotify-tools|extra|4.25.9.0-1|aarch64|phase5-core|None
+inxi|shell-tooling|core|archlinuxarm|inxi|extra|3.3.41.1-1|any|phase5-core|None
+jq|shell-tooling|core|archlinuxarm|jq|extra|1.8.2-1|aarch64|phase5-core|None
+kdenlive|optional-application|optional|archlinuxarm|kdenlive|extra|26.08.0-1|aarch64|phase5-optional|None
+kernel-modules-hook|update-infrastructure|omit|archlinuxarm|kernel-modules-hook|extra|0.1.7-3|any|not-applicable|Available but omitted because the hardware package owns kernel and module rollback
+lazydocker|development-tool|development|archlinuxarm|lazydocker|extra|0.25.2-1|aarch64|phase5-optional|None
+lazygit|development-tool|development|archlinuxarm|lazygit|extra|0.64.1-1|aarch64|phase5-optional|None
+less|shell-tooling|core|archlinuxarm|less|core|1:704-1|aarch64|phase5-core|None
+libreoffice-fresh|optional-application|optional|archlinuxarm|libreoffice-fresh|extra|26.2.5-3|aarch64|phase5-optional|None
+libsecret|system-package|core|archlinuxarm|libsecret|core|0.21.7-1|aarch64|phase5-core|None
+libvips|system-package|conditional|archlinuxarm|libvips|extra|8.18.5-1|aarch64|phase5-optional|None
+libyaml|system-package|core|archlinuxarm|libyaml|extra|0.2.5-3|aarch64|phase5-core|None
+llvm|development-tool|development|archlinuxarm|llvm|extra|22.1.8-2|aarch64|phase5-optional|None
+localsend|optional-application|optional|source-build|localsend|omarchy-pkgs|pending-build|aarch64|phase5-optional|Not installed until bundled binaries and 16 KiB page compatibility pass
+lua51|desktop-core|core|archlinuxarm|lua51|extra|5.1.5-13|aarch64|phase5-core|None
+luarocks|development-tool|core|archlinuxarm|luarocks|extra|3.13.0-5|any|phase5-core|None
+man-db|shell-tooling|core|archlinuxarm|man-db|core|2.13.1-2|aarch64|phase5-core|None
+mariadb-libs|development-tool|development|archlinuxarm|mariadb-libs|extra|12.3.2-4|aarch64|phase5-optional|None
+mise-bin|development-tool|development|source-build|mise-bin|omarchy-pkgs|pending-build|aarch64|phase5-optional|Development runtime manager is excluded from the core desktop and built off target only when selected
+moonlight-qt|optional-application|optional|archlinuxarm|moonlight-qt|extra|6.1.0-7|aarch64|phase5-optional|None
+mpv|optional-application|optional|archlinuxarm|mpv|extra|1:0.41.0-4|aarch64|phase5-optional|None
+mpv-mpris|optional-application|optional|archlinuxarm|mpv-mpris|extra|1.2-2|aarch64|phase5-optional|None
+nautilus|desktop-core|core|archlinuxarm|nautilus|extra|50.2.2-1|aarch64|phase5-core|None
+nautilus-python|desktop-core|core|archlinuxarm|nautilus-python|extra|4.1.0-3|aarch64|phase5-core|None
+networkmanager|system-package|phase1-owned|archlinuxarm|networkmanager|extra|1.58.1-1|aarch64|phase1-hardware|None
+noto-fonts|visual-configuration|core|archlinuxarm|noto-fonts|extra|1:2026.08.01-1|any|phase5-core|None
+noto-fonts-cjk|visual-configuration|conditional|archlinuxarm|noto-fonts-cjk|extra|20240730-1|any|phase5-optional|None
+noto-fonts-emoji|visual-configuration|core|archlinuxarm|noto-fonts-emoji|extra|1:2.051-1|any|phase5-core|None
+nss-mdns|system-package|conditional|archlinuxarm|nss-mdns|extra|0.15.1-2|aarch64|phase5-optional|None
+nvim|shell-tooling|core|replacement|neovim|extra|0.12.5-1|aarch64|phase5-core|Package name changes to neovim while the installed command remains nvim
+obs-studio|optional-application|deferred|defer|obs-studio|upstream|unresolved|unknown|phase5-optional|Recording is disabled until a clean ARM source build and V3D encoding test pass
+obsidian|optional-application|deferred|defer|obsidian|upstream|unresolved|unknown|phase5-optional|No exact Arch Linux ARM package exists; any future Electron build must also pass the 16 KiB page runtime test
+omacalc|omarchy-specific|core|source-build|omacalc|omarchy-pkgs|pending-build|aarch64|phase5-core|Core calculator remains unavailable until its pinned ARM package builds and passes
+omacut|omarchy-specific|core|source-build|omacut|omarchy-pkgs|pending-build|aarch64|phase5-core|Core capture workflow remains unavailable until its pinned ARM package builds and portal integration passes
+omarchy-nvim|omarchy-specific|optional|source-build|omarchy-nvim|omarchy-pkgs|pending-build|any|phase5-optional|Optional editor configuration is installed only with the editor group
+omawrite|omarchy-specific|optional|source-build|omawrite|omarchy-pkgs|pending-build|aarch64|phase5-optional|Not installed until its pinned ARM package builds and passes runtime checks
+pacman-contrib|update-infrastructure|core|archlinuxarm|pacman-contrib|extra|1.13.1-1|aarch64|phase6-update|None
+pamixer|desktop-core|core|archlinuxarm|pamixer|extra|1.6-3|aarch64|phase5-core|None
+pinta|optional-application|deferred|defer|pinta|upstream|unresolved|unknown|phase5-optional|Image editor is disabled until an ARM source package and runtime test exist
+plocate|shell-tooling|core|archlinuxarm|plocate|extra|1.1.24-2|aarch64|phase5-core|None
+plymouth|visual-configuration|omit|archlinuxarm|plymouth|extra|26.134.222-2|aarch64|not-applicable|Available but omitted because Phase 1 owns the Raspberry Pi boot presentation and initramfs
+postgresql-libs|development-tool|development|archlinuxarm|postgresql-libs|extra|18.6-1|aarch64|phase5-optional|None
+power-profiles-daemon|system-package|deferred|archlinuxarm|power-profiles-daemon|extra|0.30-1|aarch64|phase1-hardware|Available but not enabled until CM5 power and thermal behavior is validated
+python-gobject|desktop-core|core|archlinuxarm|python-gobject|extra|3.56.3-1|aarch64|phase5-core|None
+python-poetry-core|development-tool|development|archlinuxarm|python-poetry-core|extra|2.4.1-1|any|phase5-optional|None
+qemu-user-static-binfmt|development-tool|off-target|omit|qemu-user-static-binfmt|build-host|not-installed|build-host|off-target-build|Cross-architecture emulation stays on the build host and is not installed on the uConsole
+qrencode|shell-tooling|core|archlinuxarm|qrencode|extra|4.1.1-4|aarch64|phase5-core|None
+qt6-imageformats|visual-configuration|core|archlinuxarm|qt6-imageformats|extra|6.11.2-1|aarch64|phase5-core|None
+quickshell|desktop-core|core|archlinuxarm|quickshell|extra|0.3.1-1|aarch64|phase5-core|None
+ripgrep|shell-tooling|core|archlinuxarm|ripgrep|extra|15.2.0-1|aarch64|phase5-core|None
+ruby|development-tool|development|archlinuxarm|ruby|extra|3.4.10-1|aarch64|phase5-optional|None
+sddm|system-package|deferred|archlinuxarm|sddm|extra|0.21.0-7|aarch64|phase5-optional|Available but graphical login and autologin remain disabled during bring-up
+slurp|desktop-core|core|archlinuxarm|slurp|extra|1.5.0-2|aarch64|phase5-core|None
+socat|shell-tooling|core|archlinuxarm|socat|extra|1.8.1.3-1|aarch64|phase5-core|None
+starship|shell-tooling|core|archlinuxarm|starship|extra|1.26.0-1|aarch64|phase5-core|None
+sushi|desktop-core|conditional|archlinuxarm|sushi|extra|50.0-1|aarch64|phase5-optional|None
+system-config-printer|system-package|conditional|archlinuxarm|system-config-printer|extra|1.5.18-5|aarch64|phase5-optional|None
+tensaku|omarchy-specific|optional|omit|tensaku|omarchy-pkgs|not-installed|x86_64|phase5-optional|Optional writing utility is unavailable because the pinned package is x86_64-only
+tesseract|shell-tooling|conditional|archlinuxarm|tesseract|extra|5.5.3-1|aarch64|phase5-optional|None
+tesseract-data-eng|shell-tooling|conditional|archlinuxarm|tesseract-data-eng|extra|2:4.1.0-5|any|phase5-optional|None
+tldr|shell-tooling|core|archlinuxarm|tldr|extra|3.4.4-1|any|phase5-core|None
+tmux|shell-tooling|core|archlinuxarm|tmux|extra|3.7_c-1|aarch64|phase5-core|None
+tobi-try|omarchy-specific|optional|source-build|tobi-try|omarchy-pkgs|pending-build|any|phase5-optional|Not installed until its consumer and pinned architecture-independent package are tested
+tree-sitter-cli|development-tool|development|archlinuxarm|tree-sitter-cli|extra|0.26.9-1|aarch64|phase5-optional|None
+ttf-ia-writer|visual-configuration|core|source-build|ttf-ia-writer|omarchy-pkgs|pending-build|any|phase5-core|Core typography remains incomplete until the pinned font package is built
+ttf-jetbrains-mono-nerd-basic|visual-configuration|core|replacement|ttf-jetbrains-mono-nerd|extra|3.5.1-2|any|phase5-core|The full Nerd Font family replaces Omarchy's smaller four-font subset
+ttfx|omarchy-specific|core|source-build|ttfx|omarchy-pkgs|pending-build|aarch64|phase5-core|Font switching remains disabled until the pinned ARM utility builds and passes without respawn loops
+tzupdate|system-package|omit|omit|tzupdate|omarchy-pkgs|not-installed|x86_64|not-applicable|Automatic timezone mutation is omitted because Phase 1 owns the explicit timezone
+udiskie|desktop-core|core|archlinuxarm|udiskie|extra|2.7.0-2|any|phase5-core|None
+ufw|system-package|conditional|archlinuxarm|ufw|extra|0.36.2-7|any|phase5-optional|None
+ufw-docker|system-package|conditional|source-build|ufw-docker|omarchy-pkgs|pending-build|any|phase5-optional|Installed only when both Docker and the reviewed firewall integration are selected
+unzip|shell-tooling|core|archlinuxarm|unzip|extra|6.0-23|aarch64|phase5-core|None
+usage|omarchy-specific|core|archlinuxarm|usage|extra|5.1.0-1|aarch64|phase5-core|None
+uwsm|desktop-core|core|archlinuxarm|uwsm|extra|0.26.7-1|any|phase2-hyprland|None
+whois|shell-tooling|optional|archlinuxarm|whois|extra|5.6.6-1|aarch64|phase5-optional|None
+wireless-regdb|system-package|phase1-owned|archlinuxarm|wireless-regdb|core|2026.05.30-1|any|phase1-hardware|None
+wireplumber|system-package|core|archlinuxarm|wireplumber|extra|0.5.15-1|aarch64|phase2-hyprland|None
+wl-clipboard|desktop-core|core|archlinuxarm|wl-clipboard|extra|1:2.3.0-1|aarch64|phase5-core|None
+woff2-font-awesome|visual-configuration|core|archlinuxarm|woff2-font-awesome|extra|7.3.1-1|any|phase5-core|None
+wtype|desktop-core|core|archlinuxarm|wtype|extra|0.4-2|aarch64|phase5-core|None
+xdg-desktop-portal-gtk|desktop-core|core|archlinuxarm|xdg-desktop-portal-gtk|extra|1.15.3-1|aarch64|phase2-hyprland|None
+xdg-desktop-portal-hyprland|desktop-core|core|archlinuxarm|xdg-desktop-portal-hyprland|extra|1.4.1-1|aarch64|phase2-hyprland|None
+xdg-terminal-exec|desktop-core|core|local-build|xdg-terminal-exec|local|0.14.3-1|any|phase5-core|Locally built from pinned upstream because no Arch Linux ARM sync package exists
+xournalpp|optional-application|optional|archlinuxarm|xournalpp|extra|1.3.7-1|aarch64|phase5-optional|None
+yaru-icon-theme|visual-configuration|core|source-build|yaru-icon-theme|omarchy-pkgs|pending-build|any|phase5-core|Core icon theme remains incomplete until the pinned architecture-independent package is built
+yay|update-infrastructure|off-target|omit|yay|omarchy-pkgs|not-installed|aarch64|off-target-build|No on-target AUR helper or implicit AUR update path; missing packages are built cleanly off target
+yt-dlp|optional-application|optional|archlinuxarm|yt-dlp|extra|2025.12.08-2|any|phase5-optional|None
+zbar|shell-tooling|conditional|archlinuxarm|zbar|extra|0.23.93-7|aarch64|phase5-optional|None
+zoxide|shell-tooling|core|archlinuxarm|zoxide|extra|0.10.0-1|aarch64|phase5-core|None

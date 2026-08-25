@@ -141,7 +141,7 @@ Run the complete host-side contract suite with:
 tests/run-all.sh
 ```
 
-The same 28 deterministic tests run in GitHub Actions on pushes and pull
+The same 29 deterministic tests run in GitHub Actions on pushes and pull
 requests. They need neither hardware nor privileged access and therefore do
 not replace the live uConsole acceptance run.
 
@@ -397,6 +397,15 @@ to a new artifact directory. The artifacts are not installed or signed. Live
 CM5/16 KiB tests and an explicit `Yaru-gray`/`Yaru-grey` policy still block
 activation.
 
+## License
+
+Original project-authored code, configuration, tests and documentation are
+available under the [MIT License](LICENSE), copyright 2026 Conrad Hollomon.
+Upstream artifacts retain their own terms; see the
+[third-party notices](THIRD_PARTY_NOTICES.md). In particular, the selected
+uConsole CM5 DKMS source remains local-evaluation-only until its unresolved
+overlay and project-glue licensing is clarified.
+
 ## Proposed repository structure
 
 The files marked `future` must not be implemented until their prerequisite
@@ -406,6 +415,8 @@ that gate but has not been applied to a card.
 ```text
 .
 ├── README.md
+├── LICENSE
+├── THIRD_PARTY_NOTICES.md
 ├── .github/
 │   └── workflows/
 │       └── contract-tests.yml            # current deterministic CI gate
@@ -520,7 +531,7 @@ that gate but has not been applied to a card.
 │   ├── plan-sd-write-macos.sh            # current: read-only macOS media preflight
 │   └── validate-system.sh                # current: read-only PASS/WARN/FAIL report
 └── tests/
-    ├── run-all.sh                        # current 28-test aggregate runner
+    ├── run-all.sh                        # current 29-test aggregate runner
     ├── test-archive-project-volume.sh     # current archive/restore safety test
     ├── test-bootstrap-arch.sh             # current rootfs/input safety test
     ├── test-build-image.sh                # current image/device safety test
@@ -535,6 +546,7 @@ that gate but has not been applied to a card.
     ├── test-install-omarchy-arm64.sh      # current inert-staging safety test
     ├── test-install-omarchy-shell.sh      # current exact runtime-boundary test
     ├── test-install-uconsole-prerequisites.sh # current offline-closure safety test
+    ├── test-license-policy.sh            # current project/third-party license boundary test
     ├── test-install-uconsole-hardware.sh  # current transaction safety test
     ├── test-omarchy-package-policy.sh     # current complete-policy safety test
     ├── test-omarchy-prepared-image-runner.sh # current image-runner safety test

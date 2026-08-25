@@ -182,3 +182,60 @@ It does not modify Hyprland or start a session.
 The inert source stage remains outside `PATH`; it is never the runtime tree.
 The actual Quickshell launch still waits for live CM5 hardware and minimal
 Hyprland validation.
+
+## Upstream first-run provisioning
+
+Upstream ships two distinct first-run mechanisms. Both exist at the pinned
+`d99d4fc` archive. Neither is adopted yet, and the reasons differ.
+
+`bin/omarchy-provision-owner` is a first-boot owner setup, not a desktop
+feature. Its unit runs on tty1 ahead of the display manager:
+
+```ini
+ConditionPathExists=/var/lib/omarchy/provisioning/pending
+Before=display-manager.service getty@tty1.service
+Conflicts=getty@tty1.service
+```
+
+Through the shared `install/provisioning/setup-form.sh` it collects keyboard
+layout, username, password, full name, email address, hostname and timezone.
+That overlaps a majority of the Phase 1 configuration surface, so it is a real
+candidate rather than a curiosity.
+
+It cannot serve Phase 1 as it stands:
+
+- **It is not present at Phase 1.** The base layer is 21 packages. Omarchy is
+  not installed until Phase 5, and every prompt in the form is driven by `gum`,
+  which is in neither the base lock nor the 24-package shell closure.
+- **It is disabled by default.** Upstream states that a normal install never
+  runs it; it is armed by `/var/lib/omarchy/provisioning/pending`, written only
+  by a deferred-provisioning ISO install or `omarchy-system-factory-reset`.
+  This project uses neither, and the x86_64 ISO is already excluded as the CM5
+  foundation.
+- **Its tail crosses the ownership boundary.** It re-keys LUKS from the
+  throwaway install passphrase, hands off to SDDM, and finalizes the account
+  offline from a stashed Node tarball. This port has no LUKS, deliberately
+  installs no display manager, and will not have that ISO-install state.
+- **It does not cover the Phase 1 access surface.** No SSH key, no Wi-Fi
+  regulatory domain, no NetworkManager DNS policy and no source-account
+  locking. Its single password is documented as serving both the user and root.
+- **It does not reduce the unproven-console risk.** It is a tty1 TUI
+  (`StandardInput=tty`, `TTYPath=/dev/tty1`), so a dark panel or an
+  unenumerated keyboard blocks it exactly as it blocks manual configuration.
+
+`bin/omarchy-provision-first-run` is the separate desktop first-login path:
+post-update hooks, GNOME theme, GTK primary paste, speaker tuning, and the
+welcome and Wi-Fi notifications. It is invoked from the upstream Hyprland
+startup handler this audit already excludes, and several of its steps are among
+the eight actions replaced by fail-closed ARM implementations.
+
+The Phase 5 disposition is to reuse rather than fork. `setup-form.sh` is
+explicitly written to be sourced by more than one caller, so any ARM owner-setup
+path should source it instead of reimplementing its validation.
+
+One interaction must be recorded before that happens: the unit declares
+`Conflicts=getty@tty1.service`, while `scripts/validate-system.sh` reports
+`local-console` PASS from `systemctl is-active getty@tty1.service`. Arming
+owner provisioning would therefore make that check FAIL by design rather than
+by fault, and the validator must learn the distinction before the unit is ever
+enabled.

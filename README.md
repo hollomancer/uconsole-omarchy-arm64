@@ -78,6 +78,12 @@ Research snapshot: **2026-08-24**
   [`research/package-audit/`](research/package-audit/).
 - The updater/migration call graph and ARM ownership decisions are recorded in
   [`research/omarchy-update-audit-results.yaml`](research/omarchy-update-audit-results.yaml).
+- The Phase 6 replacement update design is in
+  [`docs/update-design.md`](docs/update-design.md). It is design only; the
+  orchestrator is unimplemented and gated on a signing policy.
+- The reviewed Phase 5 session handoff is in
+  [`config/omarchy-session/`](config/omarchy-session/) and applied by
+  `scripts/activate-omarchy-session.sh`.
 - Reusable lessons from the closest Quattro ARM fork are in
   [`docs/omarchy-arm-adaptation-audit.md`](docs/omarchy-arm-adaptation-audit.md).
 - The safe Phase 1 plan is in [`docs/installation.md`](docs/installation.md).

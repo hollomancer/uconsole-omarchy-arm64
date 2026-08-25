@@ -240,5 +240,52 @@ mv "$TEST_TMP/shadow" "$ROOT/etc/shadow"
 
 ln -s kernel8.img "$ROOT/boot/unsafe-link"
 expect_rejected 'FAT symlink' "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/symlink.img" --plan
+rm "$ROOT/boot/unsafe-link"
+
+# --allow-default-credentials: the first-boot console workflow. The relaxed
+# path must still refuse a root that cannot be logged into, must refuse a
+# desktop payload, and must announce itself rather than pass silently.
+mv "$ROOT/var/lib/uconsole-omarchy-arm64/base-system-selection" "$TEST_TMP/base-system-selection"
+
+expect_rejected 'unconfigured root without the explicit flag' \
+  "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/unconfigured-no-flag.img" --plan
+
+UNCONFIGURED_OUTPUT=''
+UNCONFIGURED_STDERR="$TEST_TMP/unconfigured.err"
+if ! UNCONFIGURED_OUTPUT=$("$BUILDER" "${COMMON_ARGS[@]}" \
+  --output "$OUTPUT_DIR/unconfigured.img" --allow-default-credentials --plan 2>"$UNCONFIGURED_STDERR"); then
+  printf 'Expected unconfigured plan to pass with --allow-default-credentials\n' >&2
+  sed -n '1,$p' "$UNCONFIGURED_STDERR" >&2
+  exit 1
+fi
+printf '%s\n' "$UNCONFIGURED_OUTPUT" | grep -Fq 'first-boot policy    unconfigured; default credentials' || {
+  printf 'Unconfigured plan did not report the relaxed first-boot policy\n' >&2
+  exit 1
+}
+printf '%s\n' "$UNCONFIGURED_OUTPUT" | grep -Fq 'console login: fixture' || {
+  printf 'Unconfigured plan did not name the login-capable account\n' >&2
+  exit 1
+}
+grep -Fq 'WARNING: building an UNCONFIGURED image with default credentials.' "$UNCONFIGURED_STDERR" || {
+  printf 'Unconfigured plan did not warn on stderr\n' >&2
+  exit 1
+}
+
+expect_rejected 'prepared desktop payload on an unconfigured root' \
+  "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/unconfigured-omarchy.img" \
+  --allow-default-credentials --require-omarchy-prepared --plan
+
+# Every account locked: the image would be unreachable without serial access,
+# so the relaxed path must refuse rather than produce a brick.
+cp "$ROOT/etc/shadow" "$TEST_TMP/shadow"
+sed 's/^fixture:\$6\$[^:]*/fixture:!locked/' "$TEST_TMP/shadow" > "$ROOT/etc/shadow"
+expect_rejected 'unconfigured root with no login-capable account' \
+  "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/unconfigured-locked.img" --allow-default-credentials --plan
+mv "$TEST_TMP/shadow" "$ROOT/etc/shadow"
+
+mv "$TEST_TMP/base-system-selection" "$ROOT/var/lib/uconsole-omarchy-arm64/base-system-selection"
+
+expect_rejected 'already-configured root with --allow-default-credentials' \
+  "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/configured-relaxed.img" --allow-default-credentials --plan
 
 printf 'build-image plan and safety tests: PASS\n'

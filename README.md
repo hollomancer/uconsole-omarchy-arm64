@@ -367,6 +367,42 @@ to a new artifact directory. The artifacts are not installed or signed. Live
 CM5/16 KiB tests and an explicit `Yaru-gray`/`Yaru-grey` policy still block
 activation.
 
+### Building an unconfigured first-boot image
+
+By default `build-image.sh` refuses to build from a root whose public default
+accounts are still usable, and requires admin identity, key-only SSH, timezone,
+locale, keymap and regulatory domain to be configured beforehand.
+
+`--allow-default-credentials` selects the other workflow: build an unconfigured
+image, boot it on the uConsole, and set all of that at the first console login.
+
+```sh
+scripts/build-image.sh --plan \
+  --root-tree /path/to/operator-pending-root \
+  --output /path/to/uconsole-phase1.img \
+  --allow-default-credentials
+```
+
+This is a deliberate trade, not a downgrade, and it only holds while the
+built-in panel and keyboard work. The relaxed path therefore still:
+
+- verifies the base package layer against `config/base-system/packages.lock`,
+  exactly as the strict path does;
+- proves at least one account can actually log in, so a fully locked root is
+  rejected instead of producing an image that is unreachable without serial
+  access and recoverable only by re-imaging;
+- refuses `--require-omarchy-prepared`, since a prepared desktop payload is
+  seeded into a specific configured admin's home;
+- refuses an already-configured root, which should use the strict path;
+- prints explicit warnings and records `"first_boot_state":
+  "unconfigured-default-credentials"` in the image manifest, so an
+  unconfigured image can never be mistaken for a configured one.
+
+The image ships with the stock Arch Linux ARM credentials until you change
+them. Do not attach it to an untrusted network before the first console login.
+Serial console is available as a fallback at `console=serial0,115200` if the
+panel does not come up.
+
 ## Running the tests
 
 Every check under `tests/` is offline, uses fixtures only, and touches neither

@@ -32,6 +32,7 @@ BOOT_ID=''
 ROOT_UUID=''
 SOURCE_DATE_EPOCH=''
 REQUIRE_OMARCHY_PREPARED=0
+ALLOW_DEFAULT_CREDENTIALS=0
 FSTAB_TEMPLATE="$REPO_ROOT/config/image/fstab.template"
 CMDLINE_TEMPLATE="$REPO_ROOT/config/image/cmdline.txt.template"
 BASE_PACKAGE_LOCK="$REPO_ROOT/config/base-system/packages.lock"
@@ -86,6 +87,7 @@ while (($# > 0)); do
     --root-uuid) (($# >= 2)) || install_common_die '--root-uuid requires a UUID'; ROOT_UUID=$2; shift 2 ;;
     --source-date-epoch) (($# >= 2)) || install_common_die '--source-date-epoch requires an integer'; SOURCE_DATE_EPOCH=$2; shift 2 ;;
     --require-omarchy-prepared) REQUIRE_OMARCHY_PREPARED=1; shift ;;
+    --allow-default-credentials) ALLOW_DEFAULT_CREDENTIALS=1; shift ;;
     --fstab-template) (($# >= 2)) || install_common_die '--fstab-template requires a file'; FSTAB_TEMPLATE=$2; shift 2 ;;
     --cmdline-template) (($# >= 2)) || install_common_die '--cmdline-template requires a file'; CMDLINE_TEMPLATE=$2; shift 2 ;;
     --device|--write-device|--i-understand-this-erases-the-device)
@@ -148,19 +150,60 @@ state_field() {
 [[ "$(state_field kernel_release)" == "$EXPECTED_KERNEL_RELEASE" ]] || install_common_die 'hardware state has an unexpected kernel release'
 [[ "$(state_field board_source_commit)" == "$EXPECTED_BOARD_COMMIT" ]] || install_common_die 'hardware state has an unaudited board source commit'
 
-# A development image must never be built from the signed source root while
-# its public default accounts are still usable. Require the exact completed
-# base-system transactions and verify their security-critical effects.
+# By default a development image must never be built from the signed source
+# root while its public default accounts are still usable. Require the exact
+# completed base-system transactions and verify their security-critical
+# effects.
+#
+# --allow-default-credentials deliberately trades that for a first-boot
+# workflow: the operator boots an unconfigured image on the uConsole's own
+# console and sets identity, access and locale there. That is only viable
+# while the built-in panel and keyboard work, so the relaxed path is not a
+# quiet downgrade. It proves a console login actually exists, it refuses to
+# combine with a prepared desktop payload, and it records the choice in both
+# the plan output and the image manifest.
 BASE_PACKAGE_STATE="$ROOT_TREE/var/lib/uconsole-omarchy-arm64/base-system-packages"
 BASE_SELECTION_STATE="$ROOT_TREE/var/lib/uconsole-omarchy-arm64/base-system-selection"
 install_common_require_file 'base-system package state' "$BASE_PACKAGE_STATE"
-install_common_require_file 'base-system selection state' "$BASE_SELECTION_STATE"
 install_common_require_file 'base-system package lock' "$BASE_PACKAGE_LOCK"
-install_common_require_file 'sshd policy template' "$SSHD_TEMPLATE"
 
+# The package layer is verified on both paths: relaxing operator identity must
+# not also relax the integrity of what was installed.
 EXPECTED_BASE_PACKAGES=$(awk -F '|' '$0 !~ /^#/ { print $1 "=" $2 }' "$BASE_PACKAGE_LOCK") || install_common_die 'unable to render expected base-system package state'
 OBSERVED_BASE_PACKAGES=$(sed -n '1,$p' "$BASE_PACKAGE_STATE") || install_common_die 'unable to read base-system package state'
 [[ "$OBSERVED_BASE_PACKAGES" == "$EXPECTED_BASE_PACKAGES" ]] || install_common_die 'base-system package state does not match the exact lock'
+
+file_mode() {
+  if stat -c '%a' "$1" >/dev/null 2>&1; then stat -c '%a' "$1"
+  else stat -f '%Lp' "$1"
+  fi
+}
+
+if [[ $ALLOW_DEFAULT_CREDENTIALS -eq 1 ]]; then
+  # A prepared desktop payload is seeded into a specific configured admin's
+  # home, so there is no coherent meaning for it on an unconfigured root.
+  ((REQUIRE_OMARCHY_PREPARED == 0)) || install_common_die '--allow-default-credentials cannot be combined with --require-omarchy-prepared'
+  [[ ! -e "$BASE_SELECTION_STATE" ]] || install_common_die 'root is already configured; build it without --allow-default-credentials'
+
+  # Without this check the relaxed path could hand back an image whose every
+  # account is locked, which on a serial-less uConsole is unreachable and can
+  # only be recovered by re-imaging. Require a real console login to exist.
+  LOGIN_CAPABLE=$(awk -F ':' '$2 ~ /^\$/ { print $1 }' "$ROOT_TREE/etc/shadow") || install_common_die 'unable to read target shadow database'
+  [[ -n "$LOGIN_CAPABLE" ]] || install_common_die 'no account has a usable password; the unconfigured image would be unreachable without serial access'
+  LOGIN_ACCOUNTS=$(printf '%s' "$LOGIN_CAPABLE" | paste -sd, -)
+
+  FIRST_BOOT_POLICY="unconfigured; default credentials; console login: $LOGIN_ACCOUNTS"
+  FIRST_BOOT_MANIFEST_STATE='unconfigured-default-credentials'
+  printf '%s\n' \
+    'WARNING: building an UNCONFIGURED image with default credentials.' \
+    "WARNING: these accounts keep their public default passwords: $LOGIN_ACCOUNTS" \
+    'WARNING: SSH is not restricted to key-only and no admin identity exists yet.' \
+    'WARNING: set identity, access and locale at the first console login, and do' \
+    'WARNING: not attach this image to an untrusted network beforehand.' >&2
+else
+
+install_common_require_file 'base-system selection state' "$BASE_SELECTION_STATE"
+install_common_require_file 'sshd policy template' "$SSHD_TEMPLATE"
 
 base_state_field() {
   local key=$1
@@ -198,11 +241,6 @@ grep -Eq "^wheel:[^:]*:[^:]*:.*(^|,)${ADMIN_USER}(,|$)" "$ROOT_TREE/etc/group" |
 
 AUTHORIZED_KEYS="$ROOT_TREE$ADMIN_HOME/.ssh/authorized_keys"
 [[ -s "$AUTHORIZED_KEYS" && -f "$AUTHORIZED_KEYS" && ! -L "$AUTHORIZED_KEYS" ]] || install_common_die 'configured admin authorized_keys is missing, empty or unsafe'
-file_mode() {
-  if stat -c '%a' "$1" >/dev/null 2>&1; then stat -c '%a' "$1"
-  else stat -f '%Lp' "$1"
-  fi
-}
 [[ $(file_mode "$AUTHORIZED_KEYS") == 600 ]] || install_common_die 'configured admin authorized_keys mode is not 0600'
 EXPECTED_SSHD_POLICY=$(sed "s/@ADMIN_USER@/$ADMIN_USER/g" "$SSHD_TEMPLATE") || install_common_die 'unable to render expected sshd policy'
 OBSERVED_SSHD_POLICY=$(sed -n '1,$p' "$ROOT_TREE/etc/ssh/sshd_config.d/10-uconsole.conf") || install_common_die 'unable to read configured sshd policy'
@@ -220,6 +258,11 @@ if [[ "$WIFI_PRESEED" == yes ]]; then
   [[ $(file_mode "$WIFI_DEST") == 600 ]] || install_common_die 'bootstrap Wi-Fi connection mode is not 0600'
 else
   [[ ! -e "$WIFI_DEST" && ! -L "$WIFI_DEST" ]] || install_common_die 'bootstrap Wi-Fi connection exists despite selection state'
+fi
+
+FIRST_BOOT_POLICY="admin=$ADMIN_USER key-only SSH; source accounts locked; network=$WIFI_PRESEED"
+FIRST_BOOT_MANIFEST_STATE='configured'
+
 fi
 
 OMARCHY_IMAGE_STATE='not-required'
@@ -334,7 +377,7 @@ REQUIRED_BOOT_CAPACITY=$((BOOT_BYTES + 32 * 1024 * 1024))
 
 printf '%s\n' \
   '[PASS] prepared root         Arch Linux ARM identity and exact hardware state present' \
-  "[PASS] first-boot policy    admin=$ADMIN_USER key-only SSH; source accounts locked; network=$WIFI_PRESEED" \
+  "[PASS] first-boot policy    $FIRST_BOOT_POLICY" \
   '[PASS] boot artifacts        kernel, CM5 DTB, uConsole overlays and managed include present' \
   "[PASS] Omarchy image state   $OMARCHY_IMAGE_STATE" \
   "[PASS] output safety        new regular image path under $OUTPUT_PARENT" \
@@ -552,6 +595,7 @@ MANIFEST_TMP="${MANIFEST_OUTPUT}.partial.$$"
   printf '  "image_sha256": "%s",\n' "$IMAGE_SHA"
   printf '  "source_date_epoch": %s,\n' "$SOURCE_DATE_EPOCH"
   printf '  "omarchy_image_state": "%s",\n' "$OMARCHY_IMAGE_STATE"
+  printf '  "first_boot_state": "%s",\n' "$FIRST_BOOT_MANIFEST_STATE"
   printf '  "disk_id": "%s",\n' "$DISK_ID"
   printf '  "boot": {"start_sector": %s, "sectors": %s, "partuuid": "%s", "volume_id": "%s"},\n' "$FIRST_SECTOR" "$BOOT_SECTORS" "$BOOT_PARTUUID" "$BOOT_ID"
   printf '  "root": {"start_sector": %s, "sectors": %s, "partuuid": "%s", "uuid": "%s"},\n' "$ROOT_START" "$ROOT_SECTORS" "$ROOT_PARTUUID" "$ROOT_UUID"

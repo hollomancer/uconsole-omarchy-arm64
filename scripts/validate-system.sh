@@ -186,8 +186,8 @@ state_field() {
 
 hardware_lock_field() {
   local package_name=$1
-  local field=$2
-  awk -F '|' -v wanted="$package_name" -v index="$field" '$0 !~ /^#/ && $1 == wanted {count++; value=$index} END {if (count == 1 && value != "") print value; else exit 1}' "$HARDWARE_PACKAGES_FILE"
+  local column=$2
+  awk -F '|' -v wanted="$package_name" -v column="$column" '$0 !~ /^#/ && $1 == wanted {count++; value=$column} END {if (count == 1 && value != "") print value; else exit 1}' "$HARDWARE_PACKAGES_FILE"
 }
 
 module_loaded() {
@@ -242,7 +242,7 @@ fi
 
 run_probe getconf_pagesize getconf PAGESIZE
 case "$PROBE_STATUS:$PROBE_OUTPUT" in
-  0:4096) report PASS page-size '4096 bytes (4 KiB)' ;;
+  0:4096) report FAIL page-size '4096 bytes; the selected linux-rpi-16k baseline requires 16384' ;;
   0:16384) report PASS page-size '16384 bytes (16 KiB; test every proprietary/native binary)' ;;
   127:*) report WARN page-size 'getconf unavailable' ;;
   *) report WARN page-size "unexpected result: ${PROBE_OUTPUT:-unavailable}" ;;
@@ -263,10 +263,10 @@ fi
 DT_COMPAT=""
 DT_COMPAT=$(collect_dt_compatibles)
 DT_COMPAT_LOWER=$(lower "$DT_COMPAT")
-if [[ "$DT_COMPAT_LOWER" == *"clockwork"* || "$DT_COMPAT_LOWER" == *"cwu50"* || "$DT_COMPAT_LOWER" == *"ocp8178"* || "$DT_COMPAT_LOWER" == *"axp228"* ]]; then
-  report PASS device-tree-uconsole 'uConsole-specific compatible node found'
+if [[ "$DT_COMPAT_LOWER" == *"cwu50"* && "$DT_COMPAT_LOWER" == *"ocp8178"* && "$DT_COMPAT_LOWER" == *"axp228"* ]]; then
+  report PASS device-tree-uconsole 'CWU50 panel, OCP8178 backlight and AXP228 PMIC compatible nodes found'
 else
-  report WARN device-tree-uconsole 'no uConsole-specific compatible string found; inspect the live DT/overlay symbols'
+  report FAIL device-tree-uconsole 'expected CWU50 panel, OCP8178 backlight and AXP228 PMIC compatible nodes'
 fi
 
 run_probe getty_status systemctl is-active getty@tty1.service
@@ -291,11 +291,11 @@ if MODULES=$(read_text "$ROOT/proc/modules"); then
     report FAIL gpu-kernel-driver 'vc4 and/or v3d module is absent'
   fi
   BOARD_MODULES_MISSING=""
-  for board_module in panel_cwu50 ocp8178_bl axp20x_battery snd_soc_simple_amplifier; do
+  for board_module in panel_cwu50 ocp8178_bl axp20x axp20x_i2c axp20x_regulator axp20x_battery axp20x_adc snd_soc_simple_amplifier axp20x_pek; do
     module_loaded "$board_module" || BOARD_MODULES_MISSING="$BOARD_MODULES_MISSING $board_module"
   done
   if [[ -z "$BOARD_MODULES_MISSING" ]]; then
-    report PASS uconsole-modules 'panel, backlight, battery and audio-amplifier board modules loaded'
+    report PASS uconsole-modules 'all 9 selected uConsole DKMS modules loaded'
   else
     report FAIL uconsole-modules "missing:$BOARD_MODULES_MISSING"
   fi
@@ -331,12 +331,14 @@ fi
 
 run_probe glxinfo glxinfo -B
 GLX_LOWER=$(lower "$PROBE_OUTPUT")
+OPENGL_ACCELERATION_CONFIRMED=0
 if [[ $PROBE_STATUS -eq 127 ]]; then
   if phase_at_least hyprland; then report FAIL opengl-acceleration 'glxinfo unavailable or no captured probe'
   else report WARN opengl-acceleration 'glxinfo unavailable or no captured probe'; fi
 elif [[ "$GLX_LOWER" == *"llvmpipe"* || "$GLX_LOWER" == *"softpipe"* ]]; then
   report FAIL opengl-acceleration "software renderer detected: $PROBE_OUTPUT"
 elif [[ $PROBE_STATUS -eq 0 && ( "$GLX_LOWER" == *"v3d"* || "$GLX_LOWER" == *"broadcom"* ) ]]; then
+  OPENGL_ACCELERATION_CONFIRMED=1
   report PASS opengl-acceleration "$PROBE_OUTPUT"
 elif [[ $PROBE_STATUS -ne 0 ]]; then
   if phase_at_least hyprland; then report FAIL opengl-acceleration "required probe failed: ${PROBE_OUTPUT:-no output}"
@@ -348,12 +350,14 @@ fi
 
 run_probe vulkaninfo vulkaninfo --summary
 VULKAN_LOWER=$(lower "$PROBE_OUTPUT")
+VULKAN_ACCELERATION_CONFIRMED=0
 if [[ $PROBE_STATUS -eq 127 ]]; then
   if phase_at_least hyprland; then report FAIL vulkan-acceleration 'vulkaninfo unavailable or no captured probe'
   else report WARN vulkan-acceleration 'vulkaninfo unavailable or no captured probe'; fi
 elif [[ "$VULKAN_LOWER" == *"lavapipe"* || "$VULKAN_LOWER" == *"llvmpipe"* || "$VULKAN_LOWER" == *"software"* ]]; then
   report FAIL vulkan-acceleration "software renderer detected: $PROBE_OUTPUT"
 elif [[ $PROBE_STATUS -eq 0 && ( "$VULKAN_LOWER" == *"v3dv"* || "$VULKAN_LOWER" == *"broadcom"* ) ]]; then
+  VULKAN_ACCELERATION_CONFIRMED=1
   report PASS vulkan-acceleration "$PROBE_OUTPUT"
 elif [[ $PROBE_STATUS -ne 0 ]]; then
   if phase_at_least hyprland; then report FAIL vulkan-acceleration "required probe failed: ${PROBE_OUTPUT:-no output}"
@@ -361,6 +365,16 @@ elif [[ $PROBE_STATUS -ne 0 ]]; then
 else
   if phase_at_least hyprland; then report FAIL vulkan-acceleration "device is not recognized as V3DV: $PROBE_OUTPUT"
   else report WARN vulkan-acceleration "device is not recognized as V3DV: $PROBE_OUTPUT"; fi
+fi
+
+if [[ $OPENGL_ACCELERATION_CONFIRMED -eq 1 && $VULKAN_ACCELERATION_CONFIRMED -eq 1 ]]; then
+  report PASS gpu-acceleration-gate 'V3D OpenGL and V3DV Vulkan are confirmed'
+elif [[ $OPENGL_ACCELERATION_CONFIRMED -eq 1 ]]; then
+  report PASS gpu-acceleration-gate 'V3D OpenGL is confirmed; Vulkan remains incomplete'
+elif [[ $VULKAN_ACCELERATION_CONFIRMED -eq 1 ]]; then
+  report PASS gpu-acceleration-gate 'V3DV Vulkan is confirmed; OpenGL remains incomplete'
+else
+  report FAIL gpu-acceleration-gate 'no userspace V3D/V3DV acceleration probe succeeded'
 fi
 
 CONNECTED=""
@@ -372,6 +386,10 @@ for STATUS_FILE in "$ROOT"/sys/class/drm/*/status; do
     CONNECTOR=${STATUS_FILE%/status}
     CONNECTOR=${CONNECTOR##*/}
     CONNECTED="$CONNECTED $CONNECTOR"
+    case "$CONNECTOR" in
+      *-DSI-1|*-DSI-2) ;;
+      *) continue ;;
+    esac
     MODES_FILE="${STATUS_FILE%/status}/modes"
     if [[ -r "$MODES_FILE" ]]; then
       MODES=$(read_text "$MODES_FILE")
@@ -384,70 +402,99 @@ done
 if [[ -n "$NATIVE_MODE" ]]; then
   report PASS internal-display "connected at native panel mode:$NATIVE_MODE"
 elif [[ -n "$CONNECTED" ]]; then
-  report WARN internal-display "connected connector lacks expected 720x1280/1280x720 mode:$CONNECTED"
+  report FAIL internal-display "no uConsole DSI-1/DSI-2 connector has the expected 720x1280/1280x720 mode; connected:$CONNECTED"
 else
-  report FAIL internal-display 'no connected DRM connector found'
+  report FAIL internal-display 'no connected uConsole DSI-1/DSI-2 connector found'
 fi
 
-BACKLIGHT_FOUND=0
+BACKLIGHT_FOUND=''
 for BACKLIGHT in "$ROOT"/sys/class/backlight/*; do
   [[ -d "$BACKLIGHT" ]] || continue
-  BACKLIGHT_FOUND=1
+  BACKLIGHT_NAME=${BACKLIGHT##*/}
+  BACKLIGHT_NAME_LOWER=$(lower "$BACKLIGHT_NAME")
+  if [[ "$BACKLIGHT_NAME_LOWER" == *"ocp8178"* ]]; then
+    BACKLIGHT_FOUND=$BACKLIGHT_NAME
+    break
+  fi
 done
-if [[ $BACKLIGHT_FOUND -eq 1 ]]; then
-  report PASS backlight 'backlight class device present'
+if [[ -n "$BACKLIGHT_FOUND" ]]; then
+  report PASS backlight "uConsole OCP8178 backlight present: $BACKLIGHT_FOUND"
 else
-  report FAIL backlight 'no backlight class device present'
+  report FAIL backlight 'no OCP8178 uConsole backlight class device present'
 fi
 
 run_probe aplay aplay -l
 APLAY_LOWER=$(lower "$PROBE_OUTPUT")
 if [[ $PROBE_STATUS -eq 127 ]]; then
-  report WARN audio-alsa 'aplay unavailable or no captured probe'
-elif [[ $PROBE_STATUS -eq 0 && "$APLAY_LOWER" == *"card "* && "$APLAY_LOWER" != *"no soundcards"* ]]; then
+  report FAIL audio-alsa 'aplay unavailable or no captured probe'
+elif [[ $PROBE_STATUS -eq 0 && "$APLAY_LOWER" == *"card "* && "$APLAY_LOWER" != *"no soundcards"* && ( "$APLAY_LOWER" == *"uconsole"* || ( "$APLAY_LOWER" == *"rp1"* && "$APLAY_LOWER" == *"audio"* ) ) ]]; then
   report PASS audio-alsa "$PROBE_OUTPUT"
 else
-  report FAIL audio-alsa "no ALSA card found: ${PROBE_OUTPUT:-no output}"
+  report FAIL audio-alsa "uConsole/RP1 audio card not found: ${PROBE_OUTPUT:-no output}"
 fi
 
 run_probe wpctl wpctl status
+WPCTL_LOWER=$(lower "$PROBE_OUTPUT")
 if [[ $PROBE_STATUS -eq 127 ]]; then
-  report WARN audio-pipewire 'wpctl unavailable or no captured probe'
-elif [[ $PROBE_STATUS -eq 0 && "$PROBE_OUTPUT" == *"Audio"* ]]; then
+  if phase_at_least hyprland; then report FAIL audio-pipewire 'wpctl unavailable or no captured probe'
+  else report WARN audio-pipewire 'not required before the Hyprland phase'; fi
+elif [[ $PROBE_STATUS -eq 0 && "$WPCTL_LOWER" == *"audio"* && ( "$WPCTL_LOWER" == *"uconsole"* || "$WPCTL_LOWER" == *"rp1"* ) ]]; then
   report PASS audio-pipewire "$PROBE_OUTPUT"
 else
-  report WARN audio-pipewire "PipeWire session is not confirmed: ${PROBE_OUTPUT:-no output}"
+  if phase_at_least hyprland; then report FAIL audio-pipewire "uConsole/RP1 PipeWire audio is not confirmed: ${PROBE_OUTPUT:-no output}"
+  else report WARN audio-pipewire "uConsole/RP1 PipeWire audio is not yet confirmed: ${PROBE_OUTPUT:-no output}"; fi
 fi
 
 run_probe nmcli nmcli -t -f DEVICE,TYPE,STATE device
 NMCLI_LOWER=$(lower "$PROBE_OUTPUT")
+WIFI_DEVICE=''
+if [[ $PROBE_STATUS -eq 0 ]]; then
+  WIFI_DEVICE=$(printf '%s\n' "$NMCLI_LOWER" | awk -F ':' '$2 == "wifi" && $3 == "connected" {print $1; exit}')
+fi
 if [[ $PROBE_STATUS -eq 127 ]]; then
-  report WARN networking 'nmcli unavailable or no captured probe'
-elif [[ $PROBE_STATUS -eq 0 && "$NMCLI_LOWER" == *":connected"* ]]; then
+  report FAIL networking 'nmcli unavailable or no captured probe'
+elif [[ -n "$WIFI_DEVICE" ]]; then
   report PASS networking "$PROBE_OUTPUT"
 else
-  report FAIL networking "no connected NetworkManager device: ${PROBE_OUTPUT:-no output}"
+  report FAIL networking "no connected Wi-Fi NetworkManager device: ${PROBE_OUTPUT:-no output}"
 fi
 
 run_probe iw iw dev
 if [[ $PROBE_STATUS -eq 127 ]]; then
-  report WARN wifi 'iw unavailable or no captured probe'
-elif [[ $PROBE_STATUS -eq 0 && "$PROBE_OUTPUT" == *"Interface"* ]]; then
+  report FAIL wifi 'iw unavailable or no captured probe'
+elif [[ $PROBE_STATUS -eq 0 && -n "$WIFI_DEVICE" && "$PROBE_OUTPUT" == *"Interface $WIFI_DEVICE"* ]]; then
   report PASS wifi "$PROBE_OUTPUT"
 else
-  report FAIL wifi "wireless interface not found: ${PROBE_OUTPUT:-no output}"
+  report FAIL wifi "connected Wi-Fi interface $WIFI_DEVICE not found in iw inventory: ${PROBE_OUTPUT:-no output}"
+fi
+
+if [[ -n "$WIFI_DEVICE" ]]; then
+  run_probe wifi_driver readlink -f "$ROOT/sys/class/net/$WIFI_DEVICE/device/driver"
+  WIFI_DRIVER_LOWER=$(lower "$PROBE_OUTPUT")
+  if [[ $PROBE_STATUS -eq 0 && "$WIFI_DRIVER_LOWER" == *"brcmfmac"* ]]; then
+    report PASS wifi-driver "Broadcom brcmfmac owns $WIFI_DEVICE: $PROBE_OUTPUT"
+  else
+    report FAIL wifi-driver "expected brcmfmac for $WIFI_DEVICE; observed ${PROBE_OUTPUT:-unavailable}"
+  fi
+else
+  report FAIL wifi-driver 'cannot identify the CM5 Wi-Fi driver without a connected Wi-Fi interface'
 fi
 
 run_probe bluetoothctl bluetoothctl show
 BT_LOWER=$(lower "$PROBE_OUTPUT")
 if [[ $PROBE_STATUS -eq 127 ]]; then
-  report WARN bluetooth 'bluetoothctl unavailable or no captured probe'
+  report FAIL bluetooth 'bluetoothctl unavailable or no captured probe'
 elif [[ $PROBE_STATUS -eq 0 && "$BT_LOWER" == *"controller"* && "$BT_LOWER" == *"powered: yes"* ]]; then
   report PASS bluetooth "$PROBE_OUTPUT"
 elif [[ $PROBE_STATUS -eq 0 && "$BT_LOWER" == *"controller"* ]]; then
-  report WARN bluetooth "controller present but not powered: $PROBE_OUTPUT"
+  report FAIL bluetooth "controller present but not powered: $PROBE_OUTPUT"
 else
   report FAIL bluetooth "controller not found: ${PROBE_OUTPUT:-no output}"
+fi
+if [[ $PROBE_STATUS -eq 0 && ( "$BT_LOWER" == *"manufacturer: 0x000f"* || "$BT_LOWER" == *"manufacturer: 15"* || "$BT_LOWER" == *"broadcom"* ) ]]; then
+  report PASS bluetooth-identity 'Broadcom controller manufacturer is confirmed'
+else
+  report FAIL bluetooth-identity "expected Broadcom manufacturer 0x000f (15): ${PROBE_OUTPUT:-no output}"
 fi
 
 BATTERY_DETAIL=""
@@ -457,11 +504,14 @@ for TYPE_FILE in "$ROOT"/sys/class/power_supply/*/type; do
   if [[ "$TYPE" == "Battery" ]]; then
     SUPPLY=${TYPE_FILE%/type}
     NAME=${SUPPLY##*/}
+    NAME_LOWER=$(lower "$NAME")
+    [[ "$NAME_LOWER" == *"axp"* ]] || continue
     CAPACITY='unknown'
     BATTERY_STATUS='unknown'
     if [[ -r "$SUPPLY/capacity" ]]; then CAPACITY=$(read_text "$SUPPLY/capacity"); fi
     if [[ -r "$SUPPLY/status" ]]; then BATTERY_STATUS=$(read_text "$SUPPLY/status"); fi
-    if [[ "$CAPACITY" =~ ^[0-9]+$ && "$CAPACITY" -ge 0 && "$CAPACITY" -le 100 && -n "$BATTERY_STATUS" ]]; then
+    case "$BATTERY_STATUS" in Charging|Discharging|Full|'Not charging') BATTERY_STATUS_VALID=1 ;; *) BATTERY_STATUS_VALID=0 ;; esac
+    if [[ "$CAPACITY" =~ ^[0-9]+$ && "$CAPACITY" -ge 0 && "$CAPACITY" -le 100 && $BATTERY_STATUS_VALID -eq 1 ]]; then
       BATTERY_DETAIL="$NAME capacity=$CAPACITY status=$BATTERY_STATUS"
     else
       BATTERY_DETAIL="invalid:$NAME capacity=$CAPACITY status=$BATTERY_STATUS"
@@ -474,7 +524,7 @@ if [[ -n "$BATTERY_DETAIL" && "$BATTERY_DETAIL" != invalid:* ]]; then
 elif [[ "$BATTERY_DETAIL" == invalid:* ]]; then
   report FAIL battery "${BATTERY_DETAIL#invalid:}"
 else
-  report FAIL battery 'no Battery power_supply found'
+  report FAIL battery 'no valid AXP uConsole Battery power_supply found'
 fi
 
 EXTERNAL_POWER_DETAIL=''
@@ -484,6 +534,8 @@ for TYPE_FILE in "$ROOT"/sys/class/power_supply/*/type; do
   case "$TYPE" in Mains|USB|USB_*) ;; *) continue ;; esac
   SUPPLY=${TYPE_FILE%/type}
   NAME=${SUPPLY##*/}
+  NAME_LOWER=$(lower "$NAME")
+  [[ "$NAME_LOWER" == *"axp"* ]] || continue
   ONLINE='unknown'
   if [[ -r "$SUPPLY/online" ]]; then ONLINE=$(read_text "$SUPPLY/online"); fi
   if [[ "$ONLINE" == 0 || "$ONLINE" == 1 ]]; then
@@ -498,7 +550,7 @@ if [[ -n "$EXTERNAL_POWER_DETAIL" && "$EXTERNAL_POWER_DETAIL" != invalid:* ]]; t
 elif [[ "$EXTERNAL_POWER_DETAIL" == invalid:* ]]; then
   report FAIL external-power "${EXTERNAL_POWER_DETAIL#invalid:}"
 else
-  report FAIL external-power 'no external power_supply telemetry found'
+  report FAIL external-power 'no AXP uConsole external power_supply telemetry found'
 fi
 
 if POWER_STATES=$(read_text "$ROOT/sys/power/state"); then
@@ -513,10 +565,12 @@ fi
 
 INPUTS=""
 if INPUTS=$(read_text "$ROOT/proc/bus/input/devices"); then
-  if [[ "$INPUTS" == *"kbd"* && "$INPUTS" == *"mouse"* ]]; then
-    report PASS input-devices 'keyboard and pointer handlers present'
+  UCONSOLE_KEYBOARD=$(printf '%s\n' "$INPUTS" | awk 'BEGIN {RS=""} {record=tolower($0)} record ~ /name="[^"]*uconsole[^"]*keyboard/ && record ~ /handlers=/ && record ~ /kbd/ {found=1} END {print found + 0}')
+  UCONSOLE_POINTER=$(printf '%s\n' "$INPUTS" | awk 'BEGIN {RS=""} {record=tolower($0)} record ~ /name="[^"]*uconsole[^"]*(trackball|mouse)/ && record ~ /handlers=/ && record ~ /mouse/ {found=1} END {print found + 0}')
+  if [[ $UCONSOLE_KEYBOARD -eq 1 && $UCONSOLE_POINTER -eq 1 ]]; then
+    report PASS input-devices 'uConsole keyboard and trackball/mouse HID handlers present'
   else
-    report FAIL input-devices 'keyboard and/or pointer handler absent'
+    report FAIL input-devices "uConsole HID identities missing: keyboard=$UCONSOLE_KEYBOARD pointer=$UCONSOLE_POINTER"
   fi
   INPUTS_LOWER=$(lower "$INPUTS")
   if [[ "$INPUTS_LOWER" == *"power button"* || "$INPUTS_LOWER" == *"axp20x-pek"* || "$INPUTS_LOWER" == *"axp20x pek"* ]]; then
@@ -555,8 +609,8 @@ fi
 
 run_probe hypr_devices hyprctl devices
 HYPR_DEVICES_LOWER=$(lower "$PROBE_OUTPUT")
-if [[ $PROBE_STATUS -eq 0 && "$HYPR_DEVICES_LOWER" == *"mice:"* && "$HYPR_DEVICES_LOWER" == *"keyboards:"* ]]; then
-  report PASS wayland-input 'Hyprland reports both pointer and keyboard classes'
+if [[ $PROBE_STATUS -eq 0 && "$HYPR_DEVICES_LOWER" == *"mice:"*"uconsole"*"keyboards:"*"uconsole"* ]]; then
+  report PASS wayland-input 'Hyprland reports uConsole input identities in pointer and keyboard classes'
 elif phase_at_least hyprland; then
   report FAIL wayland-input "Hyprland pointer/keyboard classes not confirmed: ${PROBE_OUTPUT:-no output}"
 else

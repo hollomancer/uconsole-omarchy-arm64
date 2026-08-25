@@ -836,9 +836,11 @@ scripts/validate-system.sh --phase hyprland
 scripts/validate-system.sh --phase omarchy
 ```
 
-The hardware phase still reports later layers as WARN. The Hyprland and
-Omarchy phases turn their respective absence into FAIL. They also require
-successful V3D/V3DV probes, the native rotated monitor, both Wayland input
-classes and an active Hyprland portal. Any OpenGL software renderer, Vulkan
-software renderer, missing DRM render node, exact hardware-state mismatch or
-absent required board module remains FAIL.
+The hardware phase reports later desktop layers as WARN, but it cannot pass
+without uConsole-specific hardware identities and at least one successful
+userspace V3D/V3DV acceleration probe. This permits headless V3DV evidence
+during console bring-up; lack of all userspace acceleration evidence is FAIL.
+The Hyprland and Omarchy phases require both GL and Vulkan, uConsole/RP1
+PipeWire audio, the native rotated panel, uConsole Wayland input identities and
+an active portal. Any software renderer, missing DRM render node, exact
+hardware-state mismatch or absent required board module remains FAIL.

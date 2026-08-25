@@ -75,6 +75,14 @@ portal, Omarchy userland and missing core packages. Unknown or unavailable
 evidence is WARN/FAIL, never silently omitted. The suspend and power-key probes
 report capability only; actual suspend/wake and button behavior remain manual
 tests with recovery present. Use `--phase hardware`, then `--phase hyprland`,
-then `--phase omarchy`. In the Hyprland and Omarchy phases, missing GL/Vulkan
-probes, native orientation, compositor input or portal state are hard failures
-rather than warnings.
+then `--phase omarchy`.
+
+The hardware phase requires the exact 16 KiB kernel selection, all nine board
+modules, CWU50/OCP8178/AXP228 DT identities, a native DSI-1 or DSI-2 panel,
+OCP8178 backlight, uConsole/RP1 ALSA card, connected `brcmfmac` Wi-Fi, Broadcom
+Bluetooth manufacturer, AXP battery/AC supplies, uConsole keyboard/trackball
+HID names and at least one successful V3D/V3DV userspace acceleration probe.
+Unavailable GLX may remain WARN during console-only bring-up only when V3DV is
+successfully identified. In the Hyprland and Omarchy phases, both GL and Vulkan
+probes, uConsole PipeWire audio, native orientation, uConsole compositor input
+and portal state are required.

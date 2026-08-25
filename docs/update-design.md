@@ -1,7 +1,10 @@
 # Phase 6 — update mechanism design
 
-Status: **design only.** Nothing here is implemented. `scripts/plan-omarchy-update.sh`
-exists and is audit-only; the orchestrator described below does not exist yet.
+Status: **partially implemented.** The hardware-domain gate
+(`scripts/check-boot-manifest.sh`) and the generalised transaction resolver
+(`research/resolve-transaction.sh`) exist and are tested off-target; see
+**Implemented so far**. `scripts/plan-omarchy-update.sh` remains audit-only, and
+the orchestrator that sequences these into an actual update does not exist yet.
 
 The audited upstream flow and the 28 content-locked command dispositions are in
 [`research/omarchy-update-audit-results.yaml`](../research/omarchy-update-audit-results.yaml)
@@ -54,13 +57,14 @@ against a mirror:
 pinned upstream commit
     ↓  plan-omarchy-update.sh          (exists; audit-only, runs no candidate code)
 candidate classified, no unknowns
-    ↓  resolve-update-transaction.sh   (future; exact closure from frozen DBs)
+    ↓  resolve-transaction.sh          (built; exact closure from frozen DBs)
 content-locked transaction + signatures
     ↓  build + test on a disposable image  (future)
 evidence recorded
     ↓  sign                             (future; blocked on a signing policy)
 promoted transaction
-    ↓  apply-omarchy-update.sh          (future; offline, boot-manifest gated)
+    ↓  apply-omarchy-update.sh          (future; offline, gated by
+                                        check-boot-manifest.sh)
 updated development root
 ```
 
@@ -169,17 +173,59 @@ None of this can ship without these, and all three are currently open:
 - **Live hardware validation.** No transaction should be promoted on evidence
   from an emulated build alone.
 
+## Implemented so far
+
+Two pieces of the pipeline exist and are tested off-target. Neither has run
+against real hardware or the frozen production databases.
+
+**`scripts/check-boot-manifest.sh`** — the hardware-domain gate. Captures the
+boot file set from a root, compares it against a baseline, and exits 1 on any
+difference unless `--allow-hardware-transition` is passed. It accepts either its
+own captures or the JSON manifest `build-image.sh` already embeds, so an updated
+root can be compared against exactly what its image shipped. It excludes that
+embedded manifest from both views (it is itself a build product and would
+otherwise self-report), refuses symbolic links under `/boot` (the recorded
+digest and the byte the firmware reads could disagree), and reports a modified
+file as changed rather than as an unrelated add plus remove.
+
+```sh
+scripts/check-boot-manifest.sh --capture --root /mnt/uconsole-root --output before.manifest
+# ... apply the transaction ...
+scripts/check-boot-manifest.sh --compare --baseline before.manifest --root /mnt/uconsole-root
+```
+
+**`research/resolve-transaction.sh`** — one resolver for every layer. The
+Hyprland and Omarchy shell resolvers were about ninety percent identical, so
+their differences moved into `config/<layer>/resolver.conf` and the safety
+envelope is written once: read-only repository, databases and source root, a
+writable output that must be new, empty and outside the repository, frozen
+database digests, and a committed transaction lock whose digest must match.
+`--generate-lock` is refused once a lock exists, so a promoted transaction
+cannot be silently regenerated.
+
+```sh
+research/resolve-transaction.sh --layer hyprland \
+  --source-volume uconsole-... --output-dir /new/empty/dir
+```
+
+`research/resolve-hyprland-closure.sh` and
+`research/resolve-omarchy-shell-closure.sh` are superseded but retained until
+the generalised resolver has been exercised against the real frozen databases.
+A test cross-checks each descriptor's image and entry point against the
+resolver it replaces, so a migration error surfaces before then.
+
 ## What to build first
 
 In dependency order, once hardware passes:
 
 1. Signing policy and offline key — everything else is gated on it.
-2. `resolve-update-transaction.sh`, generalising the existing Hyprland and
-   shell closure resolvers.
-3. The boot manifest gate as a standalone, testable check.
+2. ~~A generalised transaction resolver~~ — done, `research/resolve-transaction.sh`.
+3. ~~The boot manifest gate as a standalone, testable check~~ — done,
+   `scripts/check-boot-manifest.sh`.
 4. `apply-omarchy-update.sh`, offline and plan-first like every other
-   transaction here.
+   transaction here, wrapping the gate around the resolved transaction.
 5. `omarchy-update-arm64`, sequencing the 9 reused commands around the above.
 
-Steps 2 and 3 are independent of hardware and could begin now. Step 1 needs a
-decision from the maintainer, not code.
+Steps 2 and 3 are complete off-target. Step 4 is the next buildable piece but
+is only worth writing once a transaction can actually be signed, so step 1 —
+a decision from the maintainer rather than code — is now the critical path.

@@ -63,7 +63,7 @@ while (($# > 0)); do
   esac
 done
 
-ROOT=$(install_common_require_offline_arch_root "$ROOT")
+ROOT=$(install_common_require_offline_arch_root "$ROOT") || exit 2
 [[ -d "$PACKAGE_DIR" && ! -L "$PACKAGE_DIR" ]] || install_common_die "package directory is missing or a symlink: $PACKAGE_DIR"
 PACKAGE_DIR=$(cd -- "$PACKAGE_DIR" && pwd -P) || install_common_die 'unable to resolve package directory'
 install_common_require_file 'prerequisite lock' "$LOCK_FILE"

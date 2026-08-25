@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+# Idempotent Omarchy shell launch for the uConsole ARM64 session.
+#
+# Why this wrapper exists at all:
+#
+# Hyprland 0.56.1's Lua configuration exposes hl.exec_cmd and hl.exec_raw but no
+# exec-once equivalent, and no first-launch predicate. hl.exec_cmd calls the
+# executor's spawn() directly rather than addExecOnce(), so it runs on every
+# configuration evaluation — the initial load and each subsequent
+# `hyprctl reload`.
+#
+# Upstream omarchy-launch-shell is a supervising relaunch loop with no singleton
+# guard: it restarts Quickshell up to five times a minute and exits only when
+# told to. Two invocations therefore leave two supervisors and two Quickshell
+# instances competing over the same panel and IPC socket.
+#
+# This wrapper takes a non-blocking per-session lock and exits quietly when the
+# lock is already held. The lock file descriptor is deliberately inherited
+# across exec, so it stays held for the lifetime of the supervisor and is
+# released by the kernel when that process group is gone. A second launch — from
+# a reload, a repeated keypress, or both — becomes a no-op instead of a
+# duplicate shell.
+
+set -u
+
+LAUNCHER=/usr/bin/omarchy-launch-shell
+
+RUNTIME_DIR=${XDG_RUNTIME_DIR:-}
+if [[ -z "$RUNTIME_DIR" || ! -d "$RUNTIME_DIR" ]]; then
+  printf 'omarchy-session-arm64: XDG_RUNTIME_DIR is unset or missing; refusing to launch.\n' >&2
+  exit 2
+fi
+
+if [[ ! -x "$LAUNCHER" ]]; then
+  printf 'omarchy-session-arm64: %s is missing or not executable.\n' "$LAUNCHER" >&2
+  exit 2
+fi
+
+if ! command -v flock >/dev/null 2>&1; then
+  printf 'omarchy-session-arm64: flock is unavailable; refusing to launch without a singleton guard.\n' >&2
+  exit 2
+fi
+
+LOCK_FILE="$RUNTIME_DIR/omarchy-session-arm64.lock"
+if ! exec 9>"$LOCK_FILE"; then
+  printf 'omarchy-session-arm64: unable to open the session lock: %s\n' "$LOCK_FILE" >&2
+  exit 2
+fi
+
+# Not an error: a reload or a second keypress is expected to land here.
+if ! flock -n 9; then
+  printf 'omarchy-session-arm64: the Omarchy shell is already running for this session.\n' >&2
+  exit 0
+fi
+
+exec "$LAUNCHER"

@@ -80,7 +80,7 @@ install_common_require_file 'ARM shell configuration' "$SHELL_CONFIG"
 # hashes from the archive.
 "$REPO_ROOT/research/audit-omarchy-activation.sh" --source-archive "$SOURCE_ARCHIVE" >/dev/null || install_common_die 'pinned Omarchy source audit failed'
 
-ROOT=$(install_common_require_offline_arch_root "$ROOT")
+ROOT=$(install_common_require_offline_arch_root "$ROOT") || exit 2
 PACKAGE_ROOT="$ROOT/usr/share/omarchy-arm64"
 PACKAGE_STATE="$PACKAGE_ROOT/ARM64-PACKAGE-STATE"
 install_common_require_file 'installed ARM userland state' "$PACKAGE_STATE"

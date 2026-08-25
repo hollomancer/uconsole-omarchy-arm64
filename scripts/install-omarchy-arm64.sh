@@ -181,7 +181,7 @@ for path in "${EXPECTED_PATHS[@]}"; do
   [[ -n "$reason" ]] || install_common_die "empty staging reason: $path"
 done
 
-ROOT=$(install_common_require_offline_arch_root "$ROOT")
+ROOT=$(install_common_require_offline_arch_root "$ROOT") || exit 2
 HYPRLAND_STATE="$ROOT/var/lib/uconsole-omarchy-arm64/hyprland-selection"
 install_common_require_file 'Hyprland selection state' "$HYPRLAND_STATE"
 state_field() {

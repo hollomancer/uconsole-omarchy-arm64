@@ -93,7 +93,7 @@ done
 [[ "$(install_common_sha256 "$USERLAND_LOCK")" == "$EXPECTED_USERLAND_LOCK_SHA" ]] || install_common_die 'userland lock SHA-256 mismatch'
 [[ "$(install_common_sha256 "$RUNTIME_POLICY")" == "$EXPECTED_RUNTIME_POLICY_SHA" ]] || install_common_die 'runtime command policy SHA-256 mismatch'
 
-ROOT=$(install_common_require_offline_arch_root "$ROOT")
+ROOT=$(install_common_require_offline_arch_root "$ROOT") || exit 2
 [[ -d "$PACKAGE_DIR" && ! -L "$PACKAGE_DIR" ]] || install_common_die "package directory is missing or a symlink: $PACKAGE_DIR"
 PACKAGE_DIR=$(cd -- "$PACKAGE_DIR" && pwd -P) || install_common_die 'unable to resolve package directory'
 if [[ -n "$PACKAGE_DIR_IN_ROOT" ]]; then

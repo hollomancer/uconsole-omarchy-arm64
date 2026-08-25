@@ -68,7 +68,7 @@ while (($# > 0)); do
   esac
 done
 
-ROOT=$(install_common_require_offline_arch_root "$ROOT")
+ROOT=$(install_common_require_offline_arch_root "$ROOT") || exit 2
 HARDWARE_STATE="$ROOT/var/lib/uconsole-omarchy-arm64/hardware-selection"
 install_common_require_file 'hardware selection state' "$HARDWARE_STATE"
 state_field() {

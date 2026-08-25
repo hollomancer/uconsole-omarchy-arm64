@@ -106,7 +106,7 @@ REG_DOMAIN=$(printf '%s' "$REG_DOMAIN" | tr '[:lower:]' '[:upper:]')
 [[ "$KEYMAP" == us ]] || install_common_die 'only the audited us keymap is currently supported'
 [[ "$TIMEZONE" =~ ^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)*$ ]] || install_common_die '--timezone contains unsafe characters'
 
-ROOT=$(install_common_require_offline_arch_root "$ROOT")
+ROOT=$(install_common_require_offline_arch_root "$ROOT") || exit 2
 HARDWARE_STATE="$ROOT/var/lib/uconsole-omarchy-arm64/hardware-selection"
 PACKAGE_STATE="$ROOT/var/lib/uconsole-omarchy-arm64/base-system-packages"
 install_common_require_file 'hardware selection state' "$HARDWARE_STATE"

@@ -160,7 +160,7 @@ done
 [[ "$KERNEL_RELEASE" == *-rpi-16k ]] || install_common_die "package lock is not a 16K Pi kernel release: $KERNEL_RELEASE"
 [[ "$BOARD_SOURCE_COMMIT" == bf7a0ab55654c96b74d013520e1196d39f66391a ]] || install_common_die 'package lock advances the unaudited board source commit'
 
-ROOT=$(install_common_require_offline_arch_root "$ROOT")
+ROOT=$(install_common_require_offline_arch_root "$ROOT") || exit 2
 install_common_require_file 'boot fragment' "$BOOT_FRAGMENT"
 install_common_assert_package "$KERNEL_PACKAGE" "$KERNEL_NAME" "$KERNEL_VERSION" "$KERNEL_SHA256"
 install_common_assert_package "$HEADERS_PACKAGE" "$HEADERS_NAME" "$HEADERS_VERSION" "$HEADERS_SHA256"

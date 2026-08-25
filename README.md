@@ -127,10 +127,23 @@ scripts/validate-system.sh --phase omarchy
 ```
 
 It reports PASS, WARN or FAIL for all requested hardware, graphics, desktop and
-package checks. Enforced desktop phases fail on unavailable GPU probes, wrong
-panel orientation, missing Wayland input classes or an inactive portal.
-Deterministic fixtures exercise success, software-GPU and missing-session-
-evidence paths with `tests/test-validate-system.sh`.
+package checks. The hardware gate cannot pass until at least one userspace
+V3D/V3DV probe succeeds; the Hyprland and Omarchy gates require both OpenGL and
+Vulkan. It also requires uConsole-specific DSI, backlight, audio, radio, AXP
+power and composite-HID identities instead of accepting arbitrary devices in
+the same class. Deterministic fixtures exercise the positive, headless-GPU,
+missing-GPU, software-renderer, generic-device-impostor and missing-session
+paths.
+
+Run the complete host-side contract suite with:
+
+```sh
+tests/run-all.sh
+```
+
+The same 28 deterministic tests run in GitHub Actions on pushes and pull
+requests. They need neither hardware nor privileged access and therefore do
+not replace the live uConsole acceptance run.
 
 Before hardware is available, the exact retained boot artifacts can be checked
 without network, devices or persistent writes:
@@ -393,6 +406,9 @@ that gate but has not been applied to a card.
 ```text
 .
 ├── README.md
+├── .github/
+│   └── workflows/
+│       └── contract-tests.yml            # current deterministic CI gate
 ├── config/
 │   ├── arm64-overrides/
 │   │   ├── README.md
@@ -504,6 +520,7 @@ that gate but has not been applied to a card.
 │   ├── plan-sd-write-macos.sh            # current: read-only macOS media preflight
 │   └── validate-system.sh                # current: read-only PASS/WARN/FAIL report
 └── tests/
+    ├── run-all.sh                        # current 28-test aggregate runner
     ├── test-archive-project-volume.sh     # current archive/restore safety test
     ├── test-bootstrap-arch.sh             # current rootfs/input safety test
     ├── test-build-image.sh                # current image/device safety test

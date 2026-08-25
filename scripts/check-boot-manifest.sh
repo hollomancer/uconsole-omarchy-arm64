@@ -122,11 +122,11 @@ read_manifest() {
     extracted=$(sed -n 's/.*{"path": "\(.*\)", "size": \([0-9]*\), "sha256": "\([0-9a-f]*\)"}.*/\3  \2  \1/p' "$path") ||
       install_common_die "unable to parse JSON manifest: $path"
     [[ -n "$extracted" ]] || install_common_die "JSON manifest contains no boot files: $path"
-    printf '%s\n' "$extracted" | LC_ALL=C sort -k3
+    printf '%s\n' "$extracted"
     return 0
   fi
 
-  grep -v '^#' "$path" | grep -v '^[[:space:]]*$' | LC_ALL=C sort -k3
+  grep -v '^#' "$path" | grep -v '^[[:space:]]*$'
 }
 
 if [[ "$ACTION" == 'capture' ]]; then
@@ -134,7 +134,11 @@ if [[ "$ACTION" == 'capture' ]]; then
   BODY=$(capture_root "$ROOT") || exit 2
   COUNT=$(printf '%s\n' "$BODY" | grep -c . || true)
   [[ "$COUNT" -gt 0 ]] || install_common_die 'boot directory contains no files'
-  ROLLUP=$(printf '%s\n' "$BODY" | sha256sum | awk '{print $1}')
+  ROLLUP_TMP=$(mktemp) || install_common_die 'unable to stage the rollup digest'
+  printf '%s\n' "$BODY" > "$ROLLUP_TMP" || install_common_die 'unable to stage the rollup digest'
+  ROLLUP=$(install_common_sha256 "$ROLLUP_TMP") || install_common_die 'no usable SHA-256 command is available'
+  rm -f -- "$ROLLUP_TMP"
+  [[ "$ROLLUP" =~ ^[0-9a-f]{64}$ ]] || install_common_die 'rollup digest is malformed'
 
   RENDERED=$(printf '# uconsole boot manifest v1\n# sha256  size  path\n# files=%s rollup=%s\n%s\n' "$COUNT" "$ROLLUP" "$BODY")
   if [[ -n "$OUTPUT" ]]; then
@@ -162,7 +166,7 @@ if [[ -n "$CANDIDATE" ]]; then
   CANDIDATE_LABEL="$CANDIDATE"
 elif [[ -n "$ROOT" ]]; then
   ROOT=$(install_common_require_offline_arch_root "$ROOT") || exit 2
-  AFTER=$(capture_root "$ROOT" | LC_ALL=C sort -k3) || exit 2
+  AFTER=$(capture_root "$ROOT") || exit 2
   CANDIDATE_LABEL="$ROOT/boot"
 else
   install_common_die '--compare requires --root or --candidate'
@@ -171,22 +175,55 @@ fi
 BEFORE_COUNT=$(printf '%s\n' "$BEFORE" | grep -c . || true)
 AFTER_COUNT=$(printf '%s\n' "$AFTER" | grep -c . || true)
 
-# Compare by path so a changed file reads as "changed" rather than as an
-# unrelated add plus remove.
-BEFORE_PATHS=$(printf '%s\n' "$BEFORE" | awk '{ $1=""; $2=""; sub(/^  /, ""); print }' | LC_ALL=C sort)
-AFTER_PATHS=$(printf '%s\n' "$AFTER" | awk '{ $1=""; $2=""; sub(/^  /, ""); print }' | LC_ALL=C sort)
+# Rows are 'digest  size  path' with a two-space separator, and a boot filename
+# may itself contain spaces or tabs. Split on the first two separators only:
+# field-splitting or a whitespace-collapsing regex would silently fail to match
+# such a path against its own digest, and two empty lookups compare equal — a
+# tampered file would then be reported as unchanged. That is a fail-open in the
+# one check whose entire job is to notice a changed boot file.
+declare -A BEFORE_DIGEST=()
+declare -A AFTER_DIGEST=()
 
-ADDED=$(LC_ALL=C comm -13 <(printf '%s\n' "$BEFORE_PATHS") <(printf '%s\n' "$AFTER_PATHS"))
-REMOVED=$(LC_ALL=C comm -23 <(printf '%s\n' "$BEFORE_PATHS") <(printf '%s\n' "$AFTER_PATHS"))
-COMMON=$(LC_ALL=C comm -12 <(printf '%s\n' "$BEFORE_PATHS") <(printf '%s\n' "$AFTER_PATHS"))
+load_rows() {
+  local -n target=$1
+  local rows=$2
+  local line digest rest size path
+  while IFS= read -r line; do
+    [[ -n "$line" ]] || continue
+    [[ "$line" == *"  "* ]] || install_common_die "malformed manifest row: $line"
+    digest=${line%%"  "*}
+    rest=${line#*"  "}
+    [[ "$rest" == *"  "* ]] || install_common_die "malformed manifest row: $line"
+    size=${rest%%"  "*}
+    path=${rest#*"  "}
+    [[ "$digest" =~ ^[0-9a-f]{64}$ ]] || install_common_die "malformed digest in manifest row: $line"
+    [[ "$size" =~ ^[0-9]+$ ]] || install_common_die "malformed size in manifest row: $line"
+    [[ -n "$path" ]] || install_common_die "malformed path in manifest row: $line"
+    [[ -z "${target[$path]+set}" ]] || install_common_die "duplicate manifest entry for path: $path"
+    target["$path"]=$digest
+  done <<< "$rows"
+}
 
+load_rows BEFORE_DIGEST "$BEFORE"
+load_rows AFTER_DIGEST "$AFTER"
+
+ADDED=''
+REMOVED=''
 CHANGED=''
-while IFS= read -r shared_path; do
-  [[ -n "$shared_path" ]] || continue
-  before_digest=$(printf '%s\n' "$BEFORE" | awk -v want="$shared_path" '{ p=$0; sub(/^[^ ]+  [^ ]+  /, "", p); if (p == want) { print $1; exit } }')
-  after_digest=$(printf '%s\n' "$AFTER" | awk -v want="$shared_path" '{ p=$0; sub(/^[^ ]+  [^ ]+  /, "", p); if (p == want) { print $1; exit } }')
-  [[ "$before_digest" == "$after_digest" ]] || CHANGED+="$shared_path"$'\n'
-done <<< "$COMMON"
+while IFS= read -r path; do
+  [[ -n "$path" ]] || continue
+  if [[ -z "${AFTER_DIGEST[$path]+set}" ]]; then
+    REMOVED+="$path"$'\n'
+  elif [[ "${BEFORE_DIGEST[$path]}" != "${AFTER_DIGEST[$path]}" ]]; then
+    CHANGED+="$path"$'\n'
+  fi
+done <<< "$(printf '%s\n' "${!BEFORE_DIGEST[@]}" | LC_ALL=C sort)"
+while IFS= read -r path; do
+  [[ -n "$path" ]] || continue
+  [[ -n "${BEFORE_DIGEST[$path]+set}" ]] || ADDED+="$path"$'\n'
+done <<< "$(printf '%s\n' "${!AFTER_DIGEST[@]}" | LC_ALL=C sort)"
+ADDED=${ADDED%$'\n'}
+REMOVED=${REMOVED%$'\n'}
 CHANGED=${CHANGED%$'\n'}
 
 ADDED_COUNT=$(printf '%s\n' "$ADDED" | grep -c . || true)

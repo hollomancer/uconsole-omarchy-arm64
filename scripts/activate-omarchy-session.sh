@@ -107,6 +107,7 @@ SHELL_STATE="$STATE_DIR/omarchy-shell-selection"
 install_common_require_file 'Omarchy shell selection state' "$SHELL_STATE"
 grep -Fxq "target_user=$TARGET_USER" "$SHELL_STATE" || install_common_die 'Omarchy shell selection belongs to a different user'
 grep -Fxq "userland_version=$EXPECTED_USERLAND_VERSION" "$SHELL_STATE" || install_common_die 'Omarchy shell selection has an unexpected userland version'
+grep -Eq '^session_activated=(yes|no)$' "$SHELL_STATE" || install_common_die 'Omarchy shell selection lacks a session_activated field'
 
 USER_STATE="$STATE_DIR/user-preparation-$TARGET_USER"
 install_common_require_file 'Omarchy user preparation state' "$USER_STATE"
@@ -143,6 +144,24 @@ cat "$MINIMAL_CONFIG" "$HANDOFF_SOURCE" > "$ACTIVATED_TMP" || install_common_die
 EXPECTED_ACTIVATED_SHA256=$(install_common_sha256 "$ACTIVATED_TMP") || install_common_die 'unable to hash the expected activated configuration'
 EXPECTED_GUARD_SHA256=$(install_common_sha256 "$GUARD_SOURCE") || install_common_die 'unable to hash the session guard'
 OBSERVED_CONFIG_SHA256=$(install_common_sha256 "$CONFIG_TARGET") || install_common_die 'unable to hash the installed Hyprland configuration'
+
+# The shell selection state carries session_activated as the project-wide claim
+# that no handoff is enabled. Four separate gates read it — build-image.sh's
+# prepared-image check among them — so leaving it at 'no' after activation would
+# let an activated root be imaged as an inactive one. Keep it truthful in both
+# directions.
+set_shell_activation() {
+  local value=$1
+  local staged="$STATE_DIR/.omarchy-shell-selection.$$"
+  awk -v v="$value" '
+    /^session_activated=/ { print "session_activated=" v; seen=1; next }
+    { print }
+    END { if (!seen) exit 1 }
+  ' "$SHELL_STATE" > "$staged" || { rm -f -- "$staged"; return 1; }
+  chmod 0644 "$staged" || { rm -f -- "$staged"; return 1; }
+  mv "$staged" "$SHELL_STATE" || { rm -f -- "$staged"; return 1; }
+  grep -Fxq "session_activated=$value" "$SHELL_STATE"
+}
 
 guard_installed_exactly() {
   [[ -f "$GUARD_PATH" && ! -L "$GUARD_PATH" ]] || return 1
@@ -216,8 +235,15 @@ if [[ "$ACTION" == 'deactivate' ]]; then
   fi
   install -m 0644 "$MINIMAL_CONFIG" "$CONFIG_TARGET" || install_common_fail 'unable to restore the minimal Hyprland configuration'
   "$CHOWN_COMMAND" "$TARGET_UID:$TARGET_GID" "$CONFIG_TARGET" || install_common_fail 'unable to restore Hyprland configuration ownership'
-  rm -f -- "$GUARD_PATH" || install_common_fail 'unable to remove the session guard'
+  # Only remove a guard this transaction recognises. Every other write here is
+  # byte-verified, and an unrecognised binary at that path belongs to whoever
+  # put it there.
+  if [[ -e "$GUARD_PATH" || -L "$GUARD_PATH" ]]; then
+    guard_installed_exactly || install_common_die "refusing to remove an unrecognised file at $GUARD_TARGET"
+    rm -f -- "$GUARD_PATH" || install_common_fail 'unable to remove the session guard'
+  fi
   rm -f -- "$STATE_FILE" || install_common_fail 'unable to remove the session handoff state'
+  set_shell_activation no || install_common_fail 'unable to clear session_activated in the Omarchy shell selection'
   [[ "$(install_common_sha256 "$CONFIG_TARGET")" == "$EXPECTED_MINIMAL_SHA256" ]] || install_common_fail 'restored configuration does not match the reviewed baseline'
   printf '%s\n' \
     "[PASS] configuration        restored to minimal baseline sha256=$EXPECTED_MINIMAL_SHA256" \
@@ -229,7 +255,14 @@ if [[ "$ACTION" == 'deactivate' ]]; then
 fi
 
 if [[ "$CURRENT" == 'activated-this-mode' ]] && guard_installed_exactly && state_matches_mode; then
-  printf '[PASS] existing session handoff is byte-for-byte idempotent; no files changed.\n'
+  # Byte-identical apart from the activation claim, which is repaired rather
+  # than left stale so a reapply cannot silently restore an untruthful state.
+  if grep -Fxq 'session_activated=yes' "$SHELL_STATE"; then
+    printf '[PASS] existing session handoff is byte-for-byte idempotent; no files changed.\n'
+  else
+    set_shell_activation yes || install_common_fail 'unable to record session_activated in the Omarchy shell selection'
+    printf '[PASS] existing session handoff verified; repaired a stale session_activated claim.\n'
+  fi
   exit 0
 fi
 
@@ -255,6 +288,8 @@ STATE_TMP="$STATE_DIR/.session-handoff-$TARGET_USER.$$"
 chmod 0644 "$STATE_TMP" || install_common_fail 'unable to set session handoff state mode'
 mv "$STATE_TMP" "$STATE_FILE" || install_common_fail 'unable to publish session handoff state'
 
+set_shell_activation yes || install_common_fail 'unable to record session_activated in the Omarchy shell selection'
+
 guard_installed_exactly || install_common_fail 'published session guard does not verify'
 state_matches_mode || install_common_fail 'published session handoff state does not verify'
 [[ "$(install_common_sha256 "$CONFIG_TARGET")" == "$EXPECTED_ACTIVATED_SHA256" ]] || install_common_fail 'published configuration does not verify'
@@ -263,6 +298,7 @@ printf '%s\n' \
   "[PASS] session guard        $GUARD_TARGET sha256=$EXPECTED_GUARD_SHA256" \
   "[PASS] configuration        $TARGET_HOME/.config/hypr/hyprland.lua sha256=$EXPECTED_ACTIVATED_SHA256" \
   "[PASS] handoff state        /var/lib/uconsole-omarchy-arm64/session-handoff-$TARGET_USER" \
+  "[PASS] shell selection      session_activated=yes" \
   ''
 if [[ "$MODE" == 'manual' ]]; then
   printf '%s\n' \

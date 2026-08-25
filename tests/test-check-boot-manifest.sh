@@ -25,6 +25,12 @@ make_root() {
   printf 'kernel bytes\n' > "$root/boot/kernel8.img"
   printf 'dtb bytes\n' > "$root/boot/bcm2712-rpi-cm5-cm5io.dtb"
   printf 'overlay bytes\n' > "$root/boot/overlays/uconsole-cm5-base.dtbo"
+  # Boot filenames containing whitespace: field-splitting or a
+  # whitespace-collapsing regex fails to match such a path against its own
+  # digest, and two empty lookups compare equal, so a tampered file reads as
+  # unchanged. That is a fail-open in the gate's only job.
+  printf 'two space bytes\n' > "$root/boot/odd  name.dtbo"
+  printf 'tabbed bytes\n' > "$root/boot/tab$(printf '\t')name.dtbo"
   printf 'dtparam=ant2\n' > "$root/boot/config.txt"
   printf 'console=serial0,115200 console=tty1\n' > "$root/boot/cmdline.txt"
 }
@@ -76,6 +82,18 @@ printf '%s\n' "$OUT" | grep -Fq 'added:' && { printf 'Modified kernel wrongly re
 OUT=$("$CHECKER" --compare --baseline "$BEFORE" --root "$ROOT" --allow-hardware-transition 2>&1)
 printf '%s\n' "$OUT" | grep -Fq 'WARN' || { printf 'Approved transition did not warn:\n%s\n' "$OUT" >&2; exit 1; }
 printf 'kernel bytes\n' > "$ROOT/boot/kernel8.img"
+
+# Whitespace in a boot filename must not let a tampered file through.
+printf 'TAMPERED\n' > "$ROOT/boot/odd  name.dtbo"
+expect_gate_fires 'tampered two-space filename' --compare --baseline "$BEFORE" --root "$ROOT"
+OUT=$("$CHECKER" --compare --baseline "$BEFORE" --root "$ROOT" 2>&1 || true)
+printf '%s\n' "$OUT" | grep -Fq 'changed: odd  name.dtbo' || { printf 'Two-space filename not reported as changed:\n%s\n' "$OUT" >&2; exit 1; }
+printf 'two space bytes\n' > "$ROOT/boot/odd  name.dtbo"
+
+printf 'TAMPERED\n' > "$ROOT/boot/tab$(printf '\t')name.dtbo"
+expect_gate_fires 'tampered tabbed filename' --compare --baseline "$BEFORE" --root "$ROOT"
+printf 'tabbed bytes\n' > "$ROOT/boot/tab$(printf '\t')name.dtbo"
+"$CHECKER" --compare --baseline "$BEFORE" --root "$ROOT" >/dev/null || { printf 'Expected restored whitespace files to pass\n' >&2; exit 1; }
 
 # An added overlay fires the gate.
 printf 'new overlay\n' > "$ROOT/boot/overlays/extra.dtbo"

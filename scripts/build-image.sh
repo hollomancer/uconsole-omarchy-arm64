@@ -137,7 +137,7 @@ install_common_require_file 'cmdline template' "$CMDLINE_TEMPLATE"
 [[ $(grep -Fo '@ROOT_PARTUUID@' "$CMDLINE_TEMPLATE" | wc -l | tr -d ' ') -eq 1 ]] || install_common_die 'cmdline template must contain one @ROOT_PARTUUID@ token'
 [[ $(wc -l < "$CMDLINE_TEMPLATE" | tr -d ' ') -eq 1 ]] || install_common_die 'cmdline template must contain exactly one line'
 
-ROOT_TREE=$(install_common_require_offline_arch_root "$ROOT_TREE")
+ROOT_TREE=$(install_common_require_offline_arch_root "$ROOT_TREE") || exit 2
 case "$OUTPUT_PARENT/" in "$ROOT_TREE"/*) install_common_die 'output parent must not be the prepared root or one of its descendants' ;; esac
 HARDWARE_STATE="$ROOT_TREE/var/lib/uconsole-omarchy-arm64/hardware-selection"
 install_common_require_file 'hardware selection state' "$HARDWARE_STATE"
@@ -188,8 +188,22 @@ if [[ $ALLOW_DEFAULT_CREDENTIALS -eq 1 ]]; then
   # Without this check the relaxed path could hand back an image whose every
   # account is locked, which on a serial-less uConsole is unreachable and can
   # only be recovered by re-imaging. Require a real console login to exist.
-  LOGIN_CAPABLE=$(awk -F ':' '$2 ~ /^\$/ { print $1 }' "$ROOT_TREE/etc/shadow") || install_common_die 'unable to read target shadow database'
-  [[ -n "$LOGIN_CAPABLE" ]] || install_common_die 'no account has a usable password; the unconfigured image would be unreachable without serial access'
+  install_common_require_file 'target passwd database' "$ROOT_TREE/etc/passwd"
+  LOGIN_CAPABLE=$(awk -F ':' '
+    FNR == NR {
+      shell[$1] = $7
+      next
+    }
+    # A hashed password is necessary but not sufficient: a nologin/false shell
+    # or an expired account (field 8) cannot reach a console prompt.
+    $2 ~ /^\$/ {
+      s = shell[$1]
+      if (s == "" || s ~ /(nologin|\/false)$/) next
+      if ($8 != "" && $8 + 0 > 0) next
+      print $1
+    }
+  ' "$ROOT_TREE/etc/passwd" "$ROOT_TREE/etc/shadow") || install_common_die 'unable to read target account databases'
+  [[ -n "$LOGIN_CAPABLE" ]] || install_common_die 'no account can reach a console login; the unconfigured image would be unreachable without serial access'
   LOGIN_ACCOUNTS=$(printf '%s' "$LOGIN_CAPABLE" | paste -sd, -)
 
   FIRST_BOOT_POLICY="unconfigured; default credentials; console login: $LOGIN_ACCOUNTS"

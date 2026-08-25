@@ -117,6 +117,35 @@ cmp -s "$CONFIG" "$MINIMAL" || { printf 'Deactivate did not restore the exact mi
 [[ ! -e "$STATE_FILE" ]] || { printf 'Deactivate left handoff state behind\n' >&2; exit 1; }
 "$ACTIVATOR" "${ARGS[@]}" --deactivate >/dev/null || { printf 'Expected repeated deactivate to be a no-op\n' >&2; exit 1; }
 
+# The shell selection's session_activated claim is read by four separate gates
+# as proof that no handoff is enabled, so activation must keep it truthful or an
+# activated root could be imaged as an inactive one.
+SHELL_SELECTION="$ROOT/var/lib/uconsole-omarchy-arm64/omarchy-shell-selection"
+"$ACTIVATOR" "${ARGS[@]}" --apply >/dev/null || { printf 'Expected apply for activation-claim check to pass\n' >&2; exit 1; }
+grep -Fxq 'session_activated=yes' "$SHELL_SELECTION" || {
+  printf 'Activation left session_activated stale:\n%s\n' "$(cat "$SHELL_SELECTION")" >&2; exit 1; }
+grep -Fxq 'target_user=alarm' "$SHELL_SELECTION" || { printf 'Activation damaged other shell state fields\n' >&2; exit 1; }
+grep -Fxq 'userland_version=4.0.0.alpha-3' "$SHELL_SELECTION" || { printf 'Activation damaged the userland version\n' >&2; exit 1; }
+"$ACTIVATOR" "${ARGS[@]}" --deactivate >/dev/null || { printf 'Expected deactivate for activation-claim check to pass\n' >&2; exit 1; }
+grep -Fxq 'session_activated=no' "$SHELL_SELECTION" || {
+  printf 'Deactivation did not clear session_activated:\n%s\n' "$(cat "$SHELL_SELECTION")" >&2; exit 1; }
+
+# A reapply must repair a stale claim rather than short-circuit past it.
+"$ACTIVATOR" "${ARGS[@]}" --apply >/dev/null || { printf 'Expected apply before stale-claim repair to pass\n' >&2; exit 1; }
+sed 's/^session_activated=yes$/session_activated=no/' "$SHELL_SELECTION" > "$TEST_TMP/shell-selection"
+mv "$TEST_TMP/shell-selection" "$SHELL_SELECTION"
+"$ACTIVATOR" "${ARGS[@]}" --apply >/dev/null || { printf 'Expected stale-claim reapply to pass\n' >&2; exit 1; }
+grep -Fxq 'session_activated=yes' "$SHELL_SELECTION" || { printf 'Reapply did not repair the stale activation claim\n' >&2; exit 1; }
+
+# Deactivation must not delete an unrecognised binary sitting at the guard path.
+"$ACTIVATOR" "${ARGS[@]}" --deactivate >/dev/null || { printf 'Expected deactivate before foreign-guard check to pass\n' >&2; exit 1; }
+mkdir -p "$(dirname "$GUARD")"
+printf '#!/bin/sh\necho not ours\n' > "$GUARD"
+chmod 0755 "$GUARD"
+expect_rejected 'unrecognised file at the guard path' "${ARGS[@]}" --deactivate
+[[ -f "$GUARD" ]] || { printf 'Deactivate removed an unrecognised guard binary\n' >&2; exit 1; }
+rm "$GUARD"
+
 # A user-modified configuration is never rewritten.
 printf '\n-- user edit\n' >> "$CONFIG"
 expect_rejected 'user-modified Hyprland configuration' "${ARGS[@]}" --apply

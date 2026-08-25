@@ -288,4 +288,41 @@ mv "$TEST_TMP/base-system-selection" "$ROOT/var/lib/uconsole-omarchy-arm64/base-
 expect_rejected 'already-configured root with --allow-default-credentials' \
   "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/configured-relaxed.img" --allow-default-credentials --plan
 
+# A rejected root must stop the builder outright. install_common_die runs inside
+# a command substitution, so without an explicit guard the script continues with
+# an empty root and resolves later paths against the host filesystem; exactly one
+# error is what distinguishes stopping from continuing.
+mkdir -p "$TEST_TMP/not-a-root"
+BAD_ROOT=$("$BUILDER" --root-tree "$TEST_TMP/not-a-root" --output "$OUTPUT_DIR/bad-root.img" \
+  --disk-id c0decafe --boot-id A1B2C3D4 --root-uuid 3f2504e0-4f89-41d3-9a0c-0305e82c3301 \
+  --source-date-epoch 1787590000 --plan 2>&1 || true)
+BAD_ROOT_ERRORS=$(printf '%s\n' "$BAD_ROOT" | grep -c '^ERROR:')
+[[ "$BAD_ROOT_ERRORS" -eq 1 ]] || {
+  printf 'Expected exactly one error for a rejected root-tree; got %s:\n%s\n' "$BAD_ROOT_ERRORS" "$BAD_ROOT" >&2
+  exit 1
+}
+
+# The relaxed path's console-login check must mean "can actually reach a login",
+# not merely "has a password hash": a nologin shell or an expired account leaves
+# the image just as unreachable.
+mv "$ROOT/var/lib/uconsole-omarchy-arm64/base-system-selection" "$TEST_TMP/base-system-selection"
+cp "$ROOT/etc/passwd" "$TEST_TMP/passwd"
+cp "$ROOT/etc/shadow" "$TEST_TMP/shadow"
+
+sed 's|^fixture:x:1001:1001:Fixture:/home/fixture:/bin/bash$|fixture:x:1001:1001:Fixture:/home/fixture:/usr/bin/nologin|' "$TEST_TMP/passwd" > "$ROOT/etc/passwd"
+grep -Fq '/usr/bin/nologin' "$ROOT/etc/passwd" || { printf 'nologin fixture did not apply\n' >&2; exit 1; }
+expect_rejected 'unconfigured root whose only login shell is nologin' \
+  "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/nologin.img" --allow-default-credentials --plan
+
+cp "$TEST_TMP/passwd" "$ROOT/etc/passwd"
+awk -F ':' 'BEGIN { OFS=":" } $1 == "fixture" { $8 = "1" } { print }' "$TEST_TMP/shadow" > "$ROOT/etc/shadow"
+expect_rejected 'unconfigured root whose only account is expired' \
+  "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/expired.img" --allow-default-credentials --plan
+
+cp "$TEST_TMP/passwd" "$ROOT/etc/passwd"
+cp "$TEST_TMP/shadow" "$ROOT/etc/shadow"
+"$BUILDER" "${COMMON_ARGS[@]}" --output "$OUTPUT_DIR/restored-login.img" --allow-default-credentials --plan >/dev/null || {
+  printf 'Expected a restored login-capable account to pass again\n' >&2; exit 1; }
+mv "$TEST_TMP/base-system-selection" "$ROOT/var/lib/uconsole-omarchy-arm64/base-system-selection"
+
 printf 'build-image plan and safety tests: PASS\n'

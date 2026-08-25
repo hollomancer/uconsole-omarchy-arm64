@@ -140,6 +140,12 @@ INSIDE_SCRIPT="$REPO_ROOT/$D_INSIDE"
 # reviewed first resolution of a new layer and is refused once a lock exists,
 # so a promoted transaction can never be silently regenerated.
 if [[ "$MODE" == 'generate' ]]; then
+  # The mode only reaches the container for descriptors that declare
+  # inside_args|mode. Allowing --generate-lock for an inside_args|none layer
+  # would relax the host gate while the container still ran its unconditional
+  # comparison against a lock that does not exist yet, so refuse it here
+  # instead of failing confusingly inside the container.
+  [[ "$D_INSIDE_ARGS" == 'mode' ]] || die "layer '$D_LAYER' declares inside_args|none and cannot accept --generate-lock; its container entry point takes no mode argument"
   [[ ! -e "$TRANSACTION_LOCK" ]] || die '--generate-lock is forbidden once a transaction lock is committed'
 else
   [[ -f "$TRANSACTION_LOCK" && ! -L "$TRANSACTION_LOCK" ]] || die 'committed transaction lock is required; use --generate-lock only for the reviewed first resolution'

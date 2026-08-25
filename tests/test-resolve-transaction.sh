@@ -152,6 +152,16 @@ rmdir "$REPO_ROOT/.tmp-resolver-output-test"
 # promoted transaction can never be silently regenerated.
 expect_rejected 'generate over a committed lock' --layer-file "$HYPR_DESC" --generate-lock "${COMMON[@]}"
 
+# --generate-lock must be refused for a layer whose container entry point takes
+# no mode argument, rather than relaxing the host gate while the container still
+# compares against a lock that does not exist.
+NOMODE="$TEST_TMP/nomode-resolver.conf"
+awk -F '|' 'BEGIN { OFS="|" }
+  /^#/ { print; next }
+  $1 == "transaction_lock" { print $1, "config/hyprland/absent-transaction.lock"; next }
+  { print }' "$TEST_TMP/hyprland-resolver.conf" > "$NOMODE"
+expect_rejected 'generate-lock for an inside_args|none layer' --layer-file "$NOMODE" --generate-lock "${COMMON[@]}"
+
 # A committed lock that no longer matches its descriptor digest stops resolution.
 TAMPERED=$(test_descriptor hyprland)
 TAMPERED="$TEST_TMP/tampered-resolver.conf"
